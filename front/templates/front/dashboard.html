@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tableau de Bord</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'front/css/dashboard.css' %}" />
+</head>
+<body>
+  <div class="dashboard">
+    <h1 class="dashboard-title">Tableau de bord</h1>
+    <div class="search-bar">
+        <input type="text" placeholder="Rechercher par clients, entreprises ...">
+    </div>
+    <div class="filters">
+        <button class="filter-button">Filtres</button>
+        <button class="sort-button">Tri</button>
+    </div>
+    <div class="cards">
+        <div class="card recent-visits">
+            <h2>Visites récentes</h2>
+            <!-- Contenu des visites récentes -->
+        </div>
+        <div class="card upcoming-visits">
+            <h2>Visites à venir</h2>
+            <!-- Contenu des visites à venir -->
+        </div>
+        <div class="card reminders">
+            <h2>A Rappeler</h2>
+            <!-- Contenu des rappels -->
+        </div>
+    </div>
+    <div class="user-profile">
+        <span>Jean Dupont</span>
+        <!-- Menu déroulant pour le profil -->
+    </div>
+    <button class="add-button">+</button>
+  </div>
+</body>
+</html>

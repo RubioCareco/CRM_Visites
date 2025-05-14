@@ -7,113 +7,96 @@ body, html {
     background-size: cover;
 }
 
-.dashboard-container {
-    padding: 20px;
+.h1 {
+    text-align: left;
+    font-size: 28px;
+    font-weight: bold;
     color: white;
 }
 
-header {
-    position: relative;
-    margin-bottom: 20px;
-    padding: 10px 0;
-}
-
-.header-content {
+.dashboard {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    padding: 20px;
+    position: relative;
 }
 
 .search-bar {
-    margin-top: 10px;
+    margin-top: 60px;
+    margin-bottom: 20px;
+    position: absolute;
+    left: 20px;
 }
 
 .search-bar input {
     padding: 10px;
     border-radius: 5px;
-    border: none;
+    border: 1px solid #ccc;
     width: 300px;
-    margin-right: 10px;
 }
 
-.filters button {
-    margin-left: 10px;
-    padding: 10px 20px;
-    border-radius: 5px;
-    border: none;
-    background-color: rgba(255, 255, 255, 0.1);
-    color: white;
-    cursor: pointer;
-}
-
-.user-menu {
+.filters {
     position: absolute;
-    top: 10px;
-    right: 20px;
-}
-
-.user-dropdown {
-    display: none;
-    position: absolute;
-    right: 0;
-    background-color: rgba(255, 255, 255, 0.219);
-    border-radius: 5px;
-    overflow: hidden;
-}
-
-.user-menu:hover .user-dropdown {
-    display: block;
-}
-
-.user-dropdown a {
-    display: block;
-    padding: 10px;
-    color: white;
-    text-decoration: none;
-}
-
-main {
     display: flex;
-    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 20px;
 }
 
-section {
-    background-color: rgba(255, 255, 255, 0.192);
-    border-radius: 10px;
-    padding: 20px;
-    width: 30%;
-}
-
-.visit-card {
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 5px;
-    padding: 10px;
-    margin-bottom: 10px;
-}
-
-.status.valid {
-    color: #4CAF50;
-}
-
-.status.upcoming {
-    color: #FFC107;
-}
-
-.status.reminder {
-    color: #F44336;
-}
-
-footer {
-    margin-top: 20px;
-    text-align: center;
-}
-
-footer button {
-    margin: 5px;
+.filter-button, .sort-button {
     padding: 10px 20px;
     border-radius: 5px;
     border: none;
     background-color: #e53935;
     color: white;
     cursor: pointer;
-} 
+}
+
+.cards {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    width: 100%;
+}
+
+.card {
+    background-color: rgba(250, 250, 250, 0.8);
+    padding: 20px;
+    border-radius: 10px;
+    width: 300px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.user-profile {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    color: white;
+}
+
+.add-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #e53935;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.dashboard-title {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+}

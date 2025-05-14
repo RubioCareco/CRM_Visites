@@ -6,36 +6,117 @@
   <title>Tableau de Bord</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'front/css/dashboard.css' %}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
   <div class="dashboard">
     <h1 class="dashboard-title">Tableau de bord</h1>
     <div class="search-bar">
+        <i class="fa fa-search search-icon"></i>
         <input type="text" placeholder="Rechercher par clients, entreprises ...">
     </div>
     <div class="filters">
-        <button class="filter-button">Filtres</button>
-        <button class="sort-button">Tri</button>
+        <button class="filter-button">
+            <i class="fa-solid fa-sliders"></i>Filtres
+        </button>
+        <button class="sort-button">
+            <i class="fa-solid fa-arrow-down-a-z"></i>Tri
+        </button>
     </div>
+
     <div class="cards">
         <div class="card recent-visits">
-            <h2>Visites récentes</h2>
-            <!-- Contenu des visites récentes -->
+            <h2 class="card-title success">Visites récentes</h2>
+                <div class="visit-entry">
+                    <p><strong>Garage Jean Dupont</strong></p>
+                    <p class="status validée"><i class="fa fa-check-square"></i> Validée</p>
+                    <p class="visit-date">Dernières visites le : 28/04/2025</p>
+                </div>
+            
+                <div class="visit-entry">
+                    <p><strong>Garage Jean Dupont</strong></p>
+                    <p class="status validée"><i class="fa fa-check-square"></i> Validée</p>
+                    <p class="visit-date">Dernières visites le : 26/04/2025</p>
+                </div>
+
+                <div class="visit-entry">
+                    <p><strong>Garage Jean Dupont</strong></p>
+                    <p class="status validée"><i class="fa fa-check-square"></i> Validée</p>
+                    <p class="visit-date">Dernières visites le : 26/04/2025</p>
+                </div>
         </div>
+
         <div class="card upcoming-visits">
-            <h2>Visites à venir</h2>
-            <!-- Contenu des visites à venir -->
+            <h2 class="card-title-coming">Visites à venir</h2>
+                <div class="upcoming-entry">
+                    <p><strong>Garage Jean Dupont</strong></p>
+                    <p class="status-à-venir"><i class="fa-solid fa-calendar-days"></i>à venir</p>
+                    <p class="visit-date-futur">Rendez-vous le : 28/05/2025</p>
+                </div>
+
+                <div class="upcoming-entry">
+                    <p><strong>Garage Jean Dupont</strong></p>
+                    <p class="status-à-venir"><i class="fa-solid fa-calendar-days"></i> à venir</p>
+                    <p class="visit-date-futur">rendez-vous le : 26/05/2025</p>
+                </div>
+
+                <div class="upcoming-entry">
+                    <p><strong>Garage Jean Dupont</strong></p>
+                    <p class="status-à-venir"><i class="fa-solid fa-calendar-days"></i>à venir</p>
+                    <p class="visit-date-futur">Rendez-vous le : 28/05/2025</p>
+                </div>
         </div>
+        
         <div class="card reminders">
-            <h2>A Rappeler</h2>
-            <!-- Contenu des rappels -->
+            <h2 class="card-title-reminder">A Rappeler</h2>
+                <div class="reminder-entry">
+                    <p><strong>Garage Jean Dupont</strong></p>
+                    <p class="status-à-rappeler"><i class="fa-solid fa-triangle-exclamation"></i> A rappeler</p>
+                    <p class="visit-date-passed">Dernières visites le : 28/04/2025</p>
+                </div>
+
+                <div class="reminder-entry">
+                    <p><strong>Garage Jean Dupont</strong></p>
+                    <p class="status-à-rappeler"><i class="fa-solid fa-triangle-exclamation"></i> A rappeler</p>
+                    <p class="visit-date-passed">Dernières visites le : 26/04/2025</p>
+                </div>
+
+                <div class="reminder-entry">
+                    <p><strong>Garage Jean Dupont</strong></p>
+                    <p class="status-à-rappeler"><i class="fa-solid fa-triangle-exclamation"></i> A rappeler</p>
+                    <p class="visit-date-passed">Dernières visites le : 28/04/2025</p>
+                </div>
         </div>
-    </div>
-    <div class="user-profile">
-        <span>Jean Dupont</span>
-        <!-- Menu déroulant pour le profil -->
+        
+        <div class="user-profile-container">
+            <div class="user-profile" onclick="toggleUserMenu()">
+                <i class="fa fa-user"></i>
+                <span>Jean Dupont</span>
+            </div>
+            <div class="user-menu" id="userMenu">
+                <ul>
+                  <li>Profil</li>
+                  <li>Historique général</li>
+                  <li>Se déconnecter</li>
+                </ul>
+              </div>
+        </div>
     </div>
     <button class="add-button">+</button>
   </div>
+  <script>
+    function toggleUserMenu() {
+      const menu = document.getElementById("userMenu");
+      menu.style.display = menu.style.display === "block" ? "none" : "block";
+    }
+  
+    // Fermer si on clique en dehors
+    document.addEventListener("click", function(event) {
+      const userContainer = document.querySelector(".user-container");
+      if (!userContainer.contains(event.target)) {
+        document.getElementById("userMenu").style.display = "none";
+      }
+    });
+  </script>  
 </body>
 </html>

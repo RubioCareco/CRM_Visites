@@ -9,9 +9,20 @@ body, html {
 
 .h1 {
     text-align: left;
-    font-size: 28px;
+    font-size: 35px;
     font-weight: bold;
     color: white;
+    
+}
+
+.dashboard-title {
+    position: absolute;
+    top: 5px;
+    left: 20px;
+    color: white;
+    font-size: 34px;
+    font-weight: bold;
+    margin-bottom: 30px;
 }
 
 .dashboard {
@@ -23,33 +34,55 @@ body, html {
 }
 
 .search-bar {
+    position: relative;
     margin-top: 60px;
-    margin-bottom: 20px;
-    position: absolute;
-    left: 20px;
+    margin-bottom: 15px;
+    align-self: flex-start;
+    color: white;
 }
 
 .search-bar input {
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    width: 300px;
+    padding-left: 30px;
+    width: 450px;
+    height: 30px;
+    border-radius: 10px;
+    color: white;
+    background-color: rgba(255, 255, 255, 0.4);
+}
+
+.search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #ffffff;
+    pointer-events: none;
+}
+
+.search-bar input::placeholder {
+    color: white;
+    opacity: 0.6;
 }
 
 .filters {
-    position: absolute;
     display: flex;
     gap: 10px;
     margin-bottom: 20px;
+    align-self: flex-start;
 }
 
-.filter-button, .sort-button {
+.filter-button, .sort-button { 
     padding: 10px 20px;
-    border-radius: 5px;
+    border-radius: 12px;
     border: none;
     background-color: #e53935;
     color: white;
     cursor: pointer;
+}
+
+.filter-button i,
+.sort-button i {
+  margin-right: 10px;
 }
 
 .cards {
@@ -60,20 +93,48 @@ body, html {
 }
 
 .card {
-    background-color: rgba(250, 250, 250, 0.8);
+    background-color: rgba(250, 250, 250, 0.4);
     padding: 20px;
     border-radius: 10px;
-    width: 300px;
+    width: 400px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     text-align: center;
+    color: white;
+    max-height: 400px;  /* tu peux ajuster cette valeur */
+    overflow-y: auto;
+    padding-right: 8px; /* pour éviter que la scrollbar coupe le contenu */
+    scroll-behavior: smooth;
+    margin-top: 80px;
 }
 
+.card::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .card::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+  }
+
 .user-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: rgba(255, 255, 255, 0.4); /* transparence */
+    padding: 8px 16px;
+    border-radius: 15px;
+    color: white;
     position: absolute;
     top: 20px;
     right: 20px;
+    font-weight: 400;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .user-profile i {
+    font-size: 16px;
     color: white;
-}
+  }
 
 .add-button {
     position: fixed;
@@ -92,11 +153,173 @@ body, html {
     align-items: center;
 }
 
-.dashboard-title {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    color: white;
-    font-size: 28px;
-    font-weight: bold;
+.user-container {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
 }
+  
+  .user-menu {
+  display: none;
+  position: absolute;
+  top:calc(60px + 8px); /* distance du haut (juste sous .user-profile) */
+  right: 0;
+  background-color: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(6px);
+  padding: 10px 16px;
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  z-index: 999;
+  margin-right: 5px;
+}
+
+  .user-menu ul {
+    list-style: disc;
+    padding-left: 20px;
+    margin: 0;
+  }
+  
+  .user-menu li {
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+  
+  .user-menu li:last-child {
+    margin-bottom: 0;
+  }
+  
+  .user-menu::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    right: 16px;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 6px solid rgba(255, 255, 255, 0.9);
+  }
+
+  .visit-entry {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 15px;
+    padding: 10px 15px;
+    margin-bottom: 12px;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+    text-align: left;
+  }
+  
+  .status {
+    color: #67cc6b; /* vert pour validée */
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .visit-date {
+    font-size: 14px;
+    color: #ddd;
+    text-align: left;
+  }
+  
+  .upcoming-entry {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 15px;
+    padding: 10px 15px;
+    margin-bottom: 12px;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+    text-align: left;
+  }
+
+  .status-à-venir {
+    color: #f3d344;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .visit-date-futur {
+    font-size: 14px;
+    color: #ddd;
+    text-align: left;
+  }
+
+  .reminder-entry {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 15px;
+    padding: 10px 15px;
+    margin-bottom: 12px;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+    text-align: left;
+  }
+
+  .status-à-rappeler {
+    color: #f55066;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .visit-date-passed {
+    font-size: 14px;
+    color: #ddd;
+    text-align: left;
+  }
+
+  .card-title.success {
+    position: relative;
+    display: inline-block;
+    padding-bottom: 5px;
+  }
+  
+  .card-title.success::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    width: 100%;
+    background-color: #4caf50; /* vert validé */
+    border-radius: 2px;
+  }
+
+  .card-title-coming {
+    position: relative;
+    display: inline-block;
+    padding-bottom: 5px;
+  }
+  
+  .card-title-coming::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    width: 100%;
+    background-color: #f3d344; /* vert validé */
+    border-radius: 2px;
+  }
+
+  .card-title-reminder {
+    position: relative;
+    display: inline-block;
+    padding-bottom: 5px;
+  }
+
+  .card-title-reminder::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    width: 100%;
+    background-color: #f55066; /* vert validé */
+    border-radius: 2px;
+  }

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ajouter un nouveau client</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'front/css/new_client.css' %}">
+</head>
+<body>
+  <div class="modal">
+    <div class="modal-content">
+      <span class="close-button">&times;</span>
+      <h2>Ajoutez un nouveau client</h2>
+      <form>
+        <div class="form-group">
+          <input type="text" placeholder="Nom">
+          <input type="text" placeholder="Nom de l'entreprise">
+        </div>
+        <div class="form-group">
+          <input type="text" placeholder="Prénom">
+          <input type="text" placeholder="Numéro SIRET">
+        </div>
+        <div class="form-group">
+          <input type="text" placeholder="Adresse">
+          <input type="text" placeholder="Code Postal">
+        </div>
+        <div class="form-group">
+          <input type="email" placeholder="E-mail">
+          <input type="text" placeholder="Téléphone">
+        </div>
+        <div class="form-group">
+          <label><input type="checkbox"> Ajouter un rendez-vous</label>
+        </div>
+        <button type="submit" class="validate-button">Valider</button>
+      </form>
+    </div>
+  </div>
+  <div class="success-message">
+    Client ajouté avec succès
+  </div>
+</body>
+</html>

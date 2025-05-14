@@ -12,3 +12,9 @@ def new_password(request):
 
 def dashboard(request):
     return render(request, 'front/dashboard.html')
+
+def new_client(request):
+    return render(request, 'front/new_client.html')
+
+def add_rdv(request):
+    return render(request, 'front/add_rdv.html')

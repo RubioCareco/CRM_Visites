@@ -75,25 +75,33 @@ h2 {
     top: 50%;
     left: 10px;
     transform: translateY(-50%);
-    color: rgb(82, 67, 67);
+    color: rgb(255, 253, 253);
     font-size: 14px;
     pointer-events: none;
 }
 
 .input-icon-group input {
-    width: 85%;
-    padding: 10px 10px 10px 34px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    background-color: rgba(255, 255, 255, 0.288);
+    width: 70%;
+    padding: 12px 40px 12px 40px;
+    border: none;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.1);
     color: white;
-    transition: border-color 0.3s ease;
+    font-size: 14px;
+    transition: background-color 0.3s ease, border 0.3s ease;
+    outline: none;
 }
 
 .input-icon-group input::placeholder {
     color: rgba(255, 255, 255, 0.85);
     opacity: 1;
 }
+
+.input-icon-group input:focus {
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
 
 /* Message erreur dynamique uniquement quand le champ a été touché */
 .input-icon-group input.invalid {

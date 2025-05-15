@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profil</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'front/css/profil.css' %}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <div class="profile-modal">
+    <div class="profile-box">
+      <div id="close-button" class="close-button">
+        <i class="fa fa-times"></i>
+      </div>
+      <div class="profile-avatar">JD</div>
+      <h2>Jean DUPONT</h2>
+
+      <form>
+        <div class="profile-field">
+          <i class="fa fa-user"></i>
+          <input type="text" placeholder="Nom" disabled />
+        </div>
+        <div class="profile-field">
+          <i class="fa fa-user"></i>
+          <input type="text" placeholder="Prénom" disabled />
+        </div>
+        <div class="profile-field">
+          <i class="fa fa-envelope"></i>
+          <input type="email" placeholder="Adresse e-mail" disabled />
+        </div>
+        <div class="profile-field">
+          <i class="fa fa-phone"></i>
+          <input type="text" placeholder="Téléphone" disabled />
+        </div>
+        <div class="profile-field">
+          <i class="fa fa-building"></i>
+          <input type="text" placeholder="Site de rattachement" disabled />
+        </div>
+
+        <button type="button" class="edit-button" id="editProfileBtn">
+          <i class="fa fa-pen"></i> Modifier le profil
+        </button>
+      </form>
+    </div>
+  </div>
+
+<script>document.querySelector('.close-button').addEventListener('click', () => {
+    window.location.href = '/dashboard';
+  });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const editBtn = document.getElementById('editProfileBtn');
+      const inputs = document.querySelectorAll('.profile-field input');
+      let isEditing = false;
+  
+      editBtn.addEventListener('click', function () {
+        isEditing = !isEditing;
+  
+        inputs.forEach(input => {
+          input.disabled = !isEditing;
+  
+          if (isEditing) {
+            input.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+            input.style.border = '1px solid #e53935';
+          } else {
+            input.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+            input.style.border = '1px solid #ccc';
+          }
+        });
+  
+        // Modifier le texte du bouton
+        if (isEditing) {
+          editBtn.innerHTML = '<i class="fa fa-check"></i> Enregistrer';
+        } else {
+          editBtn.innerHTML = '<i class="fa fa-pen"></i> Modifier le profil';
+          alert("Modifications enregistrées !");
+        }
+      });
+    });
+  </script>
+  
+
+</body>
+</html>

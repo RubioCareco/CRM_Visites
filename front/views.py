@@ -18,3 +18,6 @@ def new_client(request):
 
 def add_rdv(request):
     return render(request, 'front/add_rdv.html')
+
+def profil(request):
+    return render(request, 'front/profil.html')

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ajouter un rendez-vous</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'front/css/add_rdv.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <div class="rdv-modal">
+    <div class="rdv-box">
+      <h2>Ajouter un rendez-vous</h2>
+      <form>
+        <div class="rdv-field">
+          <i class="fa fa-calendar"></i>
+          <input type="date" placeholder="Date du rendez-vous" required>
+        </div>
+        <div class="rdv-field">
+          <i class="fa fa-clock"></i>
+          <input type="time" placeholder="Heure du rendez-vous" required>
+        </div>
+        <div class="rdv-field">
+          <i class="fa fa-user"></i>
+          <input type="text" placeholder="Client" required>
+        </div>
+        <div class="rdv-field">
+          <i class="fa fa-tag"></i>
+          <input type="text" placeholder="Objet du rendez-vous" required>
+        </div>
+        <div class="rdv-field">
+          <i class="fa fa-align-left"></i>
+          <textarea placeholder="Détails/Notes" rows="3"></textarea>
+        </div>
+
+        <div class="rdv-actions">
+          <button id="cancelBtn" type="button" class="cancel-button">Annuler</button>
+          <button type="submit" class="submit-button"><i class="fa fa-check"></i> Valider</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="success-message" id="successMessage">
+    <i class="fa fa-check-circle"></i> Rendez-vous ajouté avec succès
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const form = document.querySelector("form");
+      const successMessage = document.getElementById("successMessage");
+      const cancelBtn = document.getElementById("cancelBtn");
+      const inputs = form.querySelectorAll("input, textarea");
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        if (form.checkValidity()) {
+          successMessage.style.display = "flex";
+
+          setTimeout(() => {
+            successMessage.style.display = "none";
+            form.reset();
+          }, 3000);
+        } else {
+          form.reportValidity();
+        }
+      });
+
+      cancelBtn.addEventListener("click", () => {
+        let hasData = false;
+
+        inputs.forEach(input => {
+          if (input.value.trim() !== "") {
+            hasData = true;
+          }
+        });
+
+        if (hasData) {
+          const confirmLeave = confirm("Des informations ont été saisies. Voulez-vous vraiment quitter cette page ?");
+          if (confirmLeave) {
+            window.location.href = "/dashboard";
+          }
+        } else {
+          window.location.href = "/dashboard";
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profil</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'front/css/profil.css' %}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <div class="profile-modal">
+    <div class="profile-box">
+      <div id="close-button" class="close-button">
+        <i class="fa fa-times"></i>
+      </div>
+      <div class="profile-avatar">
+        {{ commercial.prenom|slice:":1"|upper }}{{ commercial.nom|slice:":1"|upper }}
+      </div>
+      <h2>{{ commercial.prenom }} {{ commercial.nom|upper }}</h2>
+
+      <form method="POST">
+        {% csrf_token %}
+        <div class="profile-field">
+          <i class="fa fa-user"></i>
+          <input type="text" name="nom" value="{{ commercial.nom }}" placeholder="Nom" disabled />
+        </div>
+        <div class="profile-field">
+          <i class="fa fa-user"></i>
+          <input type="text" name="prenom" value="{{ commercial.prenom }}" placeholder="Prénom" disabled />
+        </div>
+        <div class="profile-field">
+          <i class="fa fa-envelope"></i>
+          <input type="email" name="email" value="{{ commercial.email }}" placeholder="Adresse e-mail" disabled />
+        </div>
+        <div class="profile-field">
+          <i class="fa fa-phone"></i>
+          <input type="text" name="telephone" value="{{ commercial.telephone }}" placeholder="Téléphone" disabled />
+        </div>
+        <div class="profile-field">
+          <i class="fa fa-building"></i>
+          <input type="text" name="site" value="N/A" placeholder="Site de rattachement" disabled />
+        </div>
+
+        <button type="submit" class="edit-button" id="editProfileBtn">
+          <i class="fa fa-pen"></i> Modifier le profil
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.querySelector('.close-button').addEventListener('click', () => {
+      window.location.href = '/dashboard';
+    });
+  
+    document.addEventListener('DOMContentLoaded', function () {
+      const editBtn = document.getElementById('editProfileBtn');
+      const inputs = document.querySelectorAll('.profile-field input');
+      const form = document.querySelector('form');
+      let isEditing = false;
+  
+      editBtn.addEventListener('click', function (e) {
+        if (!isEditing) {
+          e.preventDefault(); // Bloque l'envoi à la première étape
+          inputs.forEach(input => input.disabled = false);
+          editBtn.innerHTML = '<i class="fa fa-check"></i> Enregistrer';
+          isEditing = true;
+        } else {
+          // L'utilisateur veut enregistrer → on laisse le formulaire se soumettre
+          form.submit(); // Forcer la soumission ici
+        }
+      });
+    });
+  </script>
+  
+
+</body>
+</html>

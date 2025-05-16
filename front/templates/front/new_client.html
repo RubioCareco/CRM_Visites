@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ajouter un nouveau client</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'front/css/new_client.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <div class="modal">
+    <div class="modal-content">
+      <span class="close-button" onclick="window.location.href='/dashboard'">
+        <i class="fa-solid fa-xmark"></i>
+      </span>
+      <h2>Ajoutez un nouveau client</h2>
+      <form>
+        <div class="form-group">
+          <div class="input-icon-group">
+            <i class="fa fa-user"></i>
+            <input type="text" name="nom" placeholder="Nom" required>
+            <div class="error-message">Veuillez saisir un nom.</div>
+          </div>
+          <div class="input-icon-group">
+            <i class="fa fa-building"></i>
+            <input type="text" name="entreprise" placeholder="Nom de l'entreprise" required>
+            <div class="error-message">Veuillez saisir un nom d'entreprise.</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="input-icon-group">
+            <i class="fa fa-user"></i>
+            <input type="text" name="prenom" placeholder="Prénom" required>
+            <div class="error-message">Veuillez saisir un prénom.</div>
+          </div>
+          <div class="input-icon-group">
+            <i class="fa fa-id-card"></i>
+            <input type="text" name="siret" placeholder="Numéro SIRET" pattern="[0-9]{14}" title="Le numéro SIRET doit contenir exactement 14 chiffres." required>
+            <div class="error-message">Numéro SIRET invalide (14 chiffres requis).</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="input-icon-group">
+            <i class="fa fa-map-marker-alt"></i>
+            <input type="text" name="adresse" placeholder="Adresse" required>
+            <div class="error-message">Veuillez saisir une adresse.</div>
+          </div>
+          <div class="input-icon-group">
+            <i class="fa fa-location-dot"></i>
+            <input type="text" name="code_postal" placeholder="Code Postal" pattern="[0-9]{5}" title="Le code postal doit contenir 5 chiffres." required>
+            <div class="error-message">Code postal invalide (5 chiffres requis).</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="input-icon-group">
+            <i class="fa fa-envelope"></i>
+            <input type="email" name="email" placeholder="E-mail" required>
+            <div class="error-message">Adresse e-mail invalide.</div>
+          </div>
+          <div class="input-icon-group">
+            <i class="fa fa-phone"></i>
+            <input type="tel" name="telephone" placeholder="Téléphone" pattern="[0-9]{10}" title="Le numéro de téléphone doit contenir 10 chiffres." required>
+            <div class="error-message">Numéro de téléphone invalide (10 chiffres requis).</div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="action-button" type="button" class="action-button">
+            <i class="fa-solid fa-calendar-plus"></i>
+            Ajouter un rendez-vous
+          </button>
+          <button type="submit" class="action-button">
+            Valider
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="success-message">
+    Client ajouté avec succès
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.querySelector("form");
+      const inputs = form.querySelectorAll("input[required]");
+      const successMessage = document.querySelector(".success-message");
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        let isValid = true;
+
+        inputs.forEach((input) => {
+          const parent = input.closest(".input-icon-group");
+          const errorMessage = parent.querySelector(".error-message");
+
+          if (!input.checkValidity()) {
+            input.classList.add("invalid");
+            if (errorMessage) errorMessage.style.display = "block";
+            isValid = false;
+          } else {
+            input.classList.remove("invalid");
+            if (errorMessage) errorMessage.style.display = "none";
+          }
+        });
+
+        if (isValid) {
+          successMessage.classList.add("show");
+          setTimeout(() => {
+            successMessage.classList.remove("show");
+          }, 3000);
+          form.reset();
+        }
+      });
+
+      // Redirection dynamique vers add-rdv avec next param
+      const addRdvBtn = document.getElementById("action-button");
+      addRdvBtn.addEventListener("click", () => {
+        const currentUrl = window.location.pathname;
+        window.location.href = `/add-rdv?next=${encodeURIComponent(currentUrl)}`;
+      });
+    });
+  </script>
+</body>
+</html>

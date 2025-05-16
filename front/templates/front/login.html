@@ -6,7 +6,6 @@
   <title>Connexion RUBIO</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'front/css/login.css' %}" />
-  <!-- Font Awesome 6 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
@@ -15,32 +14,40 @@
       <img src="{% static 'front/img/Logo.png' %}" class="logo" alt="Logo Rubio">
       <p class="welcome-text">Bienvenue sur votre espace RUBIO</p>
 
-      <div class="input-group">
-        <label for="username">Nom d'utilisateur</label>
-        <div class="input-icon">
-          <i class="fas fa-user"></i>
-          <input type="text" id="username" placeholder="Nom d'utilisateur" />
-        </div>
-      </div>
+      <form method="POST" action="{% url 'login' %}">
+        {% csrf_token %}
 
-      <div class="input-group">
-        <label for="password">Mot de passe</label>
-        <div class="input-icon eye-container">
-          <i class="fas fa-lock"></i>
-          <input type="password" id="password" placeholder="Mot de passe" />
-          <i class="fa-solid fa-eye toggle-eye" id="togglePassword"></i>
+        <div class="input-group">
+          <label for="email">Email</label>
+          <div class="input-icon">
+            <i class="fas fa-user"></i>
+            <input type="text" name="email" id="email" placeholder="Adresse e-mail" required />
+          </div>
         </div>
-      </div>   
 
-      <a href="{% url 'reset_password' %}" class="forgot-password">Mot de passe oublié ?</a>
-      <button class="login-btn">Se connecter</button>
+        <div class="input-group">
+          <label for="password">Mot de passe</label>
+          <div class="input-icon eye-container">
+            <i class="fas fa-lock"></i>
+            <input type="password" name="password" id="password" placeholder="Mot de passe" required />
+            <i class="fa-solid fa-eye toggle-eye" id="togglePassword"></i>
+          </div>
+        </div>   
+
+        <a href="{% url 'reset_password' %}" class="forgot-password">Mot de passe oublié ?</a>
+        <button type="submit" class="login-btn">Se connecter</button>
+
+        {% if erreur %}
+          <p style="color: red; margin-top: 10px;">Email ou mot de passe incorrect.</p>
+        {% endif %}
+      </form>
     </div>
   </div>
 
   <script>
     const togglePassword = document.getElementById("togglePassword");
     const passwordInput = document.getElementById("password");
-  
+
     togglePassword.addEventListener("click", function () {
       const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
       passwordInput.setAttribute("type", type);
@@ -48,6 +55,5 @@
       this.classList.toggle("fa-eye-slash");
     });
   </script>
-  
 </body>
 </html>

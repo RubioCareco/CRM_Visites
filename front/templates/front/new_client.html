@@ -90,15 +90,15 @@
       const form = document.querySelector("form");
       const inputs = form.querySelectorAll("input[required]");
       const successMessage = document.querySelector(".success-message");
-  
+
       form.addEventListener("submit", (e) => {
         e.preventDefault();
         let isValid = true;
-  
+
         inputs.forEach((input) => {
           const parent = input.closest(".input-icon-group");
           const errorMessage = parent.querySelector(".error-message");
-  
+
           if (!input.checkValidity()) {
             input.classList.add("invalid");
             if (errorMessage) errorMessage.style.display = "block";
@@ -108,32 +108,23 @@
             if (errorMessage) errorMessage.style.display = "none";
           }
         });
-  
+
         if (isValid) {
-          // Affiche le message de succès
           successMessage.classList.add("show");
-  
-          // Cache le message après 3 secondes
           setTimeout(() => {
             successMessage.classList.remove("show");
           }, 3000);
-  
-          // Réinitialise le formulaire si tu veux :
           form.reset();
         }
       });
+
+      // Redirection dynamique vers add-rdv avec next param
+      const addRdvBtn = document.getElementById("action-button");
+      addRdvBtn.addEventListener("click", () => {
+        const currentUrl = window.location.pathname;
+        window.location.href = `/add-rdv?next=${encodeURIComponent(currentUrl)}`;
+      });
     });
   </script>
-  
-  <script>
-    document.querySelector('.close-button').addEventListener('click', () => {
-      window.location.href = '/dashboard';
-    });
-
-    document.querySelector('.action-button').addEventListener('click', () => {
-      window.location.href = '/add-rdv';
-    });
-  </script>
-
 </body>
 </html>

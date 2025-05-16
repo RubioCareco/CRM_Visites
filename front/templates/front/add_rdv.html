@@ -12,26 +12,29 @@
   <div class="rdv-modal">
     <div class="rdv-box">
       <h2>Ajouter un rendez-vous</h2>
-      <form>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+
         <div class="rdv-field">
           <i class="fa fa-calendar"></i>
-          <input type="date" placeholder="Date du rendez-vous" required>
+          <input type="date" name="date" placeholder="Date du rendez-vous" required>
         </div>
         <div class="rdv-field">
           <i class="fa fa-clock"></i>
-          <input type="time" placeholder="Heure du rendez-vous" required>
+          <input type="time" name="heure" placeholder="Heure du rendez-vous" required>
         </div>
         <div class="rdv-field">
           <i class="fa fa-user"></i>
-          <input type="text" placeholder="Client" required>
+          <input type="text" name="client" placeholder="Client" required>
         </div>
         <div class="rdv-field">
           <i class="fa fa-tag"></i>
-          <input type="text" placeholder="Objet du rendez-vous" required>
+          <input type="text" name="objet" placeholder="Objet du rendez-vous" required>
         </div>
         <div class="rdv-field">
           <i class="fa fa-align-left"></i>
-          <textarea placeholder="Détails/Notes" rows="3"></textarea>
+          <textarea name="notes" placeholder="Détails/Notes" rows="3"></textarea>
         </div>
 
         <div class="rdv-actions">
@@ -52,6 +55,7 @@
       const successMessage = document.getElementById("successMessage");
       const cancelBtn = document.getElementById("cancelBtn");
       const inputs = form.querySelectorAll("input, textarea");
+      const nextUrl = document.querySelector("input[name='next']").value || "/dashboard";
 
       form.addEventListener("submit", function (e) {
         e.preventDefault();
@@ -60,9 +64,8 @@
           successMessage.style.display = "flex";
 
           setTimeout(() => {
-            successMessage.style.display = "none";
-            form.reset();
-          }, 3000);
+            form.submit(); // envoie réel vers la vue Django
+          }, 1500); // petit délai d'affichage du message
         } else {
           form.reportValidity();
         }
@@ -80,10 +83,10 @@
         if (hasData) {
           const confirmLeave = confirm("Des informations ont été saisies. Voulez-vous vraiment quitter cette page ?");
           if (confirmLeave) {
-            window.location.href = "/dashboard";
+            window.location.href = nextUrl;
           }
         } else {
-          window.location.href = "/dashboard";
+          window.location.href = nextUrl;
         }
       });
     });

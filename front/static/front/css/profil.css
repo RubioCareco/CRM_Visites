@@ -16,7 +16,7 @@ body, html {
   }
   
   .profile-box {
-    background-color: rgba(250, 250, 250, 0.15);
+    background-color: rgba(250, 250, 250, 0.219);
     padding: 30px;
     border-radius: 12px;
     width: 360px;
@@ -131,7 +131,9 @@ padding: 0;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
   }
 
-  
+  .edit-button:hover {
+    background-color: #cc2e2e;
+}
 
   .profile-field input:focus {
     outline: none;

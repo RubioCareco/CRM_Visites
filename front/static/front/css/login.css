@@ -22,13 +22,6 @@ body, html {
     text-align: center;
     color: white; 
     box-shadow: none;
-    transition: box-shadow 0.3s ease-in-out;
-  }
-  
-  .login-box:hover {
-    box-shadow:
-      0 0 25px rgba(172, 123, 123, 0.7),
-      0 10px 30px rgba(0, 0, 0, 0.4);
   }
   
   .logo {

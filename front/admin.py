@@ -1,3 +1,6 @@
 from django.contrib import admin
+from .models import Commercial, Client, Rendezvous
 
-# Register your models here.
+admin.site.register(Commercial)
+admin.site.register(Client)
+admin.site.register(Rendezvous)

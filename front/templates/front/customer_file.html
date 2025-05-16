@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fiche Client</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'front/css/customer_file.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <div class="customer-modal">
+    <div class="customer-box fade-in">
+        <span class="close-button" onclick="window.location.href='/dashboard'">
+            <i class="fa-solid fa-xmark"></i>
+          </span>
+      <div class="customer-avatar">JD</div>
+      <h2>Fiche client : Jean Dupont</h2>
+
+      <div class="customer-form">
+        <!-- INPUTS GROUPÉS PAR LIGNE -->
+        <div class="input-row">
+          <div class="input-icon-group">
+            <i class="fa fa-user"></i>
+            <input type="text" placeholder="Nom" disabled />
+          </div>
+          <div class="input-icon-group">
+            <i class="fa fa-user"></i>
+            <input type="text" placeholder="Prénom" disabled />
+          </div>
+        </div>
+
+        <div class="input-row">
+          <div class="input-icon-group">
+            <i class="fa fa-envelope"></i>
+            <input type="text" placeholder="Adresse E-mail" disabled />
+          </div>
+          <div class="input-icon-group">
+            <i class="fa fa-phone"></i>
+            <input type="text" placeholder="Numéro de téléphone" disabled />
+          </div>
+        </div>
+
+        <div class="input-row">
+          <div class="input-icon-group">
+            <i class="fa fa-building"></i>
+            <input type="text" placeholder="Entreprise" disabled />
+          </div>
+          <div class="input-icon-group">
+            <i class="fa fa-map-marker-alt"></i>
+            <input type="text" placeholder="Adresse entreprise" disabled />
+          </div>
+        </div>
+
+        <div class="input-row">
+          <div class="input-icon-group">
+            <i class="fa fa-calendar-day"></i>
+            <input type="text" placeholder="Dernier RDV : 26/04/2025" disabled />
+          </div>
+          <div class="input-icon-group">
+            <i class="fa fa-clock-rotate-left"></i>
+            <input type="text" placeholder="Historique rendez-vous" disabled />
+          </div>
+        </div>
+        <!-- COMMENTAIRE -->
+        <div class="input-icon-group comment-centered">
+          <i class="fa fa-comment"></i>
+          <textarea placeholder="Commentaire..."></textarea>
+        </div>
+
+        <div class="actions">
+            <a href="{% url 'add_rdv' %}?next={{ request.path }}" class="add-button">
+            <i class="fa fa-calendar-plus"></i> Ajouter un rendez-vous
+            </a>
+        </div>
+         <!--bouton modifier-->
+        <div class="actions">
+            <button type="button" class="modify-button" id="modifyBtn">
+                <i class="fa fa-pen"></i> Modifier les informations
+              </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const modifyBtn = document.getElementById('modifyBtn');
+      const inputs = document.querySelectorAll('.customer-form input');
+      let isEditing = false;
+  
+      modifyBtn.addEventListener('click', function () {
+        isEditing = !isEditing;
+  
+        inputs.forEach(input => {
+          const placeholder = input.getAttribute('placeholder');
+  
+          // Ne pas activer les champs "Dernier RDV" et "Historique rendez-vous"
+          const isReadOnlyField = placeholder.includes("Dernier RDV") || placeholder.includes("Historique");
+  
+          if (!isReadOnlyField) {
+            input.disabled = !isEditing;
+            input.style.backgroundColor = isEditing ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.1)';
+            input.style.border = isEditing ? '1px solid #e53935' : '1px solid #ccc';
+          }
+        });
+  
+        // Modifier le texte du bouton
+        if (isEditing) {
+          modifyBtn.innerHTML = '<i class="fa fa-check"></i> Enregistrer';
+        } else {
+          modifyBtn.innerHTML = '<i class="fa fa-pen"></i> Modifier les informations';
+          alert("Modifications enregistrées !");
+        }
+      });
+    });
+  </script>
+  
+  
+
+
+</body>
+</html>

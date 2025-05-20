@@ -7,23 +7,192 @@
   {% load static %}
   <link rel="stylesheet" href="{% static 'front/css/dashboard.css' %}" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    .sort-dropdown {
+      font-size: 17px;
+      color: #fff;
+      background: rgba(40, 40, 40, 0.98);
+      border-radius: 22px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      min-width: 260px;
+      padding-bottom: 18px;
+      z-index: 1000;
+      border: 1px solid #444;
+      margin-top: 2px;
+    }
+    .sort-dropdown-title {
+      font-size: 20px;
+      font-weight: bold;
+      padding: 18px 28px 10px 28px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #fff;
+    }
+    .sort-option {
+      display: flex;
+      align-items: center;
+      padding: 14px 28px;
+      cursor: pointer;
+      transition: background 0.18s, color 0.18s;
+      border-radius: 16px;
+      margin: 0 10px 8px 10px;
+      font-size: 17px;
+      gap: 8px;
+    }
+    .sort-option.active {
+      background: rgba(229,57,53,0.13);
+      color: #e53935;
+    }
+    .sort-option.active .sort-check {
+      display: inline;
+    }
+    .sort-option:hover {
+      background: #e53935;
+      color: #fff;
+    }
+    .sort-check {
+      display: none;
+      color: #e53935;
+      font-size: 18px;
+    }
+    .statut-submenu {
+      font-size: 16px;
+      color: #fff;
+      background: rgba(40, 40, 40, 0.98);
+      border-radius: 18px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      min-width: 180px;
+      padding: 10px 0;
+      z-index: 1100;
+      border: 1px solid #444;
+      margin-left: 8px;
+    }
+    .statut-option {
+      padding: 12px 22px;
+      cursor: pointer;
+      transition: background 0.18s, color 0.18s;
+      border-radius: 12px;
+      margin: 0 8px 6px 8px;
+    }
+    .statut-option.selected, .statut-option:hover {
+      background: #e53935;
+      color: #fff;
+    }
+    .filter-panel {
+      font-family: inherit;
+      color: #fff;
+      background: rgba(40,40,40,0.98);
+      border-radius: 28px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      min-width: 340px;
+      max-width: 95vw;
+      padding: 32px 32px 24px 32px;
+      z-index: 2000;
+    }
+    .filter-checkbox {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-right: 18px;
+      font-size: 1rem;
+      color: #ccc;
+      margin-bottom: 6px;
+    }
+    .filter-checkbox input[type="checkbox"] {
+      accent-color: #e53935;
+      width: 18px;
+      height: 18px;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 38px;
+      height: 22px;
+    }
+    .switch input {display:none;}
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #444;
+      border-radius: 22px;
+      transition: .4s;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      border-radius: 50%;
+      transition: .4s;
+    }
+    input:checked + .slider {
+      background-color: #e53935;
+    }
+    input:checked + .slider:before {
+      transform: translateX(16px);
+    }
+    #clientFilter, #clientFilter option {
+      color: #222 !important;
+      background: #fff !important;
+      font-size: 1rem;
+    }
+    #clientFilter {
+      color: #222 !important;
+      background: #fff !important;
+      border: 1px solid #444;
+      border-radius: 10px;
+    }
+  </style>
 </head>
 <body>
   <div class="dashboard">
     <h1 class="dashboard-title">Tableau de bord</h1>
 
-    <div class="search-bar">
+    <div class="search-bar" style="position:relative;">
         <i class="fa fa-search search-icon"></i>
-        <input type="text" placeholder="Rechercher par clients, entreprises ...">
+        <input type="text" id="dashboardSearch" placeholder="Rechercher par clients, entreprises ..." autocomplete="off">
+        <ul id="searchSuggestions" class="autocomplete-results" style="position:absolute;left:0;right:0;top:38px;z-index:10;background:rgba(30,30,30,0.95);color:#fff;border-radius:0 0 8px 8px;max-height:180px;overflow-y:auto;display:none;"></ul>
     </div>
 
     <div class="filters">
-        <button class="filter-button">
+        <button class="filter-button" id="filterBtn">
             <i class="fa-solid fa-sliders"></i>Filtres
         </button>
-        <button class="sort-button">
-            <i class="fa-solid fa-arrow-down-a-z"></i>Tri
-        </button>
+        <div class="sort-dropdown-container" style="position:relative;display:inline-block;">
+          <button class="sort-button" id="sortBtn">
+              <i class="fa-solid fa-arrow-down-a-z"></i>Tri
+          </button>
+          <div id="sortDropdown" class="sort-dropdown" style="display:none;position:absolute;top:110%;left:50%;transform:translateX(-50%);right:auto;min-width:260px;background:rgba(40,40,40,0.98);box-shadow:0 8px 32px rgba(0,0,0,0.25);border-radius:22px;padding:0 0 18px 0;z-index:1000;border:1px solid #444;">
+            <div class="sort-dropdown-title" style="font-size:20px;font-weight:bold;padding:18px 28px 10px 28px;display:flex;align-items:center;gap:10px;">
+              <span id="sortDropdownArrow" style="font-size:22px;transition:transform 0.2s;">&#8963;</span> Tri
+            </div>
+            <div class="sort-option" data-sort="date">
+              <span class="sort-check" style="display:none;margin-right:12px;color:#e53935;font-size:18px;">&#10003;</span>
+              <span>Date du rendez-vous</span>
+            </div>
+            <div class="sort-option" data-sort="nom">
+              <span class="sort-check" style="display:none;margin-right:12px;color:#e53935;font-size:18px;">&#10003;</span>
+              <span>Nom du client / entreprise</span>
+            </div>
+            <div class="sort-option" data-sort="statut" id="statutSortOption" style="position:relative;">
+              <span class="sort-check" style="display:none;margin-right:12px;color:#e53935;font-size:18px;">&#10003;</span>
+              <span>Statut du rendez-vous</span>
+              <div id="statutSubmenu" class="statut-submenu" style="display:none;position:absolute;top:0;left:100%;min-width:180px;background:rgba(40,40,40,0.98);box-shadow:0 8px 32px rgba(0,0,0,0.18);border-radius:18px;padding:10px 0;z-index:1100;border:1px solid #444;">
+                <div class="statut-option" data-statut="visit-entry">Validé</div>
+                <div class="statut-option" data-statut="upcoming-entry">À venir</div>
+                <div class="statut-option" data-statut="reminder-entry">À rappeler</div>
+              </div>
+            </div>
+            <div style="padding:10px 28px 0 28px;text-align:right;">
+              <a href="#" id="resetSort" style="color:#4dd0e1;font-size:1rem;text-decoration:none;">Réinitialiser le tri</a>
+            </div>
+          </div>
+        </div>
     </div>
 
     <div class="cards">
@@ -110,6 +279,49 @@
         <button class="action-button" onclick="updateStatutRdv(currentRdvId, 'annuler')">Annuler le rendez-vous</button>
       </div>
     </div>
+  </div>
+
+  <!-- Filter Panel -->
+  <div id="filterPanel" class="filter-panel" style="display:none;position:fixed;top:60px;left:50%;transform:translateX(-50%);background:rgba(40,40,40,0.98);border-radius:28px;box-shadow:0 8px 32px rgba(0,0,0,0.25);padding:32px 32px 24px 32px;z-index:2000;min-width:340px;max-width:95vw;">
+    <div style="font-size:2rem;font-weight:bold;margin-bottom:18px;color:#fff;">Filtres</div>
+    <div style="margin-bottom:18px;">
+      <div style="font-size:1.1rem;font-weight:500;margin-bottom:8px;">Statut du rendez-vous</div>
+      <label class="filter-checkbox"><input type="checkbox" class="statut-filter" value="upcoming-entry"> À venir</label>
+      <label class="filter-checkbox"><input type="checkbox" class="statut-filter" value="visit-entry"> Validé</label>
+      <label class="filter-checkbox"><input type="checkbox" class="statut-filter" value="reminder-entry"> Annulé</label>
+    </div>
+    <div style="margin-bottom:18px;">
+      <div style="font-size:1.1rem;font-weight:500;margin-bottom:8px;">Date du rendez-vous</div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <input type="date" id="dateFrom" class="filter-date" style="flex:1;padding:8px 12px;border-radius:10px;border:1px solid #444;background:rgba(255,255,255,0.04);color:#fff;">
+        <span style="color:#aaa;">–</span>
+        <input type="date" id="dateTo" class="filter-date" style="flex:1;padding:8px 12px;border-radius:10px;border:1px solid #444;background:rgba(255,255,255,0.04);color:#fff;">
+      </div>
+    </div>
+    <div style="margin-bottom:18px;">
+      <div style="font-size:1.1rem;font-weight:500;margin-bottom:8px;">Client / entreprise</div>
+      <select id="clientFilter" style="width:100%;padding:8px 12px;border-radius:10px;border:1px solid #444;background:rgba(255,255,255,0.04);color:#fff;">
+        <option value="">Sélectionner</option>
+        {% for rdv in visites_recentes %}
+          <option value="{{ rdv.client.nom }}">{{ rdv.client.nom }} {{ rdv.client.prenom }}{% if rdv.client.entreprise %} ({{ rdv.client.entreprise }}){% endif %}</option>
+        {% endfor %}
+        {% for rdv in rdvs_a_venir %}
+          <option value="{{ rdv.client.nom }}">{{ rdv.client.nom }} {{ rdv.client.prenom }}{% if rdv.client.entreprise %} ({{ rdv.client.entreprise }}){% endif %}</option>
+        {% endfor %}
+        {% for rdv in a_rappeler %}
+          <option value="{{ rdv.client.nom }}">{{ rdv.client.nom }} {{ rdv.client.prenom }}{% if rdv.client.entreprise %} ({{ rdv.client.entreprise }}){% endif %}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+      <label class="switch">
+        <input type="checkbox" id="rdvAValider">
+        <span class="slider round"></span>
+      </label>
+      <span style="color:#fff;font-size:1rem;">RDV à valider</span>
+      <a href="#" id="resetFilters" style="margin-left:auto;color:#4dd0e1;font-size:1rem;text-decoration:none;">Réinitialiser filtres</a>
+    </div>
+    <button id="closeFilterPanel" style="position:absolute;top:18px;right:18px;background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;">&times;</button>
   </div>
 
   <!-- Scripts -->
@@ -322,6 +534,274 @@
           const isReminder = this.classList.contains('reminder-entry') && this.closest('#reminders');
           openClientModal(nom, prenom, entreprise, id, date, heure, adresse, cp, isRecent, isReminder);
         });
+      });
+
+      // Collecte des données pour l'autocomplétion
+      const allCards = Array.from(document.querySelectorAll('.open-modal-btn'));
+      const allClients = allCards.map(card => ({
+        nom: card.getAttribute('data-nom') || '',
+        prenom: card.getAttribute('data-prenom') || '',
+        entreprise: card.getAttribute('data-entreprise') || ''
+      }));
+
+      // Génère une liste unique de suggestions (nom complet et entreprise)
+      const suggestions = Array.from(new Set(
+        allClients.flatMap(c => [
+          c.nom + ' ' + c.prenom,
+          c.prenom + ' ' + c.nom,
+          c.entreprise
+        ].filter(Boolean))
+      ));
+
+      const searchInput = document.getElementById('dashboardSearch');
+      const suggestionBox = document.getElementById('searchSuggestions');
+
+      // Affiche les suggestions filtrées
+      function showSuggestions(value) {
+        const v = value.trim().toLowerCase();
+        if (!v) {
+          suggestionBox.style.display = 'none';
+          suggestionBox.innerHTML = '';
+          return;
+        }
+        const filtered = suggestions.filter(s => s.toLowerCase().includes(v));
+        if (filtered.length === 0) {
+          suggestionBox.style.display = 'none';
+          suggestionBox.innerHTML = '';
+          return;
+        }
+        suggestionBox.innerHTML = filtered.map(s => `<li class='autocomplete-item' style='padding:8px 12px;cursor:pointer;'>${s}</li>`).join('');
+        suggestionBox.style.display = 'block';
+        Array.from(suggestionBox.children).forEach(li => {
+          li.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            searchInput.value = this.textContent;
+            filterCards(this.textContent);
+            suggestionBox.style.display = 'none';
+          });
+        });
+      }
+
+      // Filtrage dynamique des cartes
+      function filterCards(query) {
+        const lowerQuery = query.trim().toLowerCase();
+        allCards.forEach(card => {
+          const nom = (card.getAttribute('data-nom') || '').toLowerCase();
+          const prenom = (card.getAttribute('data-prenom') || '').toLowerCase();
+          const entreprise = (card.getAttribute('data-entreprise') || '').toLowerCase();
+          if (
+            nom.includes(lowerQuery) ||
+            prenom.includes(lowerQuery) ||
+            entreprise.includes(lowerQuery) ||
+            (prenom + ' ' + nom).includes(lowerQuery) ||
+            (nom + ' ' + prenom).includes(lowerQuery)
+          ) {
+            card.style.display = '';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      }
+
+      searchInput.addEventListener('input', function() {
+        showSuggestions(this.value);
+        filterCards(this.value);
+      });
+
+      searchInput.addEventListener('focus', function() {
+        showSuggestions(this.value);
+      });
+      searchInput.addEventListener('blur', function() {
+        setTimeout(() => { suggestionBox.style.display = 'none'; }, 120);
+      });
+
+      // --- Menu déroulant Tri ---
+      const sortBtn = document.getElementById('sortBtn');
+      const sortDropdown = document.getElementById('sortDropdown');
+      const sortDropdownArrow = document.getElementById('sortDropdownArrow');
+      let currentSort = { type: 'date', order: 'desc' };
+      let currentActive = sortDropdown.querySelector('.sort-option[data-sort="date"]');
+      if(currentActive) currentActive.classList.add('active');
+      if(currentActive) currentActive.querySelector('.sort-check').style.display = 'inline';
+
+      sortBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        sortDropdown.style.display = sortDropdown.style.display === 'block' ? 'none' : 'block';
+        sortDropdownArrow.style.transform = sortDropdown.style.display === 'block' ? 'rotate(180deg)' : 'none';
+      });
+      sortDropdownArrow.addEventListener('click', function(e) {
+        sortDropdown.style.display = 'none';
+        sortDropdownArrow.style.transform = 'none';
+      });
+      document.addEventListener('click', function(e) {
+        if (!sortDropdown.contains(e.target) && e.target !== sortBtn) {
+          sortDropdown.style.display = 'none';
+          sortDropdownArrow.style.transform = 'none';
+        }
+      });
+
+      // Gestion du tri
+      sortDropdown.querySelectorAll('.sort-option').forEach(option => {
+        option.addEventListener('click', function(e) {
+          e.stopPropagation();
+          // Gère l'option active
+          sortDropdown.querySelectorAll('.sort-option').forEach(opt => {
+            opt.classList.remove('active');
+            opt.querySelector('.sort-check').style.display = 'none';
+          });
+          this.classList.add('active');
+          this.querySelector('.sort-check').style.display = 'inline';
+          // Tri
+          const sortType = this.getAttribute('data-sort');
+          let order = currentSort.type === sortType ? (currentSort.order === 'asc' ? 'desc' : 'asc') : (sortType === 'date' ? 'desc' : 'asc');
+          currentSort = { type: sortType, order: order };
+          sortCards(sortType, order);
+          sortDropdown.style.display = 'none';
+          sortDropdownArrow.style.transform = 'none';
+        });
+      });
+
+      function sortCards(type, order) {
+        ['recent-visits','upcoming-visits','reminders'].forEach(colId => {
+          const col = document.getElementById(colId);
+          if (!col) return;
+          const cards = Array.from(col.querySelectorAll('.open-modal-btn'));
+          let sorted = cards;
+          if (type === 'date') {
+            sorted = cards.sort((a, b) => {
+              const dA = a.getAttribute('data-date').split('/').reverse().join('-') + 'T' + (a.getAttribute('data-heure')||'00:00');
+              const dB = b.getAttribute('data-date').split('/').reverse().join('-') + 'T' + (b.getAttribute('data-heure')||'00:00');
+              return order === 'asc' ? dA.localeCompare(dB) : dB.localeCompare(dA);
+            });
+          } else if (type === 'statut') {
+            const statutOrder = { 'upcoming-entry': 1, 'visit-entry': 2, 'reminder-entry': 3 };
+            sorted = cards.sort((a, b) => {
+              const sA = statutOrder[Array.from(a.classList).find(c=>c.endsWith('-entry'))] || 99;
+              const sB = statutOrder[Array.from(b.classList).find(c=>c.endsWith('-entry'))] || 99;
+              return order === 'asc' ? sA - sB : sB - sA;
+            });
+          } else if (type === 'nom') {
+            sorted = cards.sort((a, b) => {
+              const nA = ((a.getAttribute('data-entreprise')||'') + ' ' + (a.getAttribute('data-nom')||'')).toLowerCase();
+              const nB = ((b.getAttribute('data-entreprise')||'') + ' ' + (b.getAttribute('data-nom')||'')).toLowerCase();
+              return order === 'asc' ? nA.localeCompare(nB) : nB.localeCompare(nA);
+            });
+          }
+          sorted.forEach(card => col.appendChild(card));
+        });
+      }
+
+      const statutSortOption = document.getElementById('statutSortOption');
+      const statutSubmenu = document.getElementById('statutSubmenu');
+      let currentStatut = null;
+
+      if (statutSortOption && statutSubmenu) {
+        let submenuTimeout = null;
+        statutSortOption.addEventListener('mouseenter', function(e) {
+          clearTimeout(submenuTimeout);
+          statutSubmenu.style.display = 'block';
+        });
+        statutSortOption.addEventListener('mouseleave', function(e) {
+          submenuTimeout = setTimeout(() => { statutSubmenu.style.display = 'none'; }, 180);
+        });
+        statutSubmenu.addEventListener('mouseenter', function(e) {
+          clearTimeout(submenuTimeout);
+          statutSubmenu.style.display = 'block';
+        });
+        statutSubmenu.addEventListener('mouseleave', function(e) {
+          statutSubmenu.style.display = 'none';
+        });
+        statutSubmenu.querySelectorAll('.statut-option').forEach(opt => {
+          opt.addEventListener('click', function(e) {
+            statutSubmenu.querySelectorAll('.statut-option').forEach(o => o.classList.remove('selected'));
+            this.classList.add('selected');
+            currentStatut = this.getAttribute('data-statut');
+            filterByStatut(currentStatut);
+            statutSubmenu.style.display = 'none';
+          });
+        });
+      }
+
+      function filterByStatut(statut) {
+        document.querySelectorAll('.open-modal-btn').forEach(card => {
+          if (card.classList.contains(statut)) {
+            card.style.display = '';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      }
+
+      const filterBtn = document.getElementById('filterBtn');
+      const filterPanel = document.getElementById('filterPanel');
+      const closeFilterPanel = document.getElementById('closeFilterPanel');
+      const resetFilters = document.getElementById('resetFilters');
+      const statutCheckboxes = document.querySelectorAll('.statut-filter');
+      const dateFrom = document.getElementById('dateFrom');
+      const dateTo = document.getElementById('dateTo');
+      const clientFilter = document.getElementById('clientFilter');
+      const rdvAValider = document.getElementById('rdvAValider');
+
+      filterBtn.addEventListener('click', function() {
+        filterPanel.style.display = 'block';
+      });
+      closeFilterPanel.addEventListener('click', function() {
+        filterPanel.style.display = 'none';
+      });
+      resetFilters.addEventListener('click', function(e) {
+        e.preventDefault();
+        statutCheckboxes.forEach(cb => cb.checked = false);
+        dateFrom.value = '';
+        dateTo.value = '';
+        clientFilter.value = '';
+        rdvAValider.checked = false;
+        filterCards();
+      });
+      [dateFrom, dateTo, clientFilter, rdvAValider].forEach(el => el.addEventListener('input', filterCards));
+      statutCheckboxes.forEach(cb => cb.addEventListener('change', filterCards));
+
+      function filterCards() {
+        const statuts = Array.from(statutCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+        const from = dateFrom.value;
+        const to = dateTo.value;
+        const client = clientFilter.value;
+        const onlyToValidate = rdvAValider.checked;
+        document.querySelectorAll('.open-modal-btn').forEach(card => {
+          let show = true;
+          // Statut
+          if (statuts.length && !statuts.some(s => card.classList.contains(s))) show = false;
+          // Date
+          const cardDate = card.getAttribute('data-date');
+          if (from && cardDate < from.split('-').reverse().join('-')) show = false;
+          if (to && cardDate > to.split('-').reverse().join('-')) show = false;
+          // Client
+          if (client && card.getAttribute('data-nom') !== client) show = false;
+          // RDV à valider (exemple : objet contient 'à valider')
+          if (onlyToValidate && !(card.textContent.toLowerCase().includes('à valider'))) show = false;
+          card.style.display = show ? '' : 'none';
+        });
+      }
+
+      const resetSort = document.getElementById('resetSort');
+      resetSort.addEventListener('click', function(e) {
+        e.preventDefault();
+        // Remet la coche sur 'Date du rendez-vous'
+        const sortDropdown = document.getElementById('sortDropdown');
+        sortDropdown.querySelectorAll('.sort-option').forEach(opt => {
+          opt.classList.remove('active');
+          opt.querySelector('.sort-check').style.display = 'none';
+        });
+        const dateOption = sortDropdown.querySelector('.sort-option[data-sort="date"]');
+        if(dateOption) {
+          dateOption.classList.add('active');
+          dateOption.querySelector('.sort-check').style.display = 'inline';
+        }
+        // Trie par date décroissante
+        sortCards('date', 'desc');
+        // Réaffiche toutes les cartes
+        document.querySelectorAll('.open-modal-btn').forEach(card => card.style.display = '');
+        // Ferme le menu
+        sortDropdown.style.display = 'none';
       });
     });
   </script>

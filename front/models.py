@@ -1,6 +1,5 @@
 from django.db import models
-
-# Create your modelsfrom django.db import models
+from django.contrib.auth.models import User
 
 class Commercial(models.Model):
     nom = models.CharField(max_length=100)
@@ -23,7 +22,7 @@ class Client(models.Model):
     code_postal = models.CharField(max_length=10, blank=True, null=True)
     email = models.EmailField(unique=True, blank=True, null=True)
     telephone = models.CharField(max_length=15, blank=True, null=True)
-    commercial = models.ForeignKey(Commercial, on_delete=models.SET_NULL, null=True, blank=True)
+    commercial = models.ForeignKey('Commercial', on_delete=models.CASCADE)
     date_creation = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -41,3 +40,13 @@ class Rendezvous(models.Model):
 
     def __str__(self):
         return f"RDV avec {self.client} le {self.date_rdv} à {self.heure_rdv}"
+
+# Historique des commentaires sur les rendez-vous
+class CommentaireRdv(models.Model):
+    rdv = models.ForeignKey(Rendezvous, on_delete=models.CASCADE, related_name='commentaires')
+    auteur = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    texte = models.TextField()
+    date_creation = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.auteur} - {self.date_creation.strftime('%d/%m/%Y %H:%M')} : {self.texte[:30]}"

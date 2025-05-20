@@ -230,14 +230,16 @@ body, html {
   border-bottom: 6px solid rgba(255, 255, 255, 0.9);
 }
 
-.user-menu ul li a {
+.user-menu ul li a,
+.floating-menu a {
   color: white;
   text-decoration: none;
   display: block;
   padding: 5px 0;
 }
 
-.user-menu ul li a:hover {
+.user-menu ul li a:hover,
+.floating-menu a:hover {
   text-decoration: underline;
 }
 
@@ -281,28 +283,8 @@ body, html {
   gap: 6px;
 }
 
-.card-title.success::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 3px;
-  width: 100%;
-  background-color: #4caf50;
-  border-radius: 2px;
-}
-
-.card-title-coming::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 3px;
-  width: 100%;
-  background-color: #f3d344;
-  border-radius: 2px;
-}
-
+.card-title.success::after,
+.card-title-coming::after,
 .card-title-reminder::after {
   content: "";
   position: absolute;
@@ -310,8 +292,19 @@ body, html {
   left: 0;
   height: 3px;
   width: 100%;
-  background-color: #f55066;
   border-radius: 2px;
+}
+
+.card-title.success::after {
+  background-color: #4caf50;
+}
+
+.card-title-coming::after {
+  background-color: #f3d344;
+}
+
+.card-title-reminder::after {
+  background-color: #f55066;
 }
 
 .client-modal {
@@ -328,11 +321,11 @@ body, html {
 }
 
 .client-modal-content {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.18);
   color: white;
-  padding: 20px;
+  padding: 32px;
   border-radius: 12px;
-  width: 400px;
+  width: 520px;
   backdrop-filter: blur(6px);
   box-shadow: 0 0 20px rgba(0,0,0,0.3);
   position: relative;
@@ -346,4 +339,90 @@ body, html {
   font-size: 24px;
   cursor: pointer;
   color: white;
+}
+
+/* Supprimer le soulignement des liens */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.card-title-waiting::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  background-color: #f3f3f3;
+  border-radius: 2px;
+}
+
+.status-à-valider {
+  color: #ffc107;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+button {
+  background-color: #e53935;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.modal-buttons, #modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.action-button {
+  background-color: #e53935;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.action-button:hover {
+  background-color: #cc2e2e;
+}
+
+#clientDetails {
+  text-align: left;
+}
+
+.comment-card {
+  background: rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  color: #fff;
+  font-size: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  text-align: left;
+}
+.comment-meta {
+  font-size: 12px;
+  color: #e53935;
+  margin-bottom: 2px;
+  display: flex;
+  gap: 8px;
+}
+.comment-author {
+  color: #e3e3e3;
+  font-style: italic;
+}
+.comment-text {
+  color: #fff;
 }

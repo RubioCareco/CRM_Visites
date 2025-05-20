@@ -15,61 +15,67 @@
         <i class="fa-solid fa-xmark"></i>
       </span>
       <h2>Ajoutez un nouveau client</h2>
-      <form>
+
+      <form method="POST">
+        {% csrf_token %}
         <div class="form-group">
           <div class="input-icon-group">
             <i class="fa fa-user"></i>
-            <input type="text" name="nom" placeholder="Nom" required>
+            <input type="text" name="nom" placeholder="Nom" required value="{{ client_temp.nom|default:'' }}">
             <div class="error-message">Veuillez saisir un nom.</div>
           </div>
           <div class="input-icon-group">
             <i class="fa fa-building"></i>
-            <input type="text" name="entreprise" placeholder="Nom de l'entreprise" required>
-            <div class="error-message">Veuillez saisir un nom d'entreprise.</div>
+            <input type="text" name="entreprise" placeholder="Nom de l'entreprise" value="{{ client_temp.entreprise|default:'' }}">
           </div>
         </div>
 
         <div class="form-group">
           <div class="input-icon-group">
             <i class="fa fa-user"></i>
-            <input type="text" name="prenom" placeholder="Prénom" required>
+            <input type="text" name="prenom" placeholder="Prénom" required value="{{ client_temp.prenom|default:'' }}">
             <div class="error-message">Veuillez saisir un prénom.</div>
           </div>
           <div class="input-icon-group">
             <i class="fa fa-id-card"></i>
-            <input type="text" name="siret" placeholder="Numéro SIRET" pattern="[0-9]{14}" title="Le numéro SIRET doit contenir exactement 14 chiffres." required>
-            <div class="error-message">Numéro SIRET invalide (14 chiffres requis).</div>
+            <input type="text" name="siret" placeholder="Numéro SIRET" pattern="[0-9]{14}" value="{{ client_temp.siret|default:'' }}">
           </div>
         </div>
 
         <div class="form-group">
           <div class="input-icon-group">
             <i class="fa fa-map-marker-alt"></i>
-            <input type="text" name="adresse" placeholder="Adresse" required>
-            <div class="error-message">Veuillez saisir une adresse.</div>
+            <input type="text" name="adresse" placeholder="Adresse" value="{{ client_temp.adresse|default:'' }}">
           </div>
           <div class="input-icon-group">
             <i class="fa fa-location-dot"></i>
-            <input type="text" name="code_postal" placeholder="Code Postal" pattern="[0-9]{5}" title="Le code postal doit contenir 5 chiffres." required>
-            <div class="error-message">Code postal invalide (5 chiffres requis).</div>
+            <input type="text" name="code_postal" placeholder="Code Postal" pattern="[0-9]{5}" value="{{ client_temp.code_postal|default:'' }}">
           </div>
         </div>
 
         <div class="form-group">
           <div class="input-icon-group">
             <i class="fa fa-envelope"></i>
-            <input type="email" name="email" placeholder="E-mail" required>
-            <div class="error-message">Adresse e-mail invalide.</div>
+            <input type="email" name="email" placeholder="E-mail" value="{{ client_temp.email|default:'' }}">
           </div>
           <div class="input-icon-group">
             <i class="fa fa-phone"></i>
-            <input type="tel" name="telephone" placeholder="Téléphone" pattern="[0-9]{10}" title="Le numéro de téléphone doit contenir 10 chiffres." required>
-            <div class="error-message">Numéro de téléphone invalide (10 chiffres requis).</div>
+            <input type="tel" name="telephone" placeholder="Téléphone" pattern="[0-9]{10}" value="{{ client_temp.telephone|default:'' }}">
           </div>
         </div>
+        {% if rdv_temp %}
+  <div class="rdv-card" onclick="window.location.href='/add-rdv?from=new-client'">
+    <div class="rdv-delete" onclick="deleteTempRdv(event)"><i class="fa fa-times"></i></div>
+    <div class="rdv-title">📌 Rendez-vous en attente</div>
+    <div class="rdv-line"><strong>Date :</strong> {{ rdv_temp.date_rdv }}</div>
+    <div class="rdv-line"><strong>Heure :</strong> {{ rdv_temp.heure_rdv }}</div>
+    <div class="rdv-line"><strong>Objet :</strong> {{ rdv_temp.objet|default:"(aucun)" }}</div>
+    <div class="rdv-line"><strong>Notes :</strong> {{ rdv_temp.notes|default:"(aucune)" }}</div>
+  </div>
+{% endif %}
 
         <div class="modal-actions">
-          <button id="action-button" type="button" class="action-button">
+          <button type="submit" class="action-button" name="add_rdv">
             <i class="fa-solid fa-calendar-plus"></i>
             Ajouter un rendez-vous
           </button>
@@ -92,7 +98,6 @@
       const successMessage = document.querySelector(".success-message");
 
       form.addEventListener("submit", (e) => {
-        e.preventDefault();
         let isValid = true;
 
         inputs.forEach((input) => {
@@ -109,22 +114,27 @@
           }
         });
 
-        if (isValid) {
-          successMessage.classList.add("show");
-          setTimeout(() => {
-            successMessage.classList.remove("show");
-          }, 3000);
-          form.reset();
+        if (!isValid) {
+          e.preventDefault();
         }
-      });
-
-      // Redirection dynamique vers add-rdv avec next param
-      const addRdvBtn = document.getElementById("action-button");
-      addRdvBtn.addEventListener("click", () => {
-        const currentUrl = window.location.pathname;
-        window.location.href = `/add-rdv?next=${encodeURIComponent(currentUrl)}`;
       });
     });
   </script>
+<script>
+  function deleteTempRdv(event) {
+    event.stopPropagation(); // évite que le clic supprime ET redirige
+    if (confirm("Supprimer ce rendez-vous temporaire ?")) {
+      fetch("/delete-temp-rdv/")
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === "ok") {
+            location.reload();
+          }
+        });
+    }
+  }
+</script>
+
+
 </body>
 </html>

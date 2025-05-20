@@ -12,13 +12,11 @@
   <div class="dashboard">
     <h1 class="dashboard-title">Tableau de bord</h1>
 
-    <!-- Barre de recherche -->
     <div class="search-bar">
         <i class="fa fa-search search-icon"></i>
         <input type="text" placeholder="Rechercher par clients, entreprises ...">
     </div>
 
-    <!-- Filtres -->
     <div class="filters">
         <button class="filter-button">
             <i class="fa-solid fa-sliders"></i>Filtres
@@ -28,72 +26,72 @@
         </button>
     </div>
 
-    <!-- Cartes -->
     <div class="cards">
-        <!-- Visites récentes -->
-        <div class="card recent-visits">
-            <h2 class="card-title success">Visites récentes</h2>
-            <div class="visit-entry" onclick="openClientModal('Garage Jean Dupont')">
-                <p><strong>Garage Jean Dupont</strong></p>
-                <p class="status validée"><i class="fa fa-check-square"></i> Validée</p>
-                <p class="visit-date">Dernières visites le : 28/04/2025</p>
-            </div>
-            <div class="visit-entry" onclick="openClientModal('Garage Jean Dupont')">
-                <p><strong>Garage Jean Dupont</strong></p>
-                <p class="status validée"><i class="fa fa-check-square"></i> Validée</p>
-                <p class="visit-date">Dernières visites le : 26/04/2025</p>
-            </div>
-        </div>
+      <div class="card recent-visits" id="recent-visits">
+        <h2 class="card-title success">Visites récentes</h2>
+        {% for rdv in visites_recentes %}
+          <div class="visit-entry open-modal-btn" data-id="{{ rdv.id }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}">
+              <p><strong>{{ rdv.client.entreprise|default:rdv.client.nom }}</strong></p>
+              <p class="status validée"><i class="fa fa-check-square"></i> Validée</p>
+              <p class="visit-date">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
+          </div>
+        {% empty %}
+          <p>Aucune visite validée.</p>
+        {% endfor %}
+      </div>
 
-        <!-- Visites à venir -->
-        <div class="card upcoming-visits">
-            <h2 class="card-title-coming">Visites à venir</h2>
-            <div class="upcoming-entry" onclick="openClientModal('Garage Jean Dupont')">
-                <p><strong>Garage Jean Dupont</strong></p>
-                <p class="status-à-venir"><i class="fa-solid fa-calendar-days"></i> à venir</p>
-                <p class="visit-date-futur">Rendez-vous le : 28/05/2025</p>
-            </div>
-        </div>
+      <div class="card upcoming-visits" id="upcoming-visits">
+        <h2 class="card-title-coming">Visites à venir</h2>
+        {% for rdv in rdvs_a_venir %}
+          <div class="upcoming-entry open-modal-btn" data-id="{{ rdv.id }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}">
+              <p><strong>{{ rdv.client.entreprise|default:rdv.client.nom }}</strong></p>
+              <p class="status-à-venir"><i class="fa-solid fa-calendar-days"></i> à venir</p>
+              <p class="visit-date-futur">Rendez-vous le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
+          </div>
+        {% empty %}
+          <p>Aucun rendez-vous à venir.</p>
+        {% endfor %}
+      </div>
 
-        <!-- A rappeler -->
-        <div class="card reminders">
-            <h2 class="card-title-reminder">A Rappeler</h2>
-            <div class="reminder-entry" onclick="openClientModal('Garage Jean Dupont')">
-                <p><strong>Garage Jean Dupont</strong></p>
-                <p class="status-à-rappeler"><i class="fa-solid fa-triangle-exclamation"></i> A rappeler</p>
-                <p class="visit-date-passed">Dernières visites le : 28/04/2025</p>
-            </div>
-        </div>
+      <div class="card reminders" id="reminders">
+        <h2 class="card-title-reminder">A Rappeler</h2>
+        {% for rdv in a_rappeler %}
+          <div class="reminder-entry open-modal-btn" data-id="{{ rdv.id }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}">
+              <p><strong>{{ rdv.client.entreprise|default:rdv.client.nom }}</strong></p>
+              <p class="status-à-rappeler"><i class="fa-solid fa-triangle-exclamation"></i> A rappeler</p>
+              <p class="visit-date-passed">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
+          </div>
+        {% empty %}
+          <p>Aucun client à rappeler.</p>
+        {% endfor %}
+      </div>
 
-        <!-- Menu utilisateur -->
-        <div class="user-profile-container">
-            <div class="user-profile" onclick="toggleUserMenu()">
-                <i class="fa fa-user"></i>
-                <span>Jean Dupont</span>
-            </div>
-            <div class="user-menu" id="userMenu">
-                <ul>
-                  <li><a href="{% url 'profil' %}" class="menu-link">Profil</a></li>
-                  <li>Historique général</li>
-                  <li><a href="{% url 'logout' %}" class="logout-btn">Se déconnecter</a></li>
-                </ul>
-            </div>
+      <div class="user-profile-container">
+        <div class="user-profile" onclick="toggleUserMenu()">
+            <i class="fa fa-user"></i>{{ commercial.prenom }} {{ commercial.nom }}
         </div>
+        <div class="user-menu" id="userMenu">
+            <ul>
+              <li><a href="{% url 'profil' %}" class="menu-link">Profil</a></li>
+              <li>Historique général</li>
+              <li><a href="{% url 'logout' %}" class="logout-btn">Se déconnecter</a></li>
+            </ul>
+        </div>
+      </div>
     </div>
 
-    <!-- Floating actions -->
     <div class="floating-actions">
-        <div class="floating-menu" id="floatingMenu">
-            <a href="{% url 'new_client' %}">
-                <button><i class="fa-solid fa-user-plus"></i> Ajouter un nouveau client</button>
-            </a>
-            <a href="{% url 'add_rdv' %}">
-                <button><i class="fa-solid fa-calendar-plus"></i> Ajouter un RDV</button>
-            </a>
-        </div>
-        <button class="add-button">
-            <i class="fa-solid fa-plus"></i>
-        </button>
+      <div class="floating-menu" id="floatingMenu">
+        <a href="{% url 'new_client' %}">
+            <button><i class="fa-solid fa-user-plus"></i> Ajouter un nouveau client</button>
+        </a>
+        <a href="{% url 'add_rdv' %}">
+            <button><i class="fa-solid fa-calendar-plus"></i> Ajouter un RDV</button>
+        </a>
+      </div>
+      <button class="add-button">
+        <i class="fa-solid fa-plus"></i>
+      </button>
     </div>
   </div>
 
@@ -102,56 +100,229 @@
     <div class="client-modal-content">
       <span class="close-btn" onclick="closeClientModal()">&times;</span>
       <h3 id="clientName">Nom du client</h3>
-      <p>Informations du client à afficher ici...</p>
+      <p id="clientDetails"></p>
+
+      <label for="commentaire">Commentaire :</label>
+      <textarea id="commentaire" rows="4" style="width: 100%; margin-top: 10px;"></textarea>
+
+      <div id="modal-buttons" style="margin-top: 20px;">
+        <button class="action-button" onclick="updateStatutRdv(currentRdvId, 'valider')">Valider le rendez-vous</button>
+        <button class="action-button" onclick="updateStatutRdv(currentRdvId, 'annuler')">Annuler le rendez-vous</button>
+      </div>
     </div>
   </div>
 
   <!-- Scripts -->
   <script>
+    let currentRdvId = null;
+
     function toggleUserMenu() {
       const menu = document.getElementById("userMenu");
       menu.style.display = menu.style.display === "block" ? "none" : "block";
     }
 
-    function openClientModal(name) {
+    function openClientModal(nom, prenom, entreprise, rdvId, date, heure, adresse, cp, isRecent, isReminder) {
       const modal = document.getElementById('clientModal');
       const title = document.getElementById('clientName');
+      const details = document.getElementById('clientDetails');
+      const buttons = document.getElementById('modal-buttons');
+
+      // Affichage des infos de base
+      title.textContent = entreprise || nom;
+      details.innerHTML = `<div style='text-align:left;'>Nom : ${nom} ${prenom}<br>` +
+        (adresse || cp ? `<b>Adresse :</b> ${adresse ? adresse : ''}${adresse && cp ? ' - ' : ''}${cp ? cp : ''}<br>` : '') +
+        `Date du rendez-vous : <b>${date}</b><br>Heure : <b>${heure}</b></div>`;
+
+      // Chargement AJAX des infos complémentaires
+      fetch(`/get-rdv-info/${rdvId}/`)
+        .then(response => response.json())
+        .then(data => {
+          // Affichage de l'historique des commentaires
+          const commentaires = data.commentaires || [];
+          let commentairesHtml = "<div style='margin-top:15px;'><b>Commentaires :</b><br>";
+          if (commentaires.length === 0) {
+            commentairesHtml += "<span style='color:#aaa;'>Aucun commentaire pour ce rendez-vous.</span>";
+          } else {
+            commentaires.forEach(c => {
+              const auteur = c.auteur && c.auteur !== 'Système' ? c.auteur : '';
+              commentairesHtml += `
+                <div class=\"comment-card\">
+                  <div class=\"comment-text\">${c.texte}</div>
+                  <div class=\"comment-meta\">
+                    <span class=\"comment-date\">${c.date}</span>
+                    ${auteur ? `<span class=\"comment-author\">${auteur}</span>` : ''}
+                  </div>
+                </div>
+              `;
+            });
+          }
+          commentairesHtml += "</div>";
+          details.innerHTML += commentairesHtml;
+        })
+        .catch(error => console.error("Erreur lors du chargement des infos :", error));
+
+      currentRdvId = rdvId;
       modal.style.display = 'flex';
-      title.textContent = name;
+      // Afficher ou masquer/modifier les boutons selon la section
+      if (isRecent) {
+        buttons.style.display = 'none';
+      } else if (isReminder) {
+        buttons.style.display = 'flex';
+        // Modifier le texte du bouton Valider et masquer Annuler
+        const validerBtn = buttons.querySelector('.action-button[onclick*="valider"]');
+        const annulerBtn = buttons.querySelector('.action-button[onclick*="annuler"]');
+        if (validerBtn) {
+          validerBtn.textContent = 'Ajouter un nouveau rendez-vous';
+          validerBtn.onclick = function() {
+            window.location.href = '/add-rdv/?next=/dashboard';
+          };
+        }
+        if (annulerBtn) annulerBtn.style.display = 'none';
+      } else {
+        buttons.style.display = 'flex';
+        // Remettre les textes et actions par défaut
+        const validerBtn = buttons.querySelector('.action-button[onclick*="valider"]');
+        const annulerBtn = buttons.querySelector('.action-button[onclick*="annuler"]');
+        if (validerBtn) {
+          validerBtn.textContent = 'Valider le rendez-vous';
+          validerBtn.onclick = function() { updateStatutRdv(currentRdvId, 'valider'); };
+        }
+        if (annulerBtn) {
+          annulerBtn.style.display = '';
+          annulerBtn.onclick = function() { updateStatutRdv(currentRdvId, 'annuler'); };
+        }
+      }
     }
 
     function closeClientModal() {
       document.getElementById('clientModal').style.display = 'none';
+      document.getElementById('commentaire').value = "";
+    }
+
+    function getCSRFToken() {
+      let cookieValue = null;
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.startsWith('csrftoken=')) {
+          cookieValue = decodeURIComponent(cookie.substring('csrftoken='.length));
+          break;
+        }
+      }
+      return cookieValue;
+    }
+
+    function updateStatutRdv(rdvId, statut) {
+      const commentaire = document.getElementById('commentaire').value;
+
+      fetch(`/update-statut/${rdvId}/${statut}/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCSRFToken(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ commentaire: commentaire })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'ok') {
+          // Retirer la carte du DOM
+          const card = document.querySelector(`[data-id='${rdvId}']`);
+          if (card) card.remove();
+
+          // Créer la nouvelle carte dans la bonne colonne
+          const nom = data.nom || '';
+          const prenom = data.prenom || '';
+          const entreprise = data.entreprise || '';
+          const date = data.date || '';
+          const heure = data.heure || '';
+          const adresse = data.adresse || '';
+          const cp = data.code_postal || '';
+
+          let containerId = '';
+          let cardClass = '';
+          let statusHtml = '';
+          if (statut === 'valider') {
+            containerId = 'recent-visits';
+            cardClass = 'visit-entry open-modal-btn';
+            statusHtml = '<p class="status validée"><i class="fa fa-check-square"></i> Validée</p>';
+          } else if (statut === 'annuler') {
+            containerId = 'reminders';
+            cardClass = 'reminder-entry open-modal-btn';
+            statusHtml = '<p class="status-à-rappeler"><i class="fa-solid fa-triangle-exclamation"></i> A rappeler</p>';
+          }
+
+          if (containerId) {
+            const container = document.getElementById(containerId);
+            const newCard = document.createElement('div');
+            newCard.className = cardClass;
+            newCard.setAttribute('data-id', rdvId);
+            newCard.setAttribute('data-nom', nom);
+            newCard.setAttribute('data-prenom', prenom);
+            newCard.setAttribute('data-entreprise', entreprise);
+            newCard.setAttribute('data-date', date);
+            newCard.setAttribute('data-heure', heure);
+            newCard.setAttribute('data-adresse', adresse);
+            newCard.setAttribute('data-cp', cp);
+            newCard.innerHTML = `
+              <p><strong>${entreprise || nom}</strong></p>
+              ${statusHtml}
+              <p class="visit-date">Dernières visites le : ${date}</p>
+            `;
+            // Réattacher l'écouteur d'ouverture de modal
+            newCard.addEventListener('click', function () {
+              openClientModal(nom, prenom, entreprise, rdvId, date, heure, adresse, cp, false, false);
+            });
+            container.appendChild(newCard);
+          }
+          closeClientModal();
+        } else {
+          alert("Erreur lors de la mise à jour");
+        }
+      });
     }
 
     document.addEventListener("DOMContentLoaded", function () {
       const userMenu = document.getElementById("userMenu");
       const userContainer = document.querySelector(".user-profile-container");
 
-      if (userContainer && userMenu) {
-        document.addEventListener("click", function (event) {
-          if (!userContainer.contains(event.target)) {
-            userMenu.style.display = "none";
-          }
-        });
-      }
+      document.addEventListener("click", function (event) {
+        if (!userContainer.contains(event.target)) {
+          userMenu.style.display = "none";
+        }
+      });
 
       const floatingMenu = document.getElementById("floatingMenu");
       const floatingBtn = document.querySelector(".add-button");
       const floatingActions = document.querySelector(".floating-actions");
 
-      if (floatingMenu && floatingBtn && floatingActions) {
-        floatingBtn.addEventListener("click", () => {
-          floatingMenu.style.display =
-            floatingMenu.style.display === "flex" ? "none" : "flex";
-        });
+      floatingBtn.addEventListener("click", () => {
+        floatingMenu.style.display = floatingMenu.style.display === "flex" ? "none" : "flex";
+      });
 
-        document.addEventListener("click", (e) => {
-          if (!floatingActions.contains(e.target)) {
-            floatingMenu.style.display = "none";
-          }
+      document.addEventListener("click", (e) => {
+        if (!floatingActions.contains(e.target)) {
+          floatingMenu.style.display = "none";
+        }
+      });
+
+      // Lancement de la modal depuis chaque rdv
+      document.querySelectorAll('.open-modal-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          const id = this.getAttribute('data-id');
+          const nom = this.getAttribute('data-nom');
+          const prenom = this.getAttribute('data-prenom');
+          const entreprise = this.getAttribute('data-entreprise');
+          const date = this.getAttribute('data-date');
+          const heure = this.getAttribute('data-heure');
+          const adresse = this.getAttribute('data-adresse');
+          const cp = this.getAttribute('data-cp');
+          // Détecter la section
+          const isRecent = this.classList.contains('visit-entry') && this.closest('#recent-visits');
+          const isReminder = this.classList.contains('reminder-entry') && this.closest('#reminders');
+          openClientModal(nom, prenom, entreprise, id, date, heure, adresse, cp, isRecent, isReminder);
         });
-      }
+      });
     });
   </script>
 </body>

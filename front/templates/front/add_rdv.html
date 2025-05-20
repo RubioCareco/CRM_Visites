@@ -12,26 +12,40 @@
   <div class="rdv-modal">
     <div class="rdv-box">
       <h2>Ajouter un rendez-vous</h2>
-      <form method="post">
+      <form method="post" autocomplete="off">
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ next }}">
 
+        {% if from_new_client %}
+          <input type="hidden" name="is_temp_rdv" value="1">
+        {% endif %}
+
         <div class="rdv-field">
           <i class="fa fa-calendar"></i>
-          <input type="date" name="date" placeholder="Date du rendez-vous" required>
+          <input type="date" name="date_rdv" required>
         </div>
+
         <div class="rdv-field">
           <i class="fa fa-clock"></i>
-          <input type="time" name="heure" placeholder="Heure du rendez-vous" required>
+          <input type="time" name="heure_rdv" required>
         </div>
-        <div class="rdv-field">
+
+        <div class="rdv-field autocomplete-container">
           <i class="fa fa-user"></i>
-          <input type="text" name="client" placeholder="Client" required>
+          {% if from_new_client and client_temp %}
+            <input type="text" disabled value="{{ client_temp.prenom }} {{ client_temp.nom }}">
+          {% else %}
+            <input type="text" id="clientSearch" placeholder="Rechercher un client..." required>
+            <ul id="clientResults" class="autocomplete-results"></ul>
+            <input type="hidden" name="client_id" id="client_id">
+          {% endif %}
         </div>
+
         <div class="rdv-field">
           <i class="fa fa-tag"></i>
           <input type="text" name="objet" placeholder="Objet du rendez-vous" required>
         </div>
+
         <div class="rdv-field">
           <i class="fa fa-align-left"></i>
           <textarea name="notes" placeholder="Détails/Notes" rows="3"></textarea>
@@ -49,23 +63,31 @@
     <i class="fa fa-check-circle"></i> Rendez-vous ajouté avec succès
   </div>
 
+  {% if not from_new_client %}
+  <script id="client-data" type="application/json">
+    [
+      {% for client in clients %}
+        {
+          "id": "{{ client.id }}",
+          "nom": "{{ client.nom|escapejs }}",
+          "prenom": "{{ client.prenom|escapejs }}"
+        }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ]
+  </script>
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const form = document.querySelector("form");
       const successMessage = document.getElementById("successMessage");
       const cancelBtn = document.getElementById("cancelBtn");
-      const inputs = form.querySelectorAll("input, textarea");
+      const inputs = form.querySelectorAll("input, textarea, select");
       const nextUrl = document.querySelector("input[name='next']").value || "/dashboard";
 
       form.addEventListener("submit", function (e) {
         e.preventDefault();
-
         if (form.checkValidity()) {
           successMessage.style.display = "flex";
-
-          setTimeout(() => {
-            form.submit(); // envoie réel vers la vue Django
-          }, 1500); // petit délai d'affichage du message
+          setTimeout(() => form.submit(), 1500);
         } else {
           form.reportValidity();
         }
@@ -73,23 +95,90 @@
 
       cancelBtn.addEventListener("click", () => {
         let hasData = false;
-
         inputs.forEach(input => {
-          if (input.value.trim() !== "") {
-            hasData = true;
-          }
+          if (input.value.trim() !== "") hasData = true;
         });
-
         if (hasData) {
-          const confirmLeave = confirm("Des informations ont été saisies. Voulez-vous vraiment quitter cette page ?");
-          if (confirmLeave) {
+          if (confirm("Des informations ont été saisies. Voulez-vous vraiment quitter cette page ?")) {
             window.location.href = nextUrl;
           }
         } else {
           window.location.href = nextUrl;
         }
       });
+
+      // Code d'autocomplétion client
+      const input = document.getElementById("clientSearch");
+      const results = document.getElementById("clientResults");
+      const hiddenInput = document.getElementById("client_id");
+
+      const rawJson = document.getElementById("client-data").textContent;
+      const clients = JSON.parse(rawJson);
+
+      input.addEventListener("input", function () {
+        const value = this.value.toLowerCase();
+        results.innerHTML = "";
+        if (value.length === 0) return;
+
+        const matches = clients.filter(c =>
+          (`${c.prenom} ${c.nom}`).toLowerCase().includes(value)
+        );
+
+        matches.forEach(client => {
+          const li = document.createElement("li");
+          li.textContent = `${client.prenom} ${client.nom}`;
+          li.classList.add("autocomplete-item");
+          li.addEventListener("click", () => {
+            input.value = `${client.prenom} ${client.nom}`;
+            hiddenInput.value = client.id;
+            results.innerHTML = "";
+          });
+          results.appendChild(li);
+        });
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!results.contains(e.target) && e.target !== input) {
+          results.innerHTML = "";
+        }
+      });
     });
   </script>
+  {% else %}
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const form = document.querySelector("form");
+      const successMessage = document.getElementById("successMessage");
+      const cancelBtn = document.getElementById("cancelBtn");
+      const inputs = form.querySelectorAll("input, textarea, select");
+      const nextUrl = document.querySelector("input[name='next']").value || "/dashboard";
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        if (form.checkValidity()) {
+          successMessage.style.display = "flex";
+          setTimeout(() => form.submit(), 1500);
+        } else {
+          form.reportValidity();
+        }
+      });
+
+      cancelBtn.addEventListener("click", () => {
+        let hasData = false;
+        inputs.forEach(input => {
+          if (input.value.trim() !== "") hasData = true;
+        });
+        if (hasData) {
+          if (confirm("Des informations ont été saisies. Voulez-vous vraiment quitter cette page ?")) {
+            window.location.href = nextUrl;
+          }
+        } else {
+          window.location.href = nextUrl;
+        }
+      });
+      // Pas de code d'autocomplétion client ici
+    });
+  </script>
+  {% endif %}
 </body>
 </html>

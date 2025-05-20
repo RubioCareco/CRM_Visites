@@ -41,16 +41,16 @@ body, html {
     transition: background-color 0.3s ease, color 0.3s ease;
     box-sizing: border-box;
     padding: 0;
-  }
-  
-  .close-button:hover {
+}
+
+.close-button:hover {
     background-color: #e53935;
     color: white;
-  }
-  
-  .close-button i {
-    pointer-events: none; /* pour éviter que le clic soit bloqué */
-  }  
+}
+
+.close-button i {
+    pointer-events: none;
+}
 
 h2 {
     text-align: center;
@@ -102,14 +102,11 @@ h2 {
     background-color: rgba(255, 255, 255, 0.15);
 }
 
-
-/* Message erreur dynamique uniquement quand le champ a été touché */
 .input-icon-group input.invalid {
     border: 1px solid #ff4d4d;
     box-shadow: 0 0 4px rgba(255, 0, 0, 0.4);
 }
 
-/* Tooltip bulle d'erreur */
 .input-icon-group .error-message {
     position: absolute;
     top: 100%;
@@ -125,7 +122,6 @@ h2 {
     display: none;
 }
 
-/* Petite flèche du popup */
 .input-icon-group .error-message::before {
     content: '';
     position: absolute;
@@ -175,7 +171,7 @@ h2 {
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
-    background-color:rgba(76, 172, 84, 0.6);
+    background-color: rgba(76, 172, 84, 0.6);
     color: rgb(255, 255, 255);
     padding: 12px 24px;
     border: 1px solid rgba(21, 255, 0, 0.6);
@@ -186,9 +182,64 @@ h2 {
     opacity: 0;
     transition: opacity 0.5s ease;
     z-index: 999;
-  }
-  
-  .success-message.show {
+}
+
+.success-message.show {
     display: block;
     opacity: 1;
-  }
+}
+
+/* 💬 Carte du rendez-vous temporaire */
+.rdv-card {
+    position: relative;
+    background-color: rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 15px 20px;
+    margin: 20px 0;
+    color: white;
+    font-size: 14px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    cursor: pointer;
+}
+
+.rdv-card:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+    transform: scale(1.01);
+}
+
+.rdv-title {
+    font-weight: bold;
+    font-size: 15px;
+    margin-bottom: 10px;
+    color: white;
+    text-align: center;
+}
+
+.rdv-line {
+    margin-bottom: 6px;
+    line-height: 1.5;
+    font-size: 14px;
+    color: white;
+}
+
+.rdv-delete {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    width: 20px;
+    height: 20px;
+    font-size: 14px;
+    border-radius: 50%;
+    background-color: #e53935;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.rdv-delete:hover {
+    background-color: #ff4d4d;
+}

@@ -7,147 +7,6 @@
   {% load static %}
   <link rel="stylesheet" href="{% static 'front/css/dashboard.css' %}" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <style>
-    .sort-dropdown {
-      font-size: 17px;
-      color: #fff;
-      background: rgba(40, 40, 40, 0.98);
-      border-radius: 22px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-      min-width: 260px;
-      padding-bottom: 18px;
-      z-index: 1000;
-      border: 1px solid #444;
-      margin-top: 2px;
-    }
-    .sort-dropdown-title {
-      font-size: 20px;
-      font-weight: bold;
-      padding: 18px 28px 10px 28px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: #fff;
-    }
-    .sort-option {
-      display: flex;
-      align-items: center;
-      padding: 14px 28px;
-      cursor: pointer;
-      transition: background 0.18s, color 0.18s;
-      border-radius: 16px;
-      margin: 0 10px 8px 10px;
-      font-size: 17px;
-      gap: 8px;
-    }
-    .sort-option.active {
-      background: rgba(229,57,53,0.13);
-      color: #e53935;
-    }
-    .sort-option.active .sort-check {
-      display: inline;
-    }
-    .sort-option:hover {
-      background: #e53935;
-      color: #fff;
-    }
-    .sort-check {
-      display: none;
-      color: #e53935;
-      font-size: 18px;
-    }
-    .statut-submenu {
-      font-size: 16px;
-      color: #fff;
-      background: rgba(40, 40, 40, 0.98);
-      border-radius: 18px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-      min-width: 180px;
-      padding: 10px 0;
-      z-index: 1100;
-      border: 1px solid #444;
-      margin-left: 8px;
-    }
-    .statut-option {
-      padding: 12px 22px;
-      cursor: pointer;
-      transition: background 0.18s, color 0.18s;
-      border-radius: 12px;
-      margin: 0 8px 6px 8px;
-    }
-    .statut-option.selected, .statut-option:hover {
-      background: #e53935;
-      color: #fff;
-    }
-    .filter-panel {
-      font-family: inherit;
-      color: #fff;
-      background: rgba(40,40,40,0.98);
-      border-radius: 28px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-      min-width: 340px;
-      max-width: 95vw;
-      padding: 32px 32px 24px 32px;
-      z-index: 2000;
-    }
-    .filter-checkbox {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      margin-right: 18px;
-      font-size: 1rem;
-      color: #ccc;
-      margin-bottom: 6px;
-    }
-    .filter-checkbox input[type="checkbox"] {
-      accent-color: #e53935;
-      width: 18px;
-      height: 18px;
-    }
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 38px;
-      height: 22px;
-    }
-    .switch input {display:none;}
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-color: #444;
-      border-radius: 22px;
-      transition: .4s;
-    }
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 16px;
-      width: 16px;
-      left: 3px;
-      bottom: 3px;
-      background-color: white;
-      border-radius: 50%;
-      transition: .4s;
-    }
-    input:checked + .slider {
-      background-color: #e53935;
-    }
-    input:checked + .slider:before {
-      transform: translateX(16px);
-    }
-    #clientFilter, #clientFilter option {
-      color: #222 !important;
-      background: #fff !important;
-      font-size: 1rem;
-    }
-    #clientFilter {
-      color: #222 !important;
-      background: #fff !important;
-      border: 1px solid #444;
-      border-radius: 10px;
-    }
-  </style>
 </head>
 <body>
   <div class="dashboard">
@@ -165,8 +24,8 @@
         </button>
         <div class="sort-dropdown-container" style="position:relative;display:inline-block;">
           <button class="sort-button" id="sortBtn">
-              <i class="fa-solid fa-arrow-down-a-z"></i>Tri
-          </button>
+            <i class="fa-solid fa-arrow-down-a-z"></i>Tri
+        </button>
           <div id="sortDropdown" class="sort-dropdown" style="display:none;position:absolute;top:110%;left:50%;transform:translateX(-50%);right:auto;min-width:260px;background:rgba(40,40,40,0.98);box-shadow:0 8px 32px rgba(0,0,0,0.25);border-radius:22px;padding:0 0 18px 0;z-index:1000;border:1px solid #444;">
             <div class="sort-dropdown-title" style="font-size:20px;font-weight:bold;padding:18px 28px 10px 28px;display:flex;align-items:center;gap:10px;">
               <span id="sortDropdownArrow" style="font-size:22px;transition:transform 0.2s;">&#8963;</span> Tri
@@ -235,32 +94,34 @@
         {% endfor %}
       </div>
 
-      <div class="user-profile-container">
+      <div class="user-container">
         <div class="user-profile" onclick="toggleUserMenu()">
-            <i class="fa fa-user"></i>{{ commercial.prenom }} {{ commercial.nom }}
+          <i class="fa fa-user"></i>{{ commercial.prenom }} {{ commercial.nom }}
         </div>
         <div class="user-menu" id="userMenu">
-            <ul>
-              <li><a href="{% url 'profil' %}" class="menu-link">Profil</a></li>
-              <li>Historique général</li>
-              <li><a href="{% url 'logout' %}" class="logout-btn">Se déconnecter</a></li>
-            </ul>
+          <ul>
+            <li><a href="{% url 'profil' %}" class="menu-link">Profil</a></li>
+            <li>Historique général</li>
+            <li><a href="{% url 'logout' %}" class="logout-btn">Se déconnecter</a></li>
+          </ul>
         </div>
       </div>
+      
+
     </div>
 
     <div class="floating-actions">
-      <div class="floating-menu" id="floatingMenu">
-        <a href="{% url 'new_client' %}">
-            <button><i class="fa-solid fa-user-plus"></i> Ajouter un nouveau client</button>
-        </a>
-        <a href="{% url 'add_rdv' %}">
-            <button><i class="fa-solid fa-calendar-plus"></i> Ajouter un RDV</button>
-        </a>
-      </div>
-      <button class="add-button">
-        <i class="fa-solid fa-plus"></i>
-      </button>
+        <div class="floating-menu" id="floatingMenu">
+            <a href="{% url 'new_client' %}">
+                <button><i class="fa-solid fa-user-plus"></i> Ajouter un nouveau client</button>
+            </a>
+            <a href="{% url 'add_rdv' %}">
+                <button><i class="fa-solid fa-calendar-plus"></i> Ajouter un RDV</button>
+            </a>
+        </div>
+        <button class="add-button">
+            <i class="fa-solid fa-plus"></i>
+        </button>
     </div>
   </div>
 
@@ -435,9 +296,9 @@
         },
         body: JSON.stringify({ commentaire: commentaire })
       })
-      .then(response => response.json())
-      .then(data => {
-        if (data.status === 'ok') {
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'ok') {
           // Retirer la carte du DOM
           const card = document.querySelector(`[data-id='${rdvId}']`);
           if (card) card.remove();
@@ -465,8 +326,8 @@
           }
 
           if (containerId) {
-            const container = document.getElementById(containerId);
-            const newCard = document.createElement('div');
+        const container = document.getElementById(containerId);
+        const newCard = document.createElement('div');
             newCard.className = cardClass;
             newCard.setAttribute('data-id', rdvId);
             newCard.setAttribute('data-nom', nom);
@@ -476,7 +337,7 @@
             newCard.setAttribute('data-heure', heure);
             newCard.setAttribute('data-adresse', adresse);
             newCard.setAttribute('data-cp', cp);
-            newCard.innerHTML = `
+        newCard.innerHTML = `
               <p><strong>${entreprise || nom}</strong></p>
               ${statusHtml}
               <p class="visit-date">Dernières visites le : ${date}</p>
@@ -485,37 +346,37 @@
             newCard.addEventListener('click', function () {
               openClientModal(nom, prenom, entreprise, rdvId, date, heure, adresse, cp, false, false);
             });
-            container.appendChild(newCard);
+        container.appendChild(newCard);
           }
-          closeClientModal();
-        } else {
+        closeClientModal();
+      } else {
           alert("Erreur lors de la mise à jour");
-        }
-      });
-    }
+      }
+    });
+}
 
     document.addEventListener("DOMContentLoaded", function () {
       const userMenu = document.getElementById("userMenu");
-      const userContainer = document.querySelector(".user-profile-container");
+      const userContainer = document.querySelector(".user-container");
 
-      document.addEventListener("click", function (event) {
-        if (!userContainer.contains(event.target)) {
-          userMenu.style.display = "none";
-        }
-      });
+        document.addEventListener("click", function (event) {
+          if (!userContainer.contains(event.target)) {
+            userMenu.style.display = "none";
+          }
+        });
 
       const floatingMenu = document.getElementById("floatingMenu");
       const floatingBtn = document.querySelector(".add-button");
       const floatingActions = document.querySelector(".floating-actions");
 
-      floatingBtn.addEventListener("click", () => {
+        floatingBtn.addEventListener("click", () => {
         floatingMenu.style.display = floatingMenu.style.display === "flex" ? "none" : "flex";
-      });
+        });
 
-      document.addEventListener("click", (e) => {
-        if (!floatingActions.contains(e.target)) {
-          floatingMenu.style.display = "none";
-        }
+        document.addEventListener("click", (e) => {
+          if (!floatingActions.contains(e.target)) {
+            floatingMenu.style.display = "none";
+          }
       });
 
       // Lancement de la modal depuis chaque rdv

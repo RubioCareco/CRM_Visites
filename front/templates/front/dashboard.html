@@ -237,9 +237,7 @@
       currentRdvId = rdvId;
       modal.style.display = 'flex';
       // Afficher ou masquer/modifier les boutons selon la section
-      if (isRecent) {
-        buttons.style.display = 'none';
-      } else if (isReminder) {
+      if (isReminder) {
         buttons.style.display = 'flex';
         // Modifier le texte du bouton Valider et masquer Annuler
         const validerBtn = buttons.querySelector('.action-button[onclick*="valider"]');

@@ -138,3 +138,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CSRF_COOKIE_SECURE = False  # Important pour le local en HTTP
 SESSION_COOKIE_SECURE = False
 CSRF_USE_SESSIONS = False  # (désactive l’attente d’un token stocké côté session)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'noreply@rubio.fr'

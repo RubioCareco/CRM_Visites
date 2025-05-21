@@ -1,11 +1,15 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Commercial, Client, Rendezvous, CommentaireRdv
-from django.contrib.auth.hashers import check_password
+from django.contrib.auth.hashers import check_password, make_password
 from functools import wraps
 from django.http import JsonResponse
 from datetime import datetime
 from django.utils import timezone
 import json
+from django.core.mail import send_mail
+from django.utils.crypto import get_random_string
+from django.urls import reverse
+from django.contrib.auth.models import User
 
 # 🔐 Décorateur de protection
 def login_required(view_func):
@@ -36,17 +40,61 @@ def logout_view(request):
     request.session.flush()
     return redirect('login')
 
-@login_required
+reset_tokens = {}
+
 def reset_password(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        users = User.objects.filter(email=email)
+        commercials = Commercial.objects.filter(email=email)
+        if not users.exists() and not commercials.exists():
+            return render(request, 'front/reset_password.html', {'error': "Aucun compte avec cet email."})
+        reset_links = []
+        for user in users:
+            token = get_random_string(48)
+            reset_tokens[token] = ('user', user.id)
+            reset_link = request.build_absolute_uri(reverse('new_password')) + f'?token={token}'
+            send_mail(
+                'Réinitialisation de mot de passe',
+                f'Cliquez sur ce lien pour réinitialiser votre mot de passe : {reset_link}',
+                'no-reply@crm.local',
+                [email],
+            )
+            reset_links.append(reset_link)
+        for commercial in commercials:
+            token = get_random_string(48)
+            reset_tokens[token] = ('commercial', commercial.id)
+            reset_link = request.build_absolute_uri(reverse('new_password')) + f'?token={token}'
+            send_mail(
+                'Réinitialisation de mot de passe',
+                f'Cliquez sur ce lien pour réinitialiser votre mot de passe : {reset_link}',
+                'no-reply@crm.local',
+                [email],
+            )
+            reset_links.append(reset_link)
+        # Pour debug local, on affiche le dernier lien généré
+        return render(request, 'front/reset_password_done.html', {'email': email, 'reset_link': reset_links[-1]})
     return render(request, 'front/reset_password.html')
 
-@login_required
 def new_password(request):
-    return render(request, 'front/new_password.html')
-
-@login_required
-def reset_password(request):
-    return render(request, 'front/reset_password.html')
+    token = request.GET.get('token')
+    token_info = reset_tokens.get(token)
+    if not token_info:
+        return render(request, 'front/new_password.html', {'error': "Lien invalide ou expiré."})
+    user_type, obj_id = token_info
+    if request.method == 'POST':
+        pwd = request.POST.get('password')
+        if user_type == 'user':
+            user = User.objects.get(id=obj_id)
+            user.set_password(pwd)
+            user.save()
+        elif user_type == 'commercial':
+            commercial = Commercial.objects.get(id=obj_id)
+            commercial.password = make_password(pwd)
+            commercial.save()
+        del reset_tokens[token]
+        return redirect('login')
+    return render(request, 'front/new_password.html', {'token': token})
 
 # 🏠 Dashboard
 @login_required

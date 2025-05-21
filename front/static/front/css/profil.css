@@ -16,7 +16,7 @@ body, html {
   }
   
   .profile-box {
-    background-color: rgba(250, 250, 250, 0.219);
+    background-color: rgba(250, 250, 250, 0.119);
     padding: 30px;
     border-radius: 12px;
     width: 360px;
@@ -26,24 +26,24 @@ body, html {
   }
   
   .close-button {
-    position: absolute;
-top: 16px;
-right: 16px;
-width: 32px;
-height: 32px;
-border: 2px solid #e53935;
-border-radius: 50%;
-background: transparent;
-color: #e53935;
-font-size: 16px;
-display: flex;
-align-items: center;
-justify-content: center;
-cursor: pointer;
-transition: background-color 0.3s ease, color 0.3s ease;
-box-sizing: border-box;
-padding: 0;
-  }
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border: 2px solid #e53935;
+  border-radius: 50%;
+  background: transparent;
+  color: #e53935;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  box-sizing: border-box;
+  padding: 0;
+    }
   
   .close-button:hover {
     background-color: #e53935;
@@ -96,14 +96,13 @@ padding: 0;
     width: 300px;
     padding: 10px 12px 10px 38px;
     border-radius: 6px;
-    border: 1px solid #ccc;
     background-color: rgba(255, 255, 255, 0.2); /* couleur constante */
     color: white;
     transition: all 0.3s ease;
   }
   
   .profile-field input:disabled {
-    opacity: 1; /* pour éviter un effet de transparence */
+    opacity: 0.8; /* pour éviter un effet de transparence */
     background-color: rgba(255, 255, 255, 0.2); /* même couleur que actif */
     cursor: default;
   }

@@ -17,4 +17,6 @@ urlpatterns = [
     path('delete-temp-rdv', views.delete_temp_rdv, name='delete_temp_rdv'),
     path('update-statut/<int:rdv_id>/<str:statut>/', views.update_statut, name='update_statut_rdv'),
     path('get-rdv-info/<int:rdv_id>/', views.get_rdv_info, name='get_rdv_info'),
+    path('client-file/', views.client_file, name='client_file'),
+    path('historique-rdv/', views.historique_rdv, name='historique_rdv'),
 ]

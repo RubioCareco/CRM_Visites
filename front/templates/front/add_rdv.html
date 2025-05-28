@@ -35,9 +35,9 @@
           {% if from_new_client and client_temp %}
             <input type="text" disabled value="{{ client_temp.prenom }} {{ client_temp.nom }}">
           {% else %}
-            <input type="text" id="clientSearch" placeholder="Rechercher un client..." required>
+            <input type="text" id="clientSearch" placeholder="Rechercher un client..." required value="{% if client_prefill %}{{ client_prefill.prénom }} {{ client_prefill.rs_nom }}{% endif %}">
             <ul id="clientResults" class="autocomplete-results"></ul>
-            <input type="hidden" name="client_id" id="client_id">
+            <input type="hidden" name="client_id" id="client_id" value="{% if client_prefill %}{{ client_prefill.id }}{% endif %}">
           {% endif %}
         </div>
 
@@ -69,8 +69,8 @@
       {% for client in clients %}
         {
           "id": "{{ client.id }}",
-          "nom": "{{ client.nom|escapejs }}",
-          "prenom": "{{ client.prenom|escapejs }}"
+          "nom": "{{ client.rs_nom|escapejs }}",
+          "prenom": "{{ client.prénom|escapejs }}"
         }{% if not forloop.last %},{% endif %}
       {% endfor %}
     ]
@@ -177,6 +177,18 @@
         }
       });
       // Pas de code d'autocomplétion client ici
+    });
+  </script>
+  {% endif %}
+  {% if client_prefill %}
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var input = document.getElementById("clientSearch");
+      var hiddenInput = document.getElementById("client_id");
+      if (input && hiddenInput) {
+        input.value = "{{ client_prefill.prénom }} {{ client_prefill.rs_nom }}";
+        hiddenInput.value = "{{ client_prefill.id }}";
+      }
     });
   </script>
   {% endif %}

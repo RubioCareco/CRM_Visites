@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Fichier Clients</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'front/css/dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'front/css/client_file.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body class="dashboard">
+
+  <h1 class="dashboard-title">Fichier Clients</h1>
+
+  <!-- Barre de recherche identique au dashboard -->
+  <div class="search-bar" style="position:relative;">
+      <i class="fa fa-search search-icon"></i>
+      <input type="text" id="clientSearchBar" placeholder="Rechercher par clients, entreprises ..." autocomplete="off">
+      <ul id="clientSearchSuggestions" class="autocomplete-results" style="position:absolute;left:0;right:0;top:38px;z-index:10;background:rgba(30,30,30,0.95);color:#fff;border-radius:0 0 8px 8px;max-height:180px;overflow-y:auto;display:none;"></ul>
+  </div>
+
+  <div class="cards" style="display:flex;justify-content:center;align-items:flex-start;min-height:10vh;">
+    <div class="card" style="width:100%;max-width:1400px;margin-top:40px;min-height:600px;">
+      <h2 style="text-align:center;margin-bottom:24px;">
+        Liste des clients
+      </h2>
+      <div class="pagination-container">
+        <form method="get" class="pagination-form" style="margin-right:12px;">
+          <label for="per_page">Clients par page :</label>
+          <select name="per_page" id="per_page" onchange="this.form.submit()">
+            <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+            <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+            <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+            <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+            <option value="200" {% if per_page == 200 %}selected{% endif %}>200</option>
+          </select>
+        </form>
+        <button class="filter-button" id="filterBtnClient" type="button">
+          <i class="fa-solid fa-sliders"></i>Filtres
+        </button>
+      </div>
+      <div id="filterPanelClient" class="filter-panel-client" style="display:none;position:fixed;left:50%;top:60px;transform:translateX(-50%);background:rgba(250,250,250,0.19);border-radius:28px;box-shadow:0 8px 32px rgba(0,0,0,0.25);padding:32px 32px 24px 32px;z-index:2000;min-width:340px;max-width:95vw;">
+        <div style="font-size:2rem;font-weight:bold;margin-bottom:18px;color:#fff;">Filtres</div>
+        <form id="clientFilterForm">
+          <div style="margin-bottom:18px;">
+            <div style="font-size:1.1rem;font-weight:500;margin-bottom:8px;">Raison sociale</div>
+            <input type="text" id="filterRaison" name="filterRaison" placeholder="Raison sociale...">
+          </div>
+          <div style="margin-bottom:18px;">
+            <div style="font-size:1.1rem;font-weight:500;margin-bottom:8px;">Adresse</div>
+            <input type="text" id="filterAdresse" name="filterAdresse" placeholder="Adresse...">
+          </div>
+          <div style="margin-bottom:18px;">
+            <div style="font-size:1.1rem;font-weight:500;margin-bottom:8px;">Code postal</div>
+            <input type="text" id="filterCP" name="filterCP" placeholder="Code postal...">
+          </div>
+          <div style="margin-bottom:18px;">
+            <div style="font-size:1.1rem;font-weight:500;margin-bottom:8px;">Ville</div>
+            <input type="text" id="filterVille" name="filterVille" placeholder="Ville...">
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+            <a href="#" id="resetClientFilters" style="margin-left:auto;color:#4dd0e1;font-size:1rem;text-decoration:none;">Réinitialiser filtres</a>
+          </div>
+          <button id="closeFilterPanelClient" type="button" style="position:absolute;top:18px;right:18px;background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;">&times;</button>
+        </form>
+      </div>
+      <table class="client-table">
+        <thead>
+          <tr style="background:transparent;">
+            <th>Civilité</th>
+            <th>Raison sociale</th>
+            <th>Prénom</th>
+            <th>Adresse</th>
+            <th>Code postal</th>
+            <th>Ville</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for client in page_obj %}
+          <tr class="client-card" data-client-id="{{ client.id }}" data-client-nom="{{ client.rs_nom|escapejs }}" data-client-prenom="{{ client.prénom|escapejs }}" style="cursor:pointer;" onclick="openClientModal('{{ client.rs_nom|escapejs }}', '{{ client.prénom|escapejs }}', '{{ client.civilite|escapejs }}', '{{ client.adresse|escapejs }}', '{{ client.code_postal|escapejs }}', '{{ client.ville|escapejs }}', '{{ client.telephone|escapejs }}', '{{ client.e_mail|escapejs }}', '{{ client.statut|escapejs }}', '{{ client.id }}')">
+            <td>{{ client.civilite|default:" " }}</td>
+            <td>{{ client.rs_nom|default:" " }}</td>
+            <td>{{ client.prénom|default:" " }}</td>
+            <td>{{ client.adresse|default:" " }}</td>
+            <td>{{ client.code_postal|default:" " }}</td>
+            <td>{{ client.ville|default:" " }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" style="text-align:center;">Aucun client importé trouvé.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div style="text-align:center;margin:18px 0;">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}">&laquo; Précédent</a>
+        {% endif %}
+        Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}&per_page={{ per_page }}">Suivant &raquo;</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale client -->
+  <div id="clientModal" class="client-modal">
+    <div class="client-modal-content">
+      <span class="close-button" onclick="closeClientModal()">
+        <i class="fa fa-times"></i>
+      </span>
+      <h3 id="modalClientName" class="modal-title" style="text-align:center;margin-bottom:18px;"></h3>
+      <div id="modalClientDetails" class="modal-details" style="margin-bottom:18px;"></div>
+      <div class="modal-buttons" style="display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:20px;">
+        <div style="display:flex;gap:16px;">
+          <button class="action-button" onclick="window.location.href='/add-rdv/?next=/client-file/&client_id={{ client_id }}'">
+            <i class="fa-solid fa-calendar-plus"></i> Ajouter un rendez-vous
+          </button>
+          <button class="action-button" onclick="alert('Fonctionnalité à venir')">
+            <i class="fa-solid fa-pen"></i> Modifier les informations
+          </button>
+        </div>
+        <button class="action-button" style="margin-top:8px;min-width:220px;" onclick="alert('Fonctionnalité à venir')">
+          <i class="fa-solid fa-check"></i> Valider
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <a href="{% url 'dashboard' %}" class="back-login" style="position:fixed;left:32px;bottom:24px;z-index:10001;">&larr; Retour au tableau de bord</a>
+
+</body>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // Récupération de toutes les lignes du tableau
+  const allRows = Array.from(document.querySelectorAll(".client-card"));
+  // Création de la liste des suggestions (tous les champs concaténés)
+  const suggestions = Array.from(new Set(
+    allRows.flatMap(row => [
+      (row.children[0]?.textContent || "") + " " + (row.children[1]?.textContent || "") + " " + (row.children[2]?.textContent || "") + " " + (row.children[3]?.textContent || "") + " " + (row.children[4]?.textContent || "") + " " + (row.children[5]?.textContent || ""),
+      (row.children[1]?.textContent || ""), // Raison sociale
+      (row.children[2]?.textContent || ""), // Prénom
+      (row.children[3]?.textContent || ""), // Adresse
+      (row.children[5]?.textContent || "")  // Ville
+    ].filter(Boolean))
+  ));
+
+  const searchInput = document.getElementById('clientSearchBar');
+  const suggestionBox = document.getElementById('clientSearchSuggestions');
+
+  // Affiche les suggestions filtrées
+  function showSuggestions(value) {
+    const v = value.trim().toLowerCase();
+    if (!v) {
+      suggestionBox.style.display = 'none';
+      suggestionBox.innerHTML = '';
+      return;
+    }
+    const filtered = suggestions.filter(s => s.toLowerCase().includes(v));
+    if (filtered.length === 0) {
+      suggestionBox.style.display = 'none';
+      suggestionBox.innerHTML = '';
+      return;
+    }
+    suggestionBox.innerHTML = filtered.map(s => `<li class='autocomplete-item' style='padding:8px 12px;cursor:pointer;'>${s}</li>`).join('');
+    suggestionBox.style.display = 'block';
+    Array.from(suggestionBox.children).forEach(li => {
+      li.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        searchInput.value = this.textContent;
+        filterRows(this.textContent);
+        suggestionBox.style.display = 'none';
+      });
+    });
+  }
+
+  // Filtrage dynamique des lignes du tableau
+  function filterRows(query) {
+    const lowerQuery = query.trim().toLowerCase();
+    allRows.forEach(row => {
+      const rowText = Array.from(row.children).map(td => (td.textContent || "").toLowerCase()).join(" ");
+      if (rowText.includes(lowerQuery)) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  }
+
+  searchInput.addEventListener('input', function() {
+    showSuggestions(this.value);
+    filterRows(this.value);
+  });
+
+  searchInput.addEventListener('focus', function() {
+    showSuggestions(this.value);
+  });
+  searchInput.addEventListener('blur', function() {
+    setTimeout(() => { suggestionBox.style.display = 'none'; }, 120);
+  });
+
+  // Filtres clients
+  const filterBtn = document.getElementById('filterBtnClient');
+  const filterPanel = document.getElementById('filterPanelClient');
+  const closeFilterPanel = document.getElementById('closeFilterPanelClient');
+  const resetFilters = document.getElementById('resetClientFilters');
+  const form = document.getElementById('clientFilterForm');
+  const raisonInput = document.getElementById('filterRaison');
+  const adresseInput = document.getElementById('filterAdresse');
+  const cpInput = document.getElementById('filterCP');
+  const villeInput = document.getElementById('filterVille');
+
+  filterBtn.addEventListener('click', function() {
+    filterPanel.style.display = 'block';
+  });
+  closeFilterPanel.addEventListener('click', function() {
+    filterPanel.style.display = 'none';
+  });
+  resetFilters.addEventListener('click', function(e) {
+    e.preventDefault();
+    raisonInput.value = '';
+    adresseInput.value = '';
+    cpInput.value = '';
+    villeInput.value = '';
+    filterRows();
+  });
+  form.addEventListener('input', filterRows);
+
+  function filterRows() {
+    const raison = raisonInput.value.trim().toLowerCase();
+    const adresse = adresseInput.value.trim().toLowerCase();
+    const cp = cpInput.value.trim().toLowerCase();
+    const ville = villeInput.value.trim().toLowerCase();
+    allRows.forEach(row => {
+      const tds = row.children;
+      const raisonVal = (tds[1]?.textContent || '').toLowerCase();
+      const adresseVal = (tds[3]?.textContent || '').toLowerCase();
+      const cpVal = (tds[4]?.textContent || '').toLowerCase();
+      const villeVal = (tds[5]?.textContent || '').toLowerCase();
+      let show = true;
+      if (raison && !raisonVal.includes(raison)) show = false;
+      if (adresse && !adresseVal.includes(adresse)) show = false;
+      if (cp && !cpVal.includes(cp)) show = false;
+      if (ville && !villeVal.includes(ville)) show = false;
+      row.style.display = show ? '' : 'none';
+    });
+  }
+});
+
+function openClientModal(nom, prenom, civilite, adresse, code_postal, ville, telephone, email, statut, clientId) {
+  document.getElementById('clientModal').style.display = 'flex';
+  document.getElementById('modalClientName').textContent = (civilite ? civilite + ' ' : '') + (prenom ? prenom + ' ' : '') + nom;
+  document.getElementById('modalClientDetails').innerHTML =
+    `<div style='text-align:left;'>
+      <b>Adresse :</b> ${adresse || 'N/A'}<br>
+      <b>Code postal :</b> ${code_postal || 'N/A'}<br>
+      <b>Ville :</b> ${ville || 'N/A'}<br>
+      <b>Téléphone :</b> ${telephone || 'N/A'}<br>
+      <b>Email :</b> ${email || 'N/A'}<br>
+      <b>Statut :</b> ${statut || 'N/A'}
+    </div>`;
+  // Mettre à jour le bouton RDV avec l'ID du client
+  const btnRdv = document.querySelector('.modal-buttons .action-button');
+  if (btnRdv) {
+    btnRdv.setAttribute('onclick', `window.location.href='/add-rdv/?next=/client-file/&client_id=${clientId}'`);
+  }
+}
+function closeClientModal() {
+  document.getElementById('clientModal').style.display = 'none';
+}
+</script>
+</html>

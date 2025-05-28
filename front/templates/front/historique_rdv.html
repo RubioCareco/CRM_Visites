@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Historique des rendez-vous</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'front/css/dashboard.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    .tab-btn {
+      padding:10px 24px;
+      border:none;
+      background:rgba(250,250,250,0.219);
+      color:#fff;
+      font-size:1.1rem;
+      cursor:pointer;
+      border-radius:0;
+      margin-left:0;
+      margin-right:0;
+      flex:1 1 0;
+      width:100%;
+      border-right:1px solid #fff2;
+      transition:background 0.2s, color 0.2s;
+      box-shadow:none;
+    }
+    .tab-btn.active {
+      background:#e53935;
+      color:#fff;
+      z-index:2;
+    }
+    .tab-btn:first-child {
+      border-top-left-radius:12px;
+    }
+    .tab-btn:last-child {
+      border-top-right-radius:12px;
+    }
+    .tab-btn:last-child {border-right:none;}
+    .tabs-container {
+      display:flex;
+      width:100%;
+      margin-bottom:18px;
+      justify-content:stretch;
+      align-items:stretch;
+      gap:0;
+      margin-top:0;
+      margin-left:0;
+      margin-right:0;
+      background:transparent;
+      border-radius:0;
+      box-shadow:none;
+      padding:0;
+    }
+    .tab-content {display:none;}
+    .tab-content.active {display:block;}
+    .visit-entry, .reminder-entry {
+      width: 99.5%;
+      min-width: 340px;
+      max-width: 100%;
+      margin: 6px auto;
+      border-radius: 10px;
+      padding: 6px 18px 4px 18px;
+      box-sizing: border-box;
+      box-shadow: none;
+      background: rgba(250, 250, 250, 0.219);
+      color: #fff;
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 2fr;
+      align-items: center;
+      gap: 0 38px;
+      font-size: 1.05rem;
+    }
+    .visit-entry p, .reminder-entry p {
+      margin: 0;
+      padding: 0;
+      display: block;
+      vertical-align: middle;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .visit-entry strong, .reminder-entry strong {
+      font-size: 1.08rem;
+      font-weight: 600;
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .status.validée, .status-à-rappeler {
+      min-width: 110px;
+      text-align: left;
+      font-size: 1.01rem;
+      white-space: nowrap;
+    }
+    .visit-date, .visit-date-passed {
+      font-size: 0.98rem;
+      color: #ccc;
+      white-space: nowrap;
+    }
+    .infos-adresse {
+      font-size: 0.98rem;
+      color: #ccc;
+      white-space: nowrap;
+    }
+    .tabs-content-scroll {
+      max-height: 68vh;
+      overflow-y: auto;
+      padding-right: 18px;
+      margin-right: 6px;
+      margin-top: 0;
+      border-radius: 0;
+      background: transparent;
+    }
+    .tabs-content-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .tabs-content-scroll::-webkit-scrollbar-thumb {
+      background-color: rgba(255, 255, 255, 0.2);
+      border-radius: 5px;
+    }
+    .visit-entry:hover, .upcoming-entry:hover, .reminder-entry:hover {
+      transform: scale(1.015);
+      box-shadow: 0 6px 24px rgba(229,57,53,0.10), 0 1.5px 8px rgba(0,0,0,0.13);
+      z-index: 2;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <h1 class="dashboard-title">Historique des rendez-vous</h1>
+    <div class="search-bar" style="position:relative; margin-top: 60px; margin-bottom: 48px;">
+        <i class="fa fa-search search-icon"></i>
+        <input type="text" id="historiqueSearch" placeholder="Rechercher par clients, entreprises ..." autocomplete="off">
+        <ul id="historiqueSearchSuggestions" class="autocomplete-results" style="position:absolute;left:0;right:0;top:38px;z-index:10;background:rgba(30,30,30,0.95);color:#fff;border-radius:0 0 8px 8px;max-height:180px;overflow-y:auto;display:none;"></ul>
+    </div>
+    <div class="cards" style="margin-top:10px;justify-content:center;align-items:flex-start;">
+      <div class="card" style="width:100%;max-width:1400px;margin:auto;min-height:650px;padding-top:0;padding-left:0;padding-right:0;border-radius:12px;overflow:hidden;">
+        <div class="tabs-container">
+          <button class="tab-btn active" onclick="showTab('general')">Historique général</button>
+          <button class="tab-btn" onclick="showTab('recent')">Rendez-vous validés</button>
+          <button class="tab-btn" onclick="showTab('rappeler')">À rappeler</button>
+        </div>
+        <div class="tabs-content-scroll">
+          <div id="tab-general" class="tab-content active">
+            {% if historique_general %}
+              {% for rdv in historique_general %}
+                <div class="{% if 'validé' in rdv.notes|lower %}visit-entry{% elif 'annulé' in rdv.notes|lower %}reminder-entry{% endif %}" style="margin-bottom:18px;">
+                  <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
+                  {% if 'validé' in rdv.notes|lower %}
+                    <p class="status validée"><i class="fa fa-check-square"></i> Validée</p>
+                  {% elif 'annulé' in rdv.notes|lower %}
+                    <p class="status-à-rappeler"><i class="fa-solid fa-triangle-exclamation"></i> Annulé</p>
+                  {% endif %}
+                  {% if 'validé' in rdv.notes|lower and rdv.date_statut %}
+                    <p class="infos-adresse" style="color:#6ee77a;">
+                      Validé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
+                      <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
+                      <span style="color:#ccc; margin-left: 12px;">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</span>
+                    </p>
+                  {% elif 'annulé' in rdv.notes|lower and rdv.date_statut %}
+                    <p class="infos-adresse" style="color:#ff5a5a;">
+                      Annulé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
+                      <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
+                      <span style="color:#ccc; margin-left: 12px;">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</span>
+                    </p>
+                  {% else %}
+                    <p class="visit-date{% if 'annulé' in rdv.notes|lower %}-passed{% endif %}">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
+                  {% endif %}
+                  <p class="infos-adresse">Adresse : {{ rdv.client.adresse }}, {{ rdv.client.code_postal }} {{ rdv.client.ville }}</p>
+                </div>
+              {% endfor %}
+            {% else %}
+              <p style="color:#aaa;">Aucun rendez-vous archivé.</p>
+            {% endif %}
+          </div>
+          <div id="tab-recent" class="tab-content">
+            {% if visites_recentes %}
+              {% for rdv in visites_recentes %}
+                <div class="visit-entry" style="margin-bottom:18px;">
+                  <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
+                  <p class="status validée"><i class="fa fa-check-square"></i> Validée</p>
+                  {% if 'validé' in rdv.notes|lower and rdv.date_statut %}
+                    <p class="infos-adresse" style="color:#6ee77a;">
+                      Validé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
+                      <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
+                      <span style="color:#ccc; margin-left: 12px;">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</span>
+                    </p>
+                  {% elif 'annulé' in rdv.notes|lower and rdv.date_statut %}
+                    <p class="infos-adresse" style="color:#ff5a5a;">
+                      Annulé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
+                      <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
+                      <span style="color:#ccc; margin-left: 12px;">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</span>
+                    </p>
+                  {% else %}
+                    <p class="visit-date">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
+                  {% endif %}
+                  <p class="infos-adresse">
+                    {% if 'validé' in rdv.notes|lower and rdv.date_statut %}Rendez-vous validé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}<br>{% endif %}
+                    {% if 'annulé' in rdv.notes|lower and rdv.date_statut %}Rendez-vous annulé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}<br>{% endif %}
+                    Adresse : {{ rdv.client.adresse }}, {{ rdv.client.code_postal }} {{ rdv.client.ville }}
+                  </p>
+                </div>
+              {% endfor %}
+            {% else %}
+              <p style="color:#aaa;">Aucun rendez-vous validé archivé.</p>
+            {% endif %}
+          </div>
+          <div id="tab-rappeler" class="tab-content">
+            {% if a_rappeler %}
+              {% for rdv in a_rappeler %}
+                <div class="reminder-entry" style="margin-bottom:18px;">
+                  <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
+                  <p class="status-à-rappeler"><i class="fa-solid fa-triangle-exclamation"></i> Annulé</p>
+                  {% if 'validé' in rdv.notes|lower and rdv.date_statut %}
+                    <p class="infos-adresse" style="color:#6ee77a;">
+                      Validé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
+                      <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
+                      <span style="color:#ccc; margin-left: 12px;">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</span>
+                    </p>
+                  {% elif 'annulé' in rdv.notes|lower and rdv.date_statut %}
+                    <p class="infos-adresse" style="color:#ff5a5a;">
+                      Annulé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
+                      <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
+                      <span style="color:#ccc; margin-left: 12px;">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</span>
+                    </p>
+                  {% else %}
+                    <p class="visit-date-passed">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
+                  {% endif %}
+                  <p class="infos-adresse">Adresse : {{ rdv.client.adresse }}, {{ rdv.client.code_postal }} {{ rdv.client.ville }}</p>
+                </div>
+              {% endfor %}
+            {% else %}
+              <p style="color:#aaa;">Aucun rendez-vous à rappeler archivé.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <a href="{% url 'dashboard' %}" class="back-login" style="position:fixed; left:24px; bottom:20px; z-index:9999; color:#f55; text-shadow: 1px 1px 6px #000, 0 0 2px #fff2; font-size: 12px;">&larr; Retour au tableau de bord</a>
+  <script>
+    function showTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+      if(tab==='general') {
+        document.querySelector('.tab-btn').classList.add('active');
+        document.getElementById('tab-general').classList.add('active');
+      } else if(tab==='recent') {
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+        document.getElementById('tab-recent').classList.add('active');
+      } else {
+        document.querySelectorAll('.tab-btn')[2].classList.add('active');
+        document.getElementById('tab-rappeler').classList.add('active');
+      }
+    }
+
+    // --- Autocomplétion & filtre barre de recherche historique ---
+    document.addEventListener('DOMContentLoaded', function() {
+      // Récupère toutes les cartes rdv (tous onglets)
+      const allCards = Array.from(document.querySelectorAll('.visit-entry, .reminder-entry'));
+      // Génère la liste des suggestions (nom, prénom, entreprise)
+      const allClients = allCards.map(card => {
+        const strong = card.querySelector('strong');
+        return strong ? strong.textContent.trim() : '';
+      });
+      const suggestions = Array.from(new Set(allClients.filter(Boolean)));
+      const searchInput = document.getElementById('historiqueSearch');
+      const suggestionBox = document.getElementById('historiqueSearchSuggestions');
+
+      function showSuggestions(value) {
+        const v = value.trim().toLowerCase();
+        if (!v) {
+          suggestionBox.style.display = 'none';
+          suggestionBox.innerHTML = '';
+          return;
+        }
+        const filtered = suggestions.filter(s => s.toLowerCase().includes(v));
+        if (filtered.length === 0) {
+          suggestionBox.style.display = 'none';
+          suggestionBox.innerHTML = '';
+          return;
+        }
+        suggestionBox.innerHTML = filtered.map(s => `<li class='autocomplete-item' style='padding:8px 12px;cursor:pointer;'>${s}</li>`).join('');
+        suggestionBox.style.display = 'block';
+        Array.from(suggestionBox.children).forEach(li => {
+          li.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            searchInput.value = this.textContent;
+            filterCards(this.textContent);
+            suggestionBox.style.display = 'none';
+          });
+        });
+      }
+
+      function filterCards(query) {
+        const lowerQuery = query.trim().toLowerCase();
+        allCards.forEach(card => {
+          const strong = card.querySelector('strong');
+          const nom = strong ? strong.textContent.toLowerCase() : '';
+          if (nom.includes(lowerQuery)) {
+            card.style.display = '';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      }
+
+      searchInput.addEventListener('input', function() {
+        showSuggestions(this.value);
+        filterCards(this.value);
+      });
+      searchInput.addEventListener('focus', function() {
+        showSuggestions(this.value);
+      });
+      searchInput.addEventListener('blur', function() {
+        setTimeout(() => { suggestionBox.style.display = 'none'; }, 120);
+      });
+    });
+  </script>
+</body>
+</html> 

@@ -58,8 +58,8 @@
       <div class="card recent-visits" id="recent-visits">
         <h2 class="card-title success">Visites récentes</h2>
         {% for rdv in visites_recentes %}
-          <div class="visit-entry open-modal-btn" data-id="{{ rdv.id }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}">
-              <p><strong>{{ rdv.client.entreprise|default:rdv.client.nom }}</strong></p>
+          <div class="visit-entry open-modal-btn" data-id="{{ rdv.id }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}" data-civilite="{{ rdv.client.civilite|default_if_none:'' }}" data-rs_nom="{{ rdv.client.rs_nom|default_if_none:'' }}" data-ville="{{ rdv.client.ville|default_if_none:'' }}" data-telephone="{{ rdv.client.telephone|default_if_none:'' }}" data-email="{{ rdv.client.e_mail|default_if_none:'' }}" data-code_comptable="{{ rdv.client.code_comptable|default_if_none:'' }}" data-statut="{{ rdv.client.statut|default_if_none:'N/A' }}">
+              <p><strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong></p>
               <p class="status validée"><i class="fa fa-check-square"></i> Validée</p>
               <p class="visit-date">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
           </div>
@@ -71,8 +71,8 @@
       <div class="card upcoming-visits" id="upcoming-visits">
         <h2 class="card-title-coming">Visites à venir</h2>
         {% for rdv in rdvs_a_venir %}
-          <div class="upcoming-entry open-modal-btn" data-id="{{ rdv.id }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}">
-              <p><strong>{{ rdv.client.entreprise|default:rdv.client.nom }}</strong></p>
+          <div class="upcoming-entry open-modal-btn" data-id="{{ rdv.id }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}" data-civilite="{{ rdv.client.civilite|default_if_none:'' }}" data-rs_nom="{{ rdv.client.rs_nom|default_if_none:'' }}" data-ville="{{ rdv.client.ville|default_if_none:'' }}" data-telephone="{{ rdv.client.telephone|default_if_none:'' }}" data-email="{{ rdv.client.e_mail|default_if_none:'' }}" data-code_comptable="{{ rdv.client.code_comptable|default_if_none:'' }}" data-statut="{{ rdv.client.statut|default_if_none:'N/A' }}">
+              <p><strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong></p>
               <p class="status-à-venir"><i class="fa-solid fa-calendar-days"></i> à venir</p>
               <p class="visit-date-futur">Rendez-vous le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
           </div>
@@ -84,8 +84,8 @@
       <div class="card reminders" id="reminders">
         <h2 class="card-title-reminder">A Rappeler</h2>
         {% for rdv in a_rappeler %}
-          <div class="reminder-entry open-modal-btn" data-id="{{ rdv.id }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}">
-              <p><strong>{{ rdv.client.entreprise|default:rdv.client.nom }}</strong></p>
+          <div class="reminder-entry open-modal-btn" data-id="{{ rdv.id }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}" data-civilite="{{ rdv.client.civilite|default_if_none:'' }}" data-rs_nom="{{ rdv.client.rs_nom|default_if_none:'' }}" data-ville="{{ rdv.client.ville|default_if_none:'' }}" data-telephone="{{ rdv.client.telephone|default_if_none:'' }}" data-email="{{ rdv.client.e_mail|default_if_none:'' }}" data-code_comptable="{{ rdv.client.code_comptable|default_if_none:'' }}" data-statut="{{ rdv.client.statut|default_if_none:'N/A' }}">
+              <p><strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong></p>
               <p class="status-à-rappeler"><i class="fa-solid fa-triangle-exclamation"></i> A rappeler</p>
               <p class="visit-date-passed">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
           </div>
@@ -101,7 +101,8 @@
         <div class="user-menu" id="userMenu">
           <ul>
             <li><a href="{% url 'profil' %}" class="menu-link">Profil</a></li>
-            <li>Historique général</li>
+            <li><a href="{% url 'client_file' %}" class="menu-link">Fichier Clients</a></li>
+            <li><a href="{% url 'historique_rdv' %}" class="menu-link">Historique RDV</a></li>
             <li><a href="{% url 'logout' %}" class="logout-btn">Se déconnecter</a></li>
           </ul>
         </div>
@@ -194,17 +195,21 @@
       menu.style.display = menu.style.display === "block" ? "none" : "block";
     }
 
-    function openClientModal(nom, prenom, entreprise, rdvId, date, heure, adresse, cp, isRecent, isReminder) {
+    function openClientModal(nom, prenom, entreprise, rdvId, date, heure, adresse, cp, isRecent, isReminder, civilite, rs_nom, ville, telephone, email, code_comptable, statut) {
       const modal = document.getElementById('clientModal');
       const title = document.getElementById('clientName');
       const details = document.getElementById('clientDetails');
       const buttons = document.getElementById('modal-buttons');
 
       // Affichage des infos de base
-      title.textContent = entreprise || nom;
-      details.innerHTML = `<div style='text-align:left;'>Nom : ${nom} ${prenom}<br>` +
-        (adresse || cp ? `<b>Adresse :</b> ${adresse ? adresse : ''}${adresse && cp ? ' - ' : ''}${cp ? cp : ''}<br>` : '') +
-        `Date du rendez-vous : <b>${date}</b><br>Heure : <b>${heure}</b></div>`;
+      title.textContent = (civilite ? civilite + ' ' : '') + (rs_nom || nom);
+      details.innerHTML = `<div style='text-align:left;'>
+        <b>Adresse :</b> ${adresse || ''} ${cp || ''} ${ville || ''}<br>
+        <b>Téléphone :</b> ${telephone || 'N/A'}<br>
+        <b>Email :</b> ${email || 'N/A'}<br>
+        <b>Statut :</b> ${statut || 'N/A'}<br>
+        ${code_comptable ? `<b>Code comptable :</b> ${code_comptable}<br>` : ''}
+      </div>`;
 
       // Chargement AJAX des infos complémentaires
       fetch(`/get-rdv-info/${rdvId}/`)
@@ -309,18 +314,30 @@
           const heure = data.heure || '';
           const adresse = data.adresse || '';
           const cp = data.code_postal || '';
+          const civilite = data.civilite || '';
+          const rs_nom = data.rs_nom || '';
+          const ville = data.ville || '';
+          const telephone = data.telephone || '';
+          const email = data.e_mail || '';
+          const code_comptable = data.code_comptable || '';
+          const statut = data.statut || '';
 
           let containerId = '';
           let cardClass = '';
           let statusHtml = '';
-          if (statut === 'valider') {
+          const statutNorm = (statut || '').toLowerCase().normalize('NFD').replace(/[-- 0- b]/g, '').replace(/[éèêë]/g, 'e');
+          if (statutNorm.startsWith('valid')) {
             containerId = 'recent-visits';
             cardClass = 'visit-entry open-modal-btn';
             statusHtml = '<p class="status validée"><i class="fa fa-check-square"></i> Validée</p>';
-          } else if (statut === 'annuler') {
+          } else if (statutNorm.startsWith('annul')) {
             containerId = 'reminders';
             cardClass = 'reminder-entry open-modal-btn';
             statusHtml = '<p class="status-à-rappeler"><i class="fa-solid fa-triangle-exclamation"></i> A rappeler</p>';
+          } else if (statutNorm.includes('venir')) {
+            containerId = 'upcoming-visits';
+            cardClass = 'upcoming-entry open-modal-btn';
+            statusHtml = '<p class="status-à-venir"><i class="fa-solid fa-calendar-days"></i> à venir</p>';
           }
 
           if (containerId) {
@@ -335,14 +352,28 @@
             newCard.setAttribute('data-heure', heure);
             newCard.setAttribute('data-adresse', adresse);
             newCard.setAttribute('data-cp', cp);
+            newCard.setAttribute('data-civilite', civilite);
+            newCard.setAttribute('data-rs_nom', rs_nom);
+            newCard.setAttribute('data-ville', ville);
+            newCard.setAttribute('data-telephone', telephone);
+            newCard.setAttribute('data-email', email);
+            newCard.setAttribute('data-code_comptable', code_comptable);
+            newCard.setAttribute('data-statut', statut);
         newCard.innerHTML = `
-              <p><strong>${entreprise || nom}</strong></p>
+              <p><strong>${civilite ? civilite + ' ' : ''}${rs_nom || nom || '(sans raison sociale)'}</strong></p>
               ${statusHtml}
               <p class="visit-date">Dernières visites le : ${date}</p>
             `;
             // Réattacher l'écouteur d'ouverture de modal
             newCard.addEventListener('click', function () {
-              openClientModal(nom, prenom, entreprise, rdvId, date, heure, adresse, cp, false, false);
+              const civilite = this.getAttribute('data-civilite');
+              const rs_nom = this.getAttribute('data-rs_nom');
+              const ville = this.getAttribute('data-ville');
+              const telephone = this.getAttribute('data-telephone');
+              const email = this.getAttribute('data-email');
+              const code_comptable = this.getAttribute('data-code_comptable');
+              const statut = this.getAttribute('data-statut');
+              openClientModal(nom, prenom, entreprise, rdvId, date, heure, adresse, cp, false, false, civilite, rs_nom, ville, telephone, email, code_comptable, statut);
             });
         container.appendChild(newCard);
           }
@@ -388,10 +419,17 @@
           const heure = this.getAttribute('data-heure');
           const adresse = this.getAttribute('data-adresse');
           const cp = this.getAttribute('data-cp');
+          const civilite = this.getAttribute('data-civilite');
+          const rs_nom = this.getAttribute('data-rs_nom');
+          const ville = this.getAttribute('data-ville');
+          const telephone = this.getAttribute('data-telephone');
+          const email = this.getAttribute('data-email');
+          const code_comptable = this.getAttribute('data-code_comptable');
+          const statut = this.getAttribute('data-statut');
           // Détecter la section
           const isRecent = this.classList.contains('visit-entry') && this.closest('#recent-visits');
           const isReminder = this.classList.contains('reminder-entry') && this.closest('#reminders');
-          openClientModal(nom, prenom, entreprise, id, date, heure, adresse, cp, isRecent, isReminder);
+          openClientModal(nom, prenom, entreprise, id, date, heure, adresse, cp, isRecent, isReminder, civilite, rs_nom, ville, telephone, email, code_comptable, statut);
         });
       });
 

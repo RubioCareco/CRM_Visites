@@ -56,7 +56,7 @@
 
     <div class="cards">
       <div class="card recent-visits" id="recent-visits">
-        <h2 class="card-title success">Visites récentes</h2>
+        <h2 class="titre-colonne titre-vert">Visites récentes</h2>
         {% for rdv in visites_recentes %}
           <div class="visit-entry open-modal-btn" data-id="{{ rdv.id }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}" data-civilite="{{ rdv.client.civilite|default_if_none:'' }}" data-rs_nom="{{ rdv.client.rs_nom|default_if_none:'' }}" data-ville="{{ rdv.client.ville|default_if_none:'' }}" data-telephone="{{ rdv.client.telephone|default_if_none:'' }}" data-email="{{ rdv.client.e_mail|default_if_none:'' }}" data-code_comptable="{{ rdv.client.code_comptable|default_if_none:'' }}" data-statut="{{ rdv.client.statut|default_if_none:'N/A' }}">
               <p><strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong></p>
@@ -69,7 +69,7 @@
       </div>
 
       <div class="card upcoming-visits" id="upcoming-visits">
-        <h2 class="card-title-coming">Visites à venir</h2>
+        <h2 class="titre-colonne titre-orange">Visites à venir</h2>
         {% for rdv in rdvs_a_venir %}
           <div class="upcoming-entry open-modal-btn" data-id="{{ rdv.id }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}" data-civilite="{{ rdv.client.civilite|default_if_none:'' }}" data-rs_nom="{{ rdv.client.rs_nom|default_if_none:'' }}" data-ville="{{ rdv.client.ville|default_if_none:'' }}" data-telephone="{{ rdv.client.telephone|default_if_none:'' }}" data-email="{{ rdv.client.e_mail|default_if_none:'' }}" data-code_comptable="{{ rdv.client.code_comptable|default_if_none:'' }}" data-statut="{{ rdv.client.statut|default_if_none:'N/A' }}">
               <p><strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong></p>
@@ -82,7 +82,7 @@
       </div>
 
       <div class="card reminders" id="reminders">
-        <h2 class="card-title-reminder">A Rappeler</h2>
+        <h2 class="titre-colonne titre-rouge">A Rappeler</h2>
         {% for rdv in a_rappeler %}
           <div class="reminder-entry open-modal-btn" data-id="{{ rdv.id }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}" data-civilite="{{ rdv.client.civilite|default_if_none:'' }}" data-rs_nom="{{ rdv.client.rs_nom|default_if_none:'' }}" data-ville="{{ rdv.client.ville|default_if_none:'' }}" data-telephone="{{ rdv.client.telephone|default_if_none:'' }}" data-email="{{ rdv.client.e_mail|default_if_none:'' }}" data-code_comptable="{{ rdv.client.code_comptable|default_if_none:'' }}" data-statut="{{ rdv.client.statut|default_if_none:'N/A' }}">
               <p><strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong></p>

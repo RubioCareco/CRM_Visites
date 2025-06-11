@@ -1,0 +1,239 @@
+.tab-btn {
+    padding:10px 24px;
+    border:none;
+    background:rgba(250,250,250,0.219);
+    color:#fff;
+    font-size:1.1rem;
+    cursor:pointer;
+    border-radius:0;
+    margin-left:0;
+    margin-right:0;
+    flex:1 1 0;
+    width:100%;
+    border-right:1px solid #fff2;
+    transition:background 0.2s, color 0.2s;
+    box-shadow:none;
+  }
+  .tab-btn.active {
+    background:#e53935;
+    color:#fff;
+    z-index:2;
+  }
+  .tab-btn:first-child {
+    border-top-left-radius:12px;
+  }
+  .tab-btn:last-child {
+    border-top-right-radius:12px;
+  }
+  .tab-btn:last-child {border-right:none;}
+  .tabs-container {
+    display:flex;
+    width:100%;
+    margin-bottom:18px;
+    justify-content:stretch;
+    align-items:stretch;
+    gap:0;
+    margin-top:0;
+    margin-left:0;
+    margin-right:0;
+    background:transparent;
+    border-radius:0;
+    box-shadow:none;
+    padding:0;
+  }
+  .tab-content {display:none;}
+  .tab-content.active {display:block;}
+  .visit-entry, .reminder-entry {
+    width: 99.5%;
+    min-width: 340px;
+    max-width: 100%;
+    margin: 6px auto;
+    border-radius: 10px;
+    padding: 6px 18px 4px 18px;
+    box-sizing: border-box;
+    box-shadow: none;
+    background: rgba(250, 250, 250, 0.219);
+    color: #fff;
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 2fr;
+    align-items: center;
+    gap: 0 38px;
+    font-size: 1.05rem;
+  }
+  .visit-entry p, .reminder-entry p {
+    margin: 0;
+    padding: 0;
+    display: block;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .visit-entry strong, .reminder-entry strong {
+    font-size: 1.08rem;
+    font-weight: 600;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .status.validée, .status-à-rappeler {
+    min-width: 110px;
+    text-align: left;
+    font-size: 1.01rem;
+    white-space: nowrap;
+  }
+  .visit-date, .visit-date-passed {
+    font-size: 0.98rem;
+    color: #ccc;
+    white-space: nowrap;
+  }
+  .infos-adresse {
+    font-size: 0.98rem;
+    color: #ccc;
+    white-space: nowrap;
+  }
+  .tabs-content-scroll {
+    max-height: 68vh;
+    overflow-y: auto;
+    padding-right: 18px;
+    margin-right: 6px;
+    margin-top: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  .tabs-content-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+  .tabs-content-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+  }
+  .visit-entry:hover, .upcoming-entry:hover, .reminder-entry:hover {
+    transform: scale(1.015);
+    box-shadow: 0 6px 24px rgba(229,57,53,0.10), 0 1.5px 8px rgba(0,0,0,0.13);
+    z-index: 2;
+  }
+  /* --- STYLE MODALE FILTRE HISTORIQUE --- */
+  #filterPopoverHistorique {
+    background: rgba(255,255,255,0.28) !important;
+    color: #222 !important;
+    border-radius: 28px !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.13);
+    padding: 32px 32px 24px 32px;
+    min-width: 340px;
+    max-width: 95vw;
+    font-family: inherit;
+    font-size: 1.13rem;
+    border: none;
+    backdrop-filter: blur(6px);
+    position: relative;
+    z-index: 2000;
+  }
+  #filterPopoverHistorique .filter-type-btn {
+    background: #f3f3f3 !important;
+    color: #222 !important;
+    border: 1.5px solid #e0e0e0 !important;
+    border-radius: 10px !important;
+    font-size: 1.04rem;
+    font-weight: 500;
+    margin-bottom: 0;
+    box-shadow: none;
+    transition: background 0.18s, color 0.18s, border 0.18s;
+    padding: 7px 18px;
+  }
+  #filterPopoverHistorique .filter-type-btn.active, #filterPopoverHistorique .filter-type-btn:active {
+    background: #e53935 !important;
+    color: #fff !important;
+    border: 1.5px solid #e53935 !important;
+  }
+  #filterPopoverHistorique .filter-type-btn:hover {
+    background: #e0e0e0 !important;
+    color: #222 !important;
+  }
+  #filterPopoverHistorique input[type="date"],
+  #filterPopoverHistorique input[type="week"],
+  #filterPopoverHistorique input[type="month"],
+  #filterPopoverHistorique select {
+    background: #fff;
+    color: #222;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 1.08rem;
+    margin-bottom: 12px;
+    width: 90%;
+    max-width: 320px;
+    box-shadow: none;
+    outline: none;
+    transition: border 0.18s, background 0.18s;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  #filterPopoverHistorique input:focus, #filterPopoverHistorique select:focus {
+    border: 1.5px solid #e53935;
+    background: #fafafa;
+  }
+  #filterPopoverHistorique input::-webkit-input-placeholder { color: #888; opacity: 1; }
+  #filterPopoverHistorique input:-ms-input-placeholder { color: #888; opacity: 1; }
+  #filterPopoverHistorique input::placeholder { color: #888; opacity: 1; }
+  #filterPopoverHistorique #applyFilterHistorique {
+    background: #4caf50 !important;
+    color: #fff !important;
+    border: none;
+    font-weight: 600;
+    font-size: 1.07rem;
+    border-radius: 10px;
+    box-shadow: none;
+    padding: 10px 28px;
+    margin-right: 8px;
+    transition: background 0.18s;
+  }
+  #filterPopoverHistorique #applyFilterHistorique:hover {
+    background: #388e3c !important;
+  }
+  #filterPopoverHistorique #resetFilterHistorique {
+    background: none !important;
+    color: #3fd0f7 !important;
+    border: none;
+    font-weight: 500;
+    font-size: 1.01rem;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0 0 0 0;
+    margin-left: auto;
+    margin-right: 0;
+    transition: color 0.18s, text-decoration 0.18s;
+    text-align: right;
+    display: block;
+    text-decoration: none;
+  }
+  #filterPopoverHistorique #resetFilterHistorique:hover {
+    color: #00bcd4 !important;
+    text-decoration: underline;
+  }
+  #filterPopoverHistorique #closeFilterPopoverHistorique {
+    color: #888 !important;
+    font-size: 1.5rem;
+    font-weight: bold;
+    opacity: 0.7;
+    transition: opacity 0.18s, color 0.18s;
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  #filterPopoverHistorique #closeFilterPopoverHistorique:hover {
+    opacity: 1;
+    color: #e53935 !important;
+  }
+  #filterInputsHistorique {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 12px;
+  }

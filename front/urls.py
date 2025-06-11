@@ -19,4 +19,5 @@ urlpatterns = [
     path('get-rdv-info/<int:rdv_id>/', views.get_rdv_info, name='get_rdv_info'),
     path('client-file/', views.client_file, name='client_file'),
     path('historique-rdv/', views.historique_rdv, name='historique_rdv'),
+    path('update-client/<int:client_id>/', views.update_client, name='update_client'),
 ]

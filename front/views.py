@@ -12,6 +12,7 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from django.db import models
 from django.core.paginator import Paginator
+from django.views.decorators.csrf import csrf_exempt
 
 # 🔐 Décorateur de protection
 def login_required(view_func):
@@ -113,15 +114,9 @@ def dashboard(request):
     rdvs = Rendezvous.objects.filter(commercial=commercial).order_by('-date_rdv', '-heure_rdv')
 
     for rdv in rdvs:
-        dt_rdv = datetime.combine(rdv.date_rdv, rdv.heure_rdv)
-        if timezone.is_naive(dt_rdv):
-            dt_rdv = timezone.make_aware(dt_rdv)
-
-        notes = (rdv.notes or '').lower()
-
-        if 'validé' in notes:
+        if rdv.statut_rdv == 'valide':
             visites_recentes.append(rdv)
-        elif 'annulé' in notes:
+        elif rdv.statut_rdv == 'annule':
             a_rappeler.append(rdv)
         else:
             a_venir.append(rdv)
@@ -210,7 +205,7 @@ def add_rdv(request):
     client_prefill = None
     if client_id_prefill:
         try:
-            client_prefill = ImportClientCorrected.objects.get(id=client_id_prefill, commercial__iexact=commercial.commercial)
+            client_prefill = ImportClientCorrected.objects.get(id=client_id_prefill)
         except ImportClientCorrected.DoesNotExist:
             client_prefill = None
 
@@ -234,7 +229,8 @@ def add_rdv(request):
                 date_rdv=request.POST.get('date_rdv'),
                 heure_rdv=request.POST.get('heure_rdv'),
                 objet=request.POST.get('objet'),
-                notes=request.POST.get('notes')
+                notes=request.POST.get('notes'),
+                statut_rdv='a_venir'  # Par défaut, à venir
             )
             next_url = request.POST.get('next') or request.GET.get('next')
             if next_url:
@@ -293,11 +289,52 @@ def update_statut(request, rdv_id, statut):
         commentaire = data.get('commentaire', '')
 
         if statut == "valider":
-            rdv.notes = f"Validé - {commentaire}"
+            rdv.statut_rdv = 'valide'
             rdv.date_statut = timezone.now()
+            if commentaire.strip():
+                rdv.notes = commentaire  # (optionnel)
+                client = rdv.client
+                rs_nom = getattr(client, 'rs_nom', None) or getattr(client, 'nom', None) or ''
+                commercial_id = request.session.get('commercial_id')
+                commercial = Commercial.objects.get(id=commercial_id) if commercial_id else None
+                CommentaireRdv.objects.create(
+                    rdv=rdv,
+                    auteur=request.user if request.user.is_authenticated else None,
+                    commercial=commercial,
+                    texte=commentaire,
+                    rs_nom=rs_nom
+                )
         elif statut == "annuler":
-            rdv.notes = f"Annulé - {commentaire}"
+            rdv.statut_rdv = 'annule'
             rdv.date_statut = timezone.now()
+            if commentaire.strip():
+                rdv.notes = commentaire  # (optionnel)
+                client = rdv.client
+                rs_nom = getattr(client, 'rs_nom', None) or getattr(client, 'nom', None) or ''
+                commercial_id = request.session.get('commercial_id')
+                commercial = Commercial.objects.get(id=commercial_id) if commercial_id else None
+                CommentaireRdv.objects.create(
+                    rdv=rdv,
+                    auteur=request.user if request.user.is_authenticated else None,
+                    commercial=commercial,
+                    texte=commentaire,
+                    rs_nom=rs_nom
+                )
+        elif statut == "commentaire":
+            # On ajoute juste un commentaire sans changer le statut
+            if commentaire.strip():
+                client = rdv.client
+                rs_nom = getattr(client, 'rs_nom', None) or getattr(client, 'nom', None) or ''
+                commercial_id = request.session.get('commercial_id')
+                commercial = Commercial.objects.get(id=commercial_id) if commercial_id else None
+                CommentaireRdv.objects.create(
+                    rdv=rdv,
+                    auteur=request.user if request.user.is_authenticated else None,
+                    commercial=commercial,
+                    texte=commentaire,
+                    rs_nom=rs_nom
+                )
+            return JsonResponse({'status': 'ok'})
 
         rdv.save()
 
@@ -397,11 +434,11 @@ def historique_rdv(request):
     a_rappeler = []
     historique_general = []
     for rdv in rdvs_archives:
-        notes = (rdv.notes or '').lower()
-        if 'validé' in notes:
+        # Utilisation du champ statut_rdv
+        if rdv.statut_rdv == 'valide':
             visites_recentes.append(rdv)
             historique_general.append(rdv)
-        elif 'annulé' in notes:
+        elif rdv.statut_rdv == 'annule':
             a_rappeler.append(rdv)
             historique_general.append(rdv)
     # On trie l'historique général par date décroissante (déjà fait par la requête)
@@ -411,3 +448,20 @@ def historique_rdv(request):
         'a_rappeler': a_rappeler,
         'historique_general': historique_general,
     })    
+
+@csrf_exempt  # À remplacer par @login_required + gestion CSRF si besoin
+def update_client(request, client_id):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            client = ImportClientCorrected.objects.get(pk=client_id)
+            client.adresse = data.get("adresse", client.adresse)
+            client.code_postal = data.get("code_postal", client.code_postal)
+            client.ville = data.get("ville", client.ville)
+            client.telephone = data.get("telephone", client.telephone)
+            client.e_mail = data.get("email", client.e_mail)
+            client.save()
+            return JsonResponse({"success": True})
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)})
+    return JsonResponse({"success": False, "error": "Méthode non autorisée"})    

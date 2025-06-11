@@ -77,7 +77,7 @@
         </thead>
         <tbody>
           {% for client in page_obj %}
-          <tr class="client-card" data-client-id="{{ client.id }}" data-client-nom="{{ client.rs_nom|escapejs }}" data-client-prenom="{{ client.prénom|escapejs }}" style="cursor:pointer;" onclick="openClientModal('{{ client.rs_nom|escapejs }}', '{{ client.prénom|escapejs }}', '{{ client.civilite|escapejs }}', '{{ client.adresse|escapejs }}', '{{ client.code_postal|escapejs }}', '{{ client.ville|escapejs }}', '{{ client.telephone|escapejs }}', '{{ client.e_mail|escapejs }}', '{{ client.statut|escapejs }}', '{{ client.id }}')">
+          <tr class="client-card" data-client-id="{{ client.id }}" data-client-nom="{{ client.rs_nom|escapejs }}" data-client-prenom="{{ client.prénom|escapejs }}" style="cursor:pointer;" onclick="openClientModal('{{ client.rs_nom|escapejs }}', '{{ client.prénom|escapejs }}', '{{ client.civilite|escapejs }}', '{{ client.adresse|escapejs }}', '{{ client.code_postal|escapejs }}', '{{ client.ville|escapejs }}', '{{ client.telephone|escapejs }}', '{{ client.e_mail|escapejs }}', '{{ client.statut|escapejs }}', '{{ client.id }}', '{{ client.code_comptable|escapejs }}')">
             <td>{{ client.civilite|default:" " }}</td>
             <td>{{ client.rs_nom|default:" " }}</td>
             <td>{{ client.prénom|default:" " }}</td>
@@ -109,20 +109,33 @@
         <i class="fa fa-times"></i>
       </span>
       <h3 id="modalClientName" class="modal-title" style="text-align:center;margin-bottom:18px;"></h3>
-      <div id="modalClientDetails" class="modal-details" style="margin-bottom:18px;"></div>
-      <div class="modal-buttons" style="display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:20px;">
-        <div style="display:flex;gap:16px;">
-          <button class="action-button" onclick="window.location.href='/add-rdv/?next=/client-file/&client_id={{ client_id }}'">
-            <i class="fa-solid fa-calendar-plus"></i> Ajouter un rendez-vous
+      <form id="modalClientForm">
+        <div id="modalClientDetails" class="modal-details" style="margin-bottom:18px;text-align:left;">
+          <div class="input-icon-group"><b>Adresse :</b> <input type="text" id="inputAdresse" name="adresse" disabled></div>
+          <div class="input-icon-group"><b>Code postal :</b> <input type="text" id="inputCP" name="code_postal" disabled></div>
+          <div class="input-icon-group"><b>Ville :</b> <input type="text" id="inputVille" name="ville" disabled></div>
+          <div class="input-icon-group"><b>Téléphone :</b> <input type="text" id="inputTel" name="telephone" disabled></div>
+          <div class="input-icon-group"><b>Email :</b> <input type="email" id="inputEmail" name="email" disabled></div>
+          <div class="input-icon-group"><b>Statut :</b> <input type="text" id="inputStatut" name="statut" disabled></div>
+          <div class="input-icon-group"><b>Code comptable :</b> <input type="text" id="inputCodeComptable" name="code_comptable" disabled></div>
+        </div>
+        <div class="modal-buttons" style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:20px;">
+          <button class="action-button" type="button" id="addRdvBtn" style="width:260px;display:flex;align-items:center;justify-content:center;gap:7px;">
+            <i class="fa-solid fa-calendar-plus"></i> <span>Ajouter un rendez-vous</span>
           </button>
-          <button class="action-button" onclick="alert('Fonctionnalité à venir')">
-            <i class="fa-solid fa-pen"></i> Modifier les informations
+          <div style="display:flex;gap:16px;justify-content:center;">
+            <button class="action-button" type="button" id="saveBtn" style="display:none;background:#4caf50;">
+              <i class="fa fa-check"></i> Enregistrer
+            </button>
+            <button class="action-button" type="button" id="cancelBtn" style="display:none;background:#e53935;">
+              <i class="fa fa-times"></i> Annuler
+            </button>
+          </div>
+          <button class="action-button" type="button" id="modifyBtn" style="width:260px;display:flex;align-items:center;justify-content:center;gap:7px;">
+            <i class="fa-solid fa-pen"></i> <span>Modifier les informations</span>
           </button>
         </div>
-        <button class="action-button" style="margin-top:8px;min-width:220px;" onclick="alert('Fonctionnalité à venir')">
-          <i class="fa-solid fa-check"></i> Valider
-        </button>
-      </div>
+      </form>
     </div>
   </div>
 
@@ -244,26 +257,108 @@ document.addEventListener("DOMContentLoaded", function () {
       row.style.display = show ? '' : 'none';
     });
   }
-});
 
-function openClientModal(nom, prenom, civilite, adresse, code_postal, ville, telephone, email, statut, clientId) {
-  document.getElementById('clientModal').style.display = 'flex';
-  document.getElementById('modalClientName').textContent = (civilite ? civilite + ' ' : '') + (prenom ? prenom + ' ' : '') + nom;
-  document.getElementById('modalClientDetails').innerHTML =
-    `<div style='text-align:left;'>
-      <b>Adresse :</b> ${adresse || 'N/A'}<br>
-      <b>Code postal :</b> ${code_postal || 'N/A'}<br>
-      <b>Ville :</b> ${ville || 'N/A'}<br>
-      <b>Téléphone :</b> ${telephone || 'N/A'}<br>
-      <b>Email :</b> ${email || 'N/A'}<br>
-      <b>Statut :</b> ${statut || 'N/A'}
-    </div>`;
-  // Mettre à jour le bouton RDV avec l'ID du client
-  const btnRdv = document.querySelector('.modal-buttons .action-button');
-  if (btnRdv) {
-    btnRdv.setAttribute('onclick', `window.location.href='/add-rdv/?next=/client-file/&client_id=${clientId}'`);
+  // --- Edition des infos client dans la modale ---
+  const modifyBtn = document.getElementById('modifyBtn');
+  const saveBtn = document.getElementById('saveBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const editableFields = [
+    document.getElementById('inputAdresse'),
+    document.getElementById('inputCP'),
+    document.getElementById('inputVille'),
+    document.getElementById('inputTel'),
+    document.getElementById('inputEmail')
+  ];
+  let oldValues = {};
+
+  modifyBtn.addEventListener('click', function () {
+    editableFields.forEach(input => oldValues[input.id] = input.value);
+    editableFields.forEach(input => input.disabled = false);
+    modifyBtn.style.display = 'none';
+    saveBtn.style.display = 'inline-block';
+    cancelBtn.style.display = 'inline-block';
+  });
+
+  cancelBtn.addEventListener('click', function () {
+    editableFields.forEach(input => {
+      input.value = oldValues[input.id];
+      input.disabled = true;
+    });
+    modifyBtn.style.display = 'inline-block';
+    saveBtn.style.display = 'none';
+    cancelBtn.style.display = 'none';
+  });
+
+  saveBtn.addEventListener('click', function () {
+    const clientId = document.getElementById('clientModal').getAttribute('data-client-id');
+    const data = {
+      adresse: document.getElementById('inputAdresse').value,
+      code_postal: document.getElementById('inputCP').value,
+      ville: document.getElementById('inputVille').value,
+      telephone: document.getElementById('inputTel').value,
+      email: document.getElementById('inputEmail').value
+    };
+    fetch(`/update-client/${clientId}/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken')
+      },
+      body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(res => {
+      if (res.success) {
+        alert('Modifications enregistrées !');
+        editableFields.forEach(input => input.disabled = true);
+        modifyBtn.style.display = 'inline-block';
+        saveBtn.style.display = 'none';
+        cancelBtn.style.display = 'none';
+      } else {
+        alert('Erreur : ' + (res.error || 'Impossible de sauvegarder'));
+      }
+    });
+  });
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
   }
-}
+
+  // --- Remplissage de la modale client ---
+  window.openClientModal = function(nom, prenom, civilite, adresse, code_postal, ville, telephone, email, statut, clientId, code_comptable) {
+    document.getElementById('clientModal').style.display = 'flex';
+    document.getElementById('clientModal').setAttribute('data-client-id', clientId);
+    document.getElementById('modalClientName').textContent = (civilite ? civilite + ' ' : '') + (prenom ? prenom + ' ' : '') + nom;
+    document.getElementById('inputAdresse').value = adresse || '';
+    document.getElementById('inputCP').value = code_postal || '';
+    document.getElementById('inputVille').value = ville || '';
+    document.getElementById('inputTel').value = telephone || '';
+    document.getElementById('inputEmail').value = email || '';
+    document.getElementById('inputStatut').value = statut || '';
+    document.getElementById('inputCodeComptable').value = code_comptable || '';
+    // Désactive tout par défaut
+    editableFields.forEach(input => input.disabled = true);
+    modifyBtn.style.display = 'inline-block';
+    saveBtn.style.display = 'none';
+    cancelBtn.style.display = 'none';
+    // Mettre à jour le bouton RDV avec l'ID du client
+    const btnRdv = document.getElementById('addRdvBtn');
+    if (btnRdv) {
+      btnRdv.setAttribute('onclick', `window.location.href='/add-rdv/?next=/client-file/&client_id=${clientId}'`);
+    }
+  }
+});
 function closeClientModal() {
   document.getElementById('clientModal').style.display = 'none';
 }

@@ -31,6 +31,11 @@ class Client(models.Model):
 
 
 class Rendezvous(models.Model):
+    STATUT_CHOICES = [
+        ('a_venir', 'À venir'),
+        ('valide', 'Validé'),
+        ('annule', 'Annulé'),
+    ]
     client = models.ForeignKey('ImportClientCorrected', on_delete=models.SET_NULL, null=True, blank=True)
     commercial = models.ForeignKey(Commercial, on_delete=models.SET_NULL, null=True, blank=True)
     date_rdv = models.DateField()
@@ -39,6 +44,7 @@ class Rendezvous(models.Model):
     notes = models.TextField(blank=True, null=True)
     date_creation = models.DateTimeField(auto_now_add=True)
     date_statut = models.DateTimeField(null=True, blank=True)  # Date du dernier changement de statut
+    statut_rdv = models.CharField(max_length=16, choices=STATUT_CHOICES, default='a_venir')
 
     def __str__(self):
         return f"RDV avec {self.client} le {self.date_rdv} à {self.heure_rdv}"
@@ -47,8 +53,10 @@ class Rendezvous(models.Model):
 class CommentaireRdv(models.Model):
     rdv = models.ForeignKey(Rendezvous, on_delete=models.CASCADE, related_name='commentaires')
     auteur = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    commercial = models.ForeignKey(Commercial, on_delete=models.SET_NULL, null=True, blank=True)
     texte = models.TextField()
     date_creation = models.DateTimeField(auto_now_add=True)
+    rs_nom = models.CharField(max_length=128, blank=True, null=True)
 
     def __str__(self):
         return f"{self.auteur} - {self.date_creation.strftime('%d/%m/%Y %H:%M')} : {self.texte[:30]}"
@@ -65,7 +73,6 @@ class ImportClientCorrected(models.Model):
     e_mail = models.CharField(max_length=60, blank=True, null=True)
     statut= models.CharField(max_length=50, blank=True, null=True)
 
-    # ... autres champs si besoin
 
     class Meta:
         db_table = 'import_clients_corrected'

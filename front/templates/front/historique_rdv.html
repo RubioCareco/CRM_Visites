@@ -6,132 +6,35 @@
   {% load static %}
   <link rel="stylesheet" href="{% static 'front/css/dashboard.css' %}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <style>
-    .tab-btn {
-      padding:10px 24px;
-      border:none;
-      background:rgba(250,250,250,0.219);
-      color:#fff;
-      font-size:1.1rem;
-      cursor:pointer;
-      border-radius:0;
-      margin-left:0;
-      margin-right:0;
-      flex:1 1 0;
-      width:100%;
-      border-right:1px solid #fff2;
-      transition:background 0.2s, color 0.2s;
-      box-shadow:none;
-    }
-    .tab-btn.active {
-      background:#e53935;
-      color:#fff;
-      z-index:2;
-    }
-    .tab-btn:first-child {
-      border-top-left-radius:12px;
-    }
-    .tab-btn:last-child {
-      border-top-right-radius:12px;
-    }
-    .tab-btn:last-child {border-right:none;}
-    .tabs-container {
-      display:flex;
-      width:100%;
-      margin-bottom:18px;
-      justify-content:stretch;
-      align-items:stretch;
-      gap:0;
-      margin-top:0;
-      margin-left:0;
-      margin-right:0;
-      background:transparent;
-      border-radius:0;
-      box-shadow:none;
-      padding:0;
-    }
-    .tab-content {display:none;}
-    .tab-content.active {display:block;}
-    .visit-entry, .reminder-entry {
-      width: 99.5%;
-      min-width: 340px;
-      max-width: 100%;
-      margin: 6px auto;
-      border-radius: 10px;
-      padding: 6px 18px 4px 18px;
-      box-sizing: border-box;
-      box-shadow: none;
-      background: rgba(250, 250, 250, 0.219);
-      color: #fff;
-      display: grid;
-      grid-template-columns: 1.5fr 1fr 2fr;
-      align-items: center;
-      gap: 0 38px;
-      font-size: 1.05rem;
-    }
-    .visit-entry p, .reminder-entry p {
-      margin: 0;
-      padding: 0;
-      display: block;
-      vertical-align: middle;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .visit-entry strong, .reminder-entry strong {
-      font-size: 1.08rem;
-      font-weight: 600;
-      display: block;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .status.validée, .status-à-rappeler {
-      min-width: 110px;
-      text-align: left;
-      font-size: 1.01rem;
-      white-space: nowrap;
-    }
-    .visit-date, .visit-date-passed {
-      font-size: 0.98rem;
-      color: #ccc;
-      white-space: nowrap;
-    }
-    .infos-adresse {
-      font-size: 0.98rem;
-      color: #ccc;
-      white-space: nowrap;
-    }
-    .tabs-content-scroll {
-      max-height: 68vh;
-      overflow-y: auto;
-      padding-right: 18px;
-      margin-right: 6px;
-      margin-top: 0;
-      border-radius: 0;
-      background: transparent;
-    }
-    .tabs-content-scroll::-webkit-scrollbar {
-      width: 6px;
-    }
-    .tabs-content-scroll::-webkit-scrollbar-thumb {
-      background-color: rgba(255, 255, 255, 0.2);
-      border-radius: 5px;
-    }
-    .visit-entry:hover, .upcoming-entry:hover, .reminder-entry:hover {
-      transform: scale(1.015);
-      box-shadow: 0 6px 24px rgba(229,57,53,0.10), 0 1.5px 8px rgba(0,0,0,0.13);
-      z-index: 2;
-    }
-  </style>
+  <link rel="stylesheet" href="{% static 'front/css/historique_rdv.css' %}">  
 </head>
 <body>
   <div class="dashboard">
     <h1 class="dashboard-title">Historique des rendez-vous</h1>
-    <div class="search-bar" style="position:relative; margin-top: 60px; margin-bottom: 48px;">
+    <div class="search-bar" style="position:relative; margin-top: 60px; margin-bottom: 48px; display:flex; align-items:center; gap:12px;">
         <i class="fa fa-search search-icon"></i>
         <input type="text" id="historiqueSearch" placeholder="Rechercher par clients, entreprises ..." autocomplete="off">
         <ul id="historiqueSearchSuggestions" class="autocomplete-results" style="position:absolute;left:0;right:0;top:38px;z-index:10;background:rgba(30,30,30,0.95);color:#fff;border-radius:0 0 8px 8px;max-height:180px;overflow-y:auto;display:none;"></ul>
+        <button id="filterBtnHistorique" class="filter-button" style="margin-left:10px;height:38px;display:flex;align-items:center;gap:7px;">
+          <i class="fa-solid fa-sliders"></i> Filtres
+        </button>
+        <div id="filterPopoverHistorique" style="display:none;position:absolute;top:48px;right:0;z-index:1001;background:rgba(40,40,40,0.98);color:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.25);padding:24px 28px 18px 28px;min-width:260px;">
+          <div style="font-size:1.15rem;font-weight:bold;margin-bottom:14px;color:#fff;">Filtrer par&nbsp;:</div>
+          <div style="display:flex;gap:10px;margin-bottom:18px;">
+            <button type="button" class="filter-type-btn" data-type="jour" style="padding:6px 14px;border-radius:8px;border:none;background:#333;color:#fff;cursor:pointer;">Jour</button>
+            <button type="button" class="filter-type-btn" data-type="semaine" style="padding:6px 14px;border-radius:8px;border:none;background:#333;color:#fff;cursor:pointer;">Semaine</button>
+            <button type="button" class="filter-type-btn" data-type="mois" style="padding:6px 14px;border-radius:8px;border:none;background:#333;color:#fff;cursor:pointer;">Mois</button>
+            <button type="button" class="filter-type-btn" data-type="annee" style="padding:6px 14px;border-radius:8px;border:none;background:#333;color:#fff;cursor:pointer;">Année</button>
+          </div>
+          <div id="filterInputsHistorique">
+            <!-- Ici viendront les inputs selon le type de filtre -->
+          </div>
+          <div style="display:flex;gap:12px;margin-top:18px;justify-content:flex-end;">
+            <button type="button" id="applyFilterHistorique" style="background:#4caf50;color:#fff;padding:7px 18px;border-radius:8px;border:none;">Appliquer</button>
+            <button type="button" id="resetFilterHistorique" style="background:#e53935;color:#fff;padding:7px 18px;border-radius:8px;border:none;">Réinitialiser</button>
+          </div>
+          <button type="button" id="closeFilterPopoverHistorique" style="position:absolute;top:10px;right:14px;background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer;">&times;</button>
+        </div>
     </div>
     <div class="cards" style="margin-top:10px;justify-content:center;align-items:flex-start;">
       <div class="card" style="width:100%;max-width:1400px;margin:auto;min-height:650px;padding-top:0;padding-left:0;padding-right:0;border-radius:12px;overflow:hidden;">
@@ -144,27 +47,27 @@
           <div id="tab-general" class="tab-content active">
             {% if historique_general %}
               {% for rdv in historique_general %}
-                <div class="{% if 'validé' in rdv.notes|lower %}visit-entry{% elif 'annulé' in rdv.notes|lower %}reminder-entry{% endif %}" style="margin-bottom:18px;">
+                <div class="{% if rdv.statut_rdv == 'valide' %}visit-entry{% elif rdv.statut_rdv == 'annule' %}reminder-entry{% endif %}" style="margin-bottom:18px;">
                   <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
-                  {% if 'validé' in rdv.notes|lower %}
+                  {% if rdv.statut_rdv == 'valide' %}
                     <p class="status validée"><i class="fa fa-check-square"></i> Validée</p>
-                  {% elif 'annulé' in rdv.notes|lower %}
+                  {% elif rdv.statut_rdv == 'annule' %}
                     <p class="status-à-rappeler"><i class="fa-solid fa-triangle-exclamation"></i> Annulé</p>
                   {% endif %}
-                  {% if 'validé' in rdv.notes|lower and rdv.date_statut %}
+                  {% if rdv.statut_rdv == 'valide' and rdv.date_statut %}
                     <p class="infos-adresse" style="color:#6ee77a;">
                       Validé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
                       <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
                       <span style="color:#ccc; margin-left: 12px;">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</span>
                     </p>
-                  {% elif 'annulé' in rdv.notes|lower and rdv.date_statut %}
+                  {% elif rdv.statut_rdv == 'annule' and rdv.date_statut %}
                     <p class="infos-adresse" style="color:#ff5a5a;">
                       Annulé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
                       <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
                       <span style="color:#ccc; margin-left: 12px;">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</span>
                     </p>
                   {% else %}
-                    <p class="visit-date{% if 'annulé' in rdv.notes|lower %}-passed{% endif %}">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
+                    <p class="visit-date-passed">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
                   {% endif %}
                   <p class="infos-adresse">Adresse : {{ rdv.client.adresse }}, {{ rdv.client.code_postal }} {{ rdv.client.ville }}</p>
                 </div>
@@ -179,13 +82,13 @@
                 <div class="visit-entry" style="margin-bottom:18px;">
                   <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
                   <p class="status validée"><i class="fa fa-check-square"></i> Validée</p>
-                  {% if 'validé' in rdv.notes|lower and rdv.date_statut %}
+                  {% if rdv.statut_rdv == 'valide' and rdv.date_statut %}
                     <p class="infos-adresse" style="color:#6ee77a;">
                       Validé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
                       <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
                       <span style="color:#ccc; margin-left: 12px;">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</span>
                     </p>
-                  {% elif 'annulé' in rdv.notes|lower and rdv.date_statut %}
+                  {% elif rdv.statut_rdv == 'annule' and rdv.date_statut %}
                     <p class="infos-adresse" style="color:#ff5a5a;">
                       Annulé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
                       <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
@@ -195,8 +98,8 @@
                     <p class="visit-date">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
                   {% endif %}
                   <p class="infos-adresse">
-                    {% if 'validé' in rdv.notes|lower and rdv.date_statut %}Rendez-vous validé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}<br>{% endif %}
-                    {% if 'annulé' in rdv.notes|lower and rdv.date_statut %}Rendez-vous annulé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}<br>{% endif %}
+                    {% if rdv.statut_rdv == 'valide' and rdv.date_statut %}Rendez-vous validé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}<br>{% endif %}
+                    {% if rdv.statut_rdv == 'annule' and rdv.date_statut %}Rendez-vous annulé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}<br>{% endif %}
                     Adresse : {{ rdv.client.adresse }}, {{ rdv.client.code_postal }} {{ rdv.client.ville }}
                   </p>
                 </div>
@@ -211,13 +114,13 @@
                 <div class="reminder-entry" style="margin-bottom:18px;">
                   <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
                   <p class="status-à-rappeler"><i class="fa-solid fa-triangle-exclamation"></i> Annulé</p>
-                  {% if 'validé' in rdv.notes|lower and rdv.date_statut %}
+                  {% if rdv.statut_rdv == 'valide' and rdv.date_statut %}
                     <p class="infos-adresse" style="color:#6ee77a;">
                       Validé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
                       <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
                       <span style="color:#ccc; margin-left: 12px;">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</span>
                     </p>
-                  {% elif 'annulé' in rdv.notes|lower and rdv.date_statut %}
+                  {% elif rdv.statut_rdv == 'annule' and rdv.date_statut %}
                     <p class="infos-adresse" style="color:#ff5a5a;">
                       Annulé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
                       <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
@@ -314,6 +217,155 @@
       });
       searchInput.addEventListener('blur', function() {
         setTimeout(() => { suggestionBox.style.display = 'none'; }, 120);
+      });
+    });
+
+    // --- LOGIQUE FILTRE HISTORIQUE ---
+    document.addEventListener('DOMContentLoaded', function() {
+      // --- Filtres date ---
+      const filterBtn = document.getElementById('filterBtnHistorique');
+      const filterPopover = document.getElementById('filterPopoverHistorique');
+      const closeFilter = document.getElementById('closeFilterPopoverHistorique');
+      const filterTypeBtns = document.querySelectorAll('.filter-type-btn');
+      const filterInputs = document.getElementById('filterInputsHistorique');
+      const applyBtn = document.getElementById('applyFilterHistorique');
+      const resetBtn = document.getElementById('resetFilterHistorique');
+      let currentType = 'jour';
+      let currentValue = '';
+
+      // Ouvre/ferme le panneau
+      filterBtn.addEventListener('click', function(e) {
+        filterPopover.style.display = (filterPopover.style.display === 'block') ? 'none' : 'block';
+        filterPopover.style.right = '0';
+        filterPopover.style.left = 'auto';
+        e.stopPropagation();
+      });
+      closeFilter.addEventListener('click', function() {
+        filterPopover.style.display = 'none';
+      });
+      document.addEventListener('click', function(e) {
+        if (!filterPopover.contains(e.target) && e.target !== filterBtn) {
+          filterPopover.style.display = 'none';
+        }
+      });
+
+      // Affiche l'input selon le type
+      function renderInput(type) {
+        let html = '';
+        if (type === 'jour') {
+          html = '<input type="date" id="inputFiltreDate" style="width:100%;">';
+        } else if (type === 'semaine') {
+          html = '<input type="week" id="inputFiltreSemaine" style="width:100%;">';
+        } else if (type === 'mois') {
+          html = '<input type="month" id="inputFiltreMois" style="width:100%;">';
+        } else if (type === 'annee') {
+          // Génère un select d'années de 2015 à 2030
+          let options = '';
+          for(let y=2015; y<=2030; y++) {
+            options += `<option value="${y}"${y===new Date().getFullYear()?' selected':''}>${y}</option>`;
+          }
+          html = `<select id="inputFiltreAnnee">${options}</select>`;
+        }
+        filterInputs.innerHTML = html;
+        // --- Ouvre le sélecteur natif au clic sur l'input (si supporté) ---
+        const input = filterInputs.querySelector('input');
+        if (input && input.showPicker) {
+          input.addEventListener('focus', function() {
+            input.showPicker();
+          });
+          input.addEventListener('click', function() {
+            input.showPicker();
+          });
+        }
+      }
+      renderInput(currentType);
+      filterTypeBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+          currentType = this.dataset.type;
+          renderInput(currentType);
+        });
+      });
+
+      // Filtrage dynamique
+      function filterByDate() {
+        const allCards = Array.from(document.querySelectorAll('.visit-entry, .reminder-entry'));
+        let value = '';
+        if (currentType === 'jour') {
+          value = document.getElementById('inputFiltreDate').value;
+        } else if (currentType === 'semaine') {
+          value = document.getElementById('inputFiltreSemaine').value;
+        } else if (currentType === 'mois') {
+          value = document.getElementById('inputFiltreMois').value;
+        } else if (currentType === 'annee') {
+          value = document.getElementById('inputFiltreAnnee').value;
+        }
+        allCards.forEach(card => {
+          const dateText = card.querySelector('.visit-date, .visit-date-passed, .visit-date-futur');
+          let dateStr = '';
+          if (dateText) {
+            // Extrait la date au format d/m/Y
+            const match = dateText.textContent.match(/(\d{2}\/\d{2}\/\d{4})/);
+            if (match) dateStr = match[1];
+          }
+          let show = true;
+          if (value) {
+            if (currentType === 'jour') {
+              // yyyy-mm-dd vs dd/mm/yyyy
+              const [y, m, d] = value.split('-');
+              const val = `${d}/${m}/${y}`;
+              show = (dateStr === val);
+            } else if (currentType === 'semaine') {
+              // yyyy-Wxx
+              const [year, week] = value.split('-W');
+              // On calcule la semaine de la date de la carte
+              if (dateStr) {
+                const [d, m, y] = dateStr.split('/');
+                const dateObj = new Date(`${y}-${m}-${d}`);
+                const weekNum = getWeekNumber(dateObj);
+                show = (y === year && weekNum === parseInt(week));
+              } else {
+                show = false;
+              }
+            } else if (currentType === 'mois') {
+              // yyyy-mm
+              const [y, m] = value.split('-');
+              if (dateStr) {
+                const [d, mm, yy] = dateStr.split('/');
+                show = (y === yy && m === mm);
+              } else {
+                show = false;
+              }
+            } else if (currentType === 'annee') {
+              if (dateStr) {
+                const [d, m, y] = dateStr.split('/');
+                show = (y === value);
+              } else {
+                show = false;
+              }
+            }
+          }
+          card.style.display = show ? '' : 'none';
+        });
+      }
+      // Semaine ISO
+      function getWeekNumber(date) {
+        date = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        const dayNum = date.getUTCDay() || 7;
+        date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+        return Math.ceil((((date - yearStart) / 86400000) + 1)/7);
+      }
+
+      applyBtn.addEventListener('click', function() {
+        filterByDate();
+        filterPopover.style.display = 'none';
+      });
+      filterInputs.addEventListener('change', filterByDate);
+      resetBtn.addEventListener('click', function() {
+        // Réaffiche tout
+        document.querySelectorAll('.visit-entry, .reminder-entry').forEach(card => card.style.display = '');
+        // Réinitialise l'input
+        renderInput(currentType);
       });
     });
   </script>

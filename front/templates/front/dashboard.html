@@ -7,6 +7,25 @@
   {% load static %}
   <link rel="stylesheet" href="{% static 'front/css/dashboard.css' %}" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    /* Ajout scrollbar pour la section commentaires de la modal */
+    .modal-commentaires-scroll {
+      max-height: 180px;
+      overflow-y: auto;
+      margin-top: 8px;
+      padding-right: 8px;
+    }
+    .modal-commentaires-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .modal-commentaires-scroll::-webkit-scrollbar-thumb {
+      background-color: rgba(255, 255, 255, 0.2);
+      border-radius: 5px;
+    }
+    .note-icon {
+      position:absolute;right:18px;top:50%;transform:translateY(-50%);cursor:pointer;color:#4dd0e1;font-size:1.2rem;z-index:2;
+    }
+  </style>
 </head>
 <body>
   <div class="dashboard">
@@ -58,10 +77,12 @@
       <div class="card recent-visits" id="recent-visits">
         <h2 class="titre-colonne titre-vert">Visites récentes</h2>
         {% for rdv in visites_recentes %}
-          <div class="visit-entry open-modal-btn" data-id="{{ rdv.id }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}" data-civilite="{{ rdv.client.civilite|default_if_none:'' }}" data-rs_nom="{{ rdv.client.rs_nom|default_if_none:'' }}" data-ville="{{ rdv.client.ville|default_if_none:'' }}" data-telephone="{{ rdv.client.telephone|default_if_none:'' }}" data-email="{{ rdv.client.e_mail|default_if_none:'' }}" data-code_comptable="{{ rdv.client.code_comptable|default_if_none:'' }}" data-statut="{{ rdv.client.statut|default_if_none:'N/A' }}">
+          <div class="visit-entry open-modal-btn" data-id="{{ rdv.id }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}" data-civilite="{{ rdv.client.civilite|default_if_none:'' }}" data-rs_nom="{{ rdv.client.rs_nom|default_if_none:'' }}" data-ville="{{ rdv.client.ville|default_if_none:'' }}" data-telephone="{{ rdv.client.telephone|default_if_none:'' }}" data-email="{{ rdv.client.e_mail|default_if_none:'' }}" data-code_comptable="{{ rdv.client.code_comptable|default_if_none:'' }}" data-statut="valide" style="position:relative;display:flex;align-items:center;">
+            <div style="flex:1;min-width:0;">
               <p><strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong></p>
               <p class="status validée"><i class="fa fa-check-square"></i> Validée</p>
               <p class="visit-date">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
+            </div>
           </div>
         {% empty %}
           <p>Aucune visite validée.</p>
@@ -71,10 +92,12 @@
       <div class="card upcoming-visits" id="upcoming-visits">
         <h2 class="titre-colonne titre-orange">Visites à venir</h2>
         {% for rdv in rdvs_a_venir %}
-          <div class="upcoming-entry open-modal-btn" data-id="{{ rdv.id }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}" data-civilite="{{ rdv.client.civilite|default_if_none:'' }}" data-rs_nom="{{ rdv.client.rs_nom|default_if_none:'' }}" data-ville="{{ rdv.client.ville|default_if_none:'' }}" data-telephone="{{ rdv.client.telephone|default_if_none:'' }}" data-email="{{ rdv.client.e_mail|default_if_none:'' }}" data-code_comptable="{{ rdv.client.code_comptable|default_if_none:'' }}" data-statut="{{ rdv.client.statut|default_if_none:'N/A' }}">
+          <div class="upcoming-entry open-modal-btn" data-id="{{ rdv.id }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}" data-civilite="{{ rdv.client.civilite|default_if_none:'' }}" data-rs_nom="{{ rdv.client.rs_nom|default_if_none:'' }}" data-ville="{{ rdv.client.ville|default_if_none:'' }}" data-telephone="{{ rdv.client.telephone|default_if_none:'' }}" data-email="{{ rdv.client.e_mail|default_if_none:'' }}" data-code_comptable="{{ rdv.client.code_comptable|default_if_none:'' }}" data-statut="a_venir" style="position:relative;display:flex;align-items:center;">
+            <div style="flex:1;min-width:0;">
               <p><strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong></p>
               <p class="status-à-venir"><i class="fa-solid fa-calendar-days"></i> à venir</p>
               <p class="visit-date-futur">Rendez-vous le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
+            </div>
           </div>
         {% empty %}
           <p>Aucun rendez-vous à venir.</p>
@@ -84,10 +107,12 @@
       <div class="card reminders" id="reminders">
         <h2 class="titre-colonne titre-rouge">A Rappeler</h2>
         {% for rdv in a_rappeler %}
-          <div class="reminder-entry open-modal-btn" data-id="{{ rdv.id }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}" data-civilite="{{ rdv.client.civilite|default_if_none:'' }}" data-rs_nom="{{ rdv.client.rs_nom|default_if_none:'' }}" data-ville="{{ rdv.client.ville|default_if_none:'' }}" data-telephone="{{ rdv.client.telephone|default_if_none:'' }}" data-email="{{ rdv.client.e_mail|default_if_none:'' }}" data-code_comptable="{{ rdv.client.code_comptable|default_if_none:'' }}" data-statut="{{ rdv.client.statut|default_if_none:'N/A' }}">
+          <div class="reminder-entry open-modal-btn" data-id="{{ rdv.id }}" data-client-id="{{ rdv.client.id }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}" data-civilite="{{ rdv.client.civilite|default_if_none:'' }}" data-rs_nom="{{ rdv.client.rs_nom|default_if_none:'' }}" data-ville="{{ rdv.client.ville|default_if_none:'' }}" data-telephone="{{ rdv.client.telephone|default_if_none:'' }}" data-email="{{ rdv.client.e_mail|default_if_none:'' }}" data-code_comptable="{{ rdv.client.code_comptable|default_if_none:'' }}" data-statut="annule" style="position:relative;display:flex;align-items:center;">
+            <div style="flex:1;min-width:0;">
               <p><strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong></p>
               <p class="status-à-rappeler"><i class="fa-solid fa-triangle-exclamation"></i> A rappeler</p>
               <p class="visit-date-passed">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
+            </div>
           </div>
         {% empty %}
           <p>Aucun client à rappeler.</p>
@@ -134,9 +159,13 @@
       <p id="clientDetails"></p>
 
       <label for="commentaire">Commentaire :</label>
-      <textarea id="commentaire" rows="4" style="width: 100%; margin-top: 10px;"></textarea>
+      <textarea id="commentaire" rows="4" style="width: 100%; margin-top: 10px; margin-bottom: 22px;"></textarea>
 
-      <div id="modal-buttons" style="margin-top: 20px;">
+      <button class="action-button" id="completerFormulaireBtn" style="display:none;margin-bottom:4px;width:360px;max-width:95vw;display:flex;align-items:center;justify-content:center;gap:10px;margin-left:auto;margin-right:auto;">
+        <i class="fa-solid fa-clipboard-list"></i><span>Compléter le formulaire</span>
+      </button>
+
+      <div id="modal-buttons" style="margin-top: 10px;">
         <button class="action-button" onclick="updateStatutRdv(currentRdvId, 'valider')">Valider le rendez-vous</button>
         <button class="action-button" onclick="updateStatutRdv(currentRdvId, 'annuler')">Annuler le rendez-vous</button>
       </div>
@@ -186,6 +215,14 @@
     <button id="closeFilterPanel" style="position:absolute;top:18px;right:18px;background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;">&times;</button>
   </div>
 
+  <!-- Modal Note -->
+  <div id="noteModal" class="note-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.45);z-index:3000;align-items:center;justify-content:center;">
+    <div class="note-modal-content" style="background:#232323;padding:28px 32px;border-radius:16px;max-width:420px;min-width:220px;color:#fff;box-shadow:0 8px 32px rgba(0,0,0,0.25);position:relative;">
+      <span class="close-note-modal" style="position:absolute;top:12px;right:18px;font-size:1.5rem;cursor:pointer;">&times;</span>
+      <div id="noteModalText" style="white-space:pre-line;font-size:1.08rem;"></div>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script>
     let currentRdvId = null;
@@ -208,7 +245,7 @@
         <b>Téléphone :</b> ${telephone || 'N/A'}<br>
         <b>Email :</b> ${email || 'N/A'}<br>
         <b>Statut :</b> ${statut || 'N/A'}<br>
-        ${code_comptable ? `<b>Code comptable :</b> ${code_comptable}<br>` : ''}
+        <b>Code comptable :</b> ${code_comptable || 'N/A'}
       </div>`;
 
       // Chargement AJAX des infos complémentaires
@@ -217,24 +254,17 @@
         .then(data => {
           // Affichage de l'historique des commentaires
           const commentaires = data.commentaires || [];
-          let commentairesHtml = "<div style='margin-top:15px;'><b>Commentaires :</b><br>";
+          let commentairesHtml = "<div style='margin-top:15px;'><b>Commentaires :</b><br><div class='modal-commentaires-scroll'>";
           if (commentaires.length === 0) {
             commentairesHtml += "<span style='color:#aaa;'>Aucun commentaire pour ce rendez-vous.</span>";
           } else {
             commentaires.forEach(c => {
               const auteur = c.auteur && c.auteur !== 'Système' ? c.auteur : '';
               commentairesHtml += `
-                <div class=\"comment-card\">
-                  <div class=\"comment-text\">${c.texte}</div>
-                  <div class=\"comment-meta\">
-                    <span class=\"comment-date\">${c.date}</span>
-                    ${auteur ? `<span class=\"comment-author\">${auteur}</span>` : ''}
-                  </div>
-                </div>
-              `;
+                <div class=\"comment-card\">\n                  <div class=\"comment-text\">${c.texte}</div>\n                  <div class=\"comment-meta\">\n                    <span class=\"comment-date\">${c.date}</span>\n                    ${auteur ? `<span class=\"comment-author\">${auteur}</span>` : ''}\n                  </div>\n                </div>\n              `;
             });
           }
-          commentairesHtml += "</div>";
+          commentairesHtml += "</div></div>";
           details.innerHTML += commentairesHtml;
         })
         .catch(error => console.error("Erreur lors du chargement des infos :", error));
@@ -243,28 +273,63 @@
       modal.style.display = 'flex';
       // Afficher ou masquer/modifier les boutons selon la section
       if (isReminder) {
-        buttons.style.display = 'flex';
-        // Modifier le texte du bouton Valider et masquer Annuler
+        // Section 'À rappeler' : un seul bouton 'Ajouter un nouveau rendez-vous'
         const validerBtn = buttons.querySelector('.action-button[onclick*="valider"]');
         const annulerBtn = buttons.querySelector('.action-button[onclick*="annuler"]');
         if (validerBtn) {
+          validerBtn.style.display = '';
           validerBtn.textContent = 'Ajouter un nouveau rendez-vous';
+          const card = document.querySelector(`.reminder-entry[data-id='${rdvId}']`);
+          const clientId = card ? card.getAttribute('data-client-id') : '';
           validerBtn.onclick = function() {
-            window.location.href = '/add-rdv/?next=/dashboard';
+            window.location.href = '/add-rdv/?next=/dashboard' + (clientId ? ('&client_id=' + clientId) : '');
           };
         }
         if (annulerBtn) annulerBtn.style.display = 'none';
-      } else {
-        buttons.style.display = 'flex';
-        // Remettre les textes et actions par défaut
+      } else if (isRecent) {
+        // Section 'Visites récentes' : un seul bouton 'Valider le commentaire'
         const validerBtn = buttons.querySelector('.action-button[onclick*="valider"]');
         const annulerBtn = buttons.querySelector('.action-button[onclick*="annuler"]');
+        if (validerBtn) validerBtn.style.display = 'none';
+        if (annulerBtn) {
+          annulerBtn.style.display = '';
+          annulerBtn.textContent = 'Valider le commentaire';
+          annulerBtn.onclick = function() {
+            const commentaire = document.getElementById('commentaire').value;
+            fetch(`/update-statut/${rdvId}/commentaire/`, {
+              method: 'POST',
+              headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ commentaire: commentaire })
+            })
+            .then(response => response.json())
+            .then(data => {
+              if (data.status === 'ok') {
+                closeClientModal();
+                alert('Commentaire enregistré !');
+              } else {
+                alert('Erreur lors de l\'enregistrement du commentaire');
+              }
+            });
+          };
+        }
+      } else {
+        // Section 'Visites à venir' : les deux boutons classiques
+        buttons.style.display = 'flex';
+        const validerBtn = buttons.querySelector('.action-button[onclick*="valider"]');
+        const annulerBtn = buttons.querySelector('.action-button[onclick*="annuler"]');
+        const completerBtn = document.getElementById('completerFormulaireBtn');
+        if (completerBtn) completerBtn.style.display = '';
         if (validerBtn) {
+          validerBtn.style.display = '';
           validerBtn.textContent = 'Valider le rendez-vous';
           validerBtn.onclick = function() { updateStatutRdv(currentRdvId, 'valider'); };
         }
         if (annulerBtn) {
           annulerBtn.style.display = '';
+          annulerBtn.textContent = 'Annuler le rendez-vous';
           annulerBtn.onclick = function() { updateStatutRdv(currentRdvId, 'annuler'); };
         }
       }
@@ -424,7 +489,7 @@
           const ville = this.getAttribute('data-ville');
           const telephone = this.getAttribute('data-telephone');
           const email = this.getAttribute('data-email');
-          const code_comptable = this.getAttribute('data-code_comptable');
+          const code_comptable = this.getAttribute('data-code_comptable') || 'N/A';
           const statut = this.getAttribute('data-statut');
           // Détecter la section
           const isRecent = this.classList.contains('visit-entry') && this.closest('#recent-visits');
@@ -699,6 +764,15 @@
         document.querySelectorAll('.open-modal-btn').forEach(card => card.style.display = '');
         // Ferme le menu
         sortDropdown.style.display = 'none';
+      });
+
+      document.addEventListener('DOMContentLoaded', function() {
+        document.querySelector('.close-note-modal').onclick = function() {
+          document.getElementById('noteModal').style.display = 'none';
+        };
+        document.getElementById('noteModal').onclick = function(e) {
+          if (e.target === this) this.style.display = 'none';
+        };
       });
     });
   </script>

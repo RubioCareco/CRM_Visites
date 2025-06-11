@@ -5,6 +5,7 @@ body, html {
   height: 100%;
   background: url('../img/background3.png') no-repeat center center fixed;
   background-size: cover;
+  overflow-x: hidden !important;
 }
 
 .dashboard-title {
@@ -106,6 +107,7 @@ body, html {
   gap: 80px;
   justify-content: center;
   width: 100%;
+  overflow: visible !important;
 }
 
 .card {
@@ -118,6 +120,7 @@ body, html {
   color: white;
   max-height: 400px;
   overflow-y: auto;
+  overflow-x: visible !important;
   padding-right: 8px;
   scroll-behavior: smooth;
   margin-top: 80px;
@@ -711,4 +714,44 @@ input:checked + .slider:before {
   background: #e53935;
   border-radius: 2px;
   margin-top: 6px;
+}
+
+/* --- PATCH TOOLTIP GLOBAL --- */
+html, body {
+  overflow-x: hidden !important;
+}
+.cards {
+  overflow: visible !important;
+}
+/* .card {
+  overflow: visible !important;
+} */
+
+#tooltip-global-note {
+  max-width: 320px;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  pointer-events: none;
+  box-sizing: border-box;
+  z-index: 99999 !important;
+}
+/* --- FIN PATCH TOOLTIP GLOBAL --- */
+
+/* --- COULEURS STATUTS DASHBOARD --- */
+.status.validée, .status.validée i {
+  color: #6ee77a !important;
+}
+.status-à-venir, .status-à-venir i {
+  color: #ffb347 !important;
+}
+.status-à-rappeler, .status-à-rappeler i {
+  color: #ff5a5a !important;
+}
+/* --- FIN COULEURS STATUTS DASHBOARD --- */
+
+#completerFormulaireBtn {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 }

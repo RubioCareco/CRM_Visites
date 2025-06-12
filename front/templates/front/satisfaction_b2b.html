@@ -13,6 +13,13 @@
     <p class="intro">L'objectif de ce formulaire est d'améliorer les performances de Careco Rubio auprès des garages clients.<br>Temps nécessaire à la réponse : 3 minutes.</p>
     {% if success %}
       <div style="color: green; text-align: center; font-size: 1.2em; margin: 30px 0;">Merci, votre PDF a bien été généré et archivé.</div>
+      <script>
+        if (window.opener) {
+          try {
+            window.opener.location.reload();
+          } catch (e) {}
+        }
+      </script>
     {% endif %}
     <form method="post" autocomplete="off" class="satisfaction-form">
       {% csrf_token %}

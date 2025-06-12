@@ -29,18 +29,16 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 38px;
-      height: 38px;
+      width: 45px;
+      height: 45px;
       background: none;
       border: none;
       cursor: pointer;
       margin-left: 8px;
-      color: #e53935;
-      font-size: 2rem;
-      transition: color 0.18s;
+      transition: transform 0.18s cubic-bezier(.4,0,.2,1);
     }
     .pdf-download-icon:hover {
-      color: #b71c1c;
+      transform: scale(1.6);
     }
   </style>
 </head>
@@ -98,12 +96,16 @@
             <div style="flex:1;min-width:0;">
               <p><strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong></p>
               <p class="status validée"><i class="fa fa-check-square"></i> Validée</p>
-              <p class="visit-date">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
-              {% with satisfaction=rdv.satisfactionb2b_set.first %}
-                {% if satisfaction %}
-                  {# Lien PDF supprimé ici, il sera affiché uniquement dans la modale #}
-                {% endif %}
-              {% endwith %}
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <p class="visit-date" style="margin:0;">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
+                {% with satisfaction=rdv.satisfactionb2b_set.first %}
+                  {% if satisfaction %}
+                    <a href="/download-satisfaction/{{ rdv.id }}/" download target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction" style="margin-left:10px;">
+                      <img src="{% static 'front/img/PDF.svg' %}" alt="PDF" style="height: 28px; width: auto; display: block;">
+                    </a>
+                  {% endif %}
+                {% endwith %}
+              </div>
             </div>
           </div>
         {% empty %}
@@ -279,29 +281,6 @@
         <b>Code comptable :</b> ${code_comptable || 'N/A'}
       </div>`;
 
-      // Affichage du bouton PDF uniquement pour les RDV validés
-      const pdfContainer = document.getElementById('pdfDownloadContainer');
-      if (pdfContainer) pdfContainer.innerHTML = ""; // reset
-
-      // Ajout dynamique de l'icône PDF dans la modale si RDV validé
-      if (statut && statut.toLowerCase() === 'valide') {
-        fetch(`/check-satisfaction/${rdvId}/`)
-          .then(response => response.json())
-          .then(data => {
-            if (data.exists && pdfContainer) {
-              pdfContainer.innerHTML = `
-                <a href='/download-satisfaction/${rdvId}/' target='_blank' rel='noopener noreferrer' class='pdf-download-icon' title='Télécharger le PDF de satisfaction'>
-                  <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="64" height="64" rx="12" fill="#fff"/>
-                    <path d="M20 16C20 14.8954 20.8954 14 22 14H42C43.1046 14 44 14.8954 44 16V48C44 49.1046 43.1046 50 42 50H22C20.8954 50 20 49.1046 20 48V16Z" fill="#111"/>
-                    <text x="32" y="40" text-anchor="middle" font-size="18" font-family="Arial, Helvetica, sans-serif" fill="#fff" font-weight="bold">PDF</text>
-                  </svg>
-                </a>
-              `;
-            }
-          });
-      }
-
       // Chargement AJAX des infos complémentaires
       fetch(`/get-rdv-info/${rdvId}/`)
         .then(response => response.json())
@@ -359,7 +338,27 @@
             const rsNom = document.getElementById('clientName').textContent.trim();
             const commercialId = "{{ request.session.commercial_id }}";
             const url = `/satisfaction-b2b/?rs_nom=${encodeURIComponent(rsNom)}&commercial_id=${commercialId}&rdv_id=${currentRdvId}`;
-            window.open(url, '_blank', 'noopener,noreferrer');
+            const win = window.open(url, '_blank', 'noopener,noreferrer');
+            if (!win) {
+              alert("La fenêtre du formulaire a été bloquée par votre navigateur. Veuillez autoriser les popups pour ce site.");
+              return;
+            }
+            // Détection dynamique de la soumission du formulaire dans la popup
+            const timer = setInterval(() => {
+              if (win.closed) {
+                fetch(`/check-satisfaction/${currentRdvId}/`)
+                  .then(response => response.json())
+                  .then(data => {
+                    if (data.exists) {
+                      completerBtn.disabled = true;
+                      completerBtn.classList.add('disabled');
+                      completerBtn.title = "Formulaire déjà rempli";
+                      completerBtn.style.background = '#888';
+                    }
+                  });
+                clearInterval(timer);
+              }
+            }, 800);
           };
         }
       } else if (statut && statut.toLowerCase() === 'valide') {
@@ -504,7 +503,16 @@
         newCard.innerHTML = `
               <p><strong>${civilite ? civilite + ' ' : ''}${rs_nom || nom || '(sans raison sociale)'}</strong></p>
               ${statusHtml}
-              <p class="visit-date">Dernières visites le : ${date}</p>
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <p class="visit-date" style="margin:0;">Dernières visites le : ${date}</p>
+                {% with satisfaction=rdv.satisfactionb2b_set.first %}
+                  {% if satisfaction %}
+                    <a href="/download-satisfaction/{{ rdv.id }}/" download target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le PDF de satisfaction" style="margin-left:10px;">
+                      <img src="{% static 'front/img/PDF.svg' %}" alt="PDF" style="height: 28px; width: auto; display: block;">
+                    </a>
+                  {% endif %}
+                {% endwith %}
+              </div>
             `;
             // Réattacher l'écouteur d'ouverture de modal
             newCard.addEventListener('click', function () {
@@ -552,7 +560,9 @@
 
       // Lancement de la modal depuis chaque rdv
       document.querySelectorAll('.open-modal-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
+        btn.addEventListener('click', function (e) {
+          // Si le clic vient de l'icône PDF ou d'un de ses enfants, on ne fait rien
+          if (e.target.closest('.pdf-download-icon')) return;
           const id = this.getAttribute('data-id');
           const nom = this.getAttribute('data-nom');
           const prenom = this.getAttribute('data-prenom');
@@ -857,6 +867,22 @@
         document.getElementById('noteModal').onclick = function(e) {
           if (e.target === this) this.style.display = 'none';
         };
+      });
+
+      window.addEventListener('message', function(event) {
+        console.log('Message reçu :', event.data, 'currentRdvId:', currentRdvId);
+        if (event.data && event.data.type === 'satisfaction_submitted') {
+          const completerBtn = document.getElementById('completerFormulaireBtn');
+          if (completerBtn && currentRdvId == event.data.rdv_id) {
+            completerBtn.disabled = true;
+            completerBtn.classList.add('disabled');
+            completerBtn.title = "Formulaire déjà rempli";
+            completerBtn.style.background = '#888';
+            console.log('Bouton grisé suite à la soumission du formulaire !');
+          } else {
+            console.log('Pas de correspondance RDV ou bouton non trouvé');
+          }
+        }
       });
     });
   </script>

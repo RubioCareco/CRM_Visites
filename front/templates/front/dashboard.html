@@ -101,13 +101,7 @@
               <p class="visit-date">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
               {% with satisfaction=rdv.satisfactionb2b_set.first %}
                 {% if satisfaction %}
-                  <a href="{% url 'download_satisfaction_pdf' rdv.id %}" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le PDF de satisfaction">
-                    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect width="64" height="64" rx="12" fill="#fff"/>
-                      <path d="M20 16C20 14.8954 20.8954 14 22 14H42C43.1046 14 44 14.8954 44 16V48C44 49.1046 43.1046 50 42 50H22C20.8954 50 20 49.1046 20 48V16Z" fill="#111"/>
-                      <text x="32" y="40" text-anchor="middle" font-size="18" font-family="Arial, Helvetica, sans-serif" fill="#fff" font-weight="bold">PDF</text>
-                    </svg>
-                  </a>
+                  {# Lien PDF supprimé ici, il sera affiché uniquement dans la modale #}
                 {% endif %}
               {% endwith %}
             </div>
@@ -288,6 +282,25 @@
       // Affichage du bouton PDF uniquement pour les RDV validés
       const pdfContainer = document.getElementById('pdfDownloadContainer');
       if (pdfContainer) pdfContainer.innerHTML = ""; // reset
+
+      // Ajout dynamique de l'icône PDF dans la modale si RDV validé
+      if (statut && statut.toLowerCase() === 'valide') {
+        fetch(`/check-satisfaction/${rdvId}/`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.exists && pdfContainer) {
+              pdfContainer.innerHTML = `
+                <a href='/download-satisfaction/${rdvId}/' target='_blank' rel='noopener noreferrer' class='pdf-download-icon' title='Télécharger le PDF de satisfaction'>
+                  <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="64" height="64" rx="12" fill="#fff"/>
+                    <path d="M20 16C20 14.8954 20.8954 14 22 14H42C43.1046 14 44 14.8954 44 16V48C44 49.1046 43.1046 50 42 50H22C20.8954 50 20 49.1046 20 48V16Z" fill="#111"/>
+                    <text x="32" y="40" text-anchor="middle" font-size="18" font-family="Arial, Helvetica, sans-serif" fill="#fff" font-weight="bold">PDF</text>
+                  </svg>
+                </a>
+              `;
+            }
+          });
+      }
 
       // Chargement AJAX des infos complémentaires
       fetch(`/get-rdv-info/${rdvId}/`)

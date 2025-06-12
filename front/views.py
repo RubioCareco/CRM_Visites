@@ -478,9 +478,31 @@ def satisfaction_b2b(request):
 
     if request.method == 'POST':
         data = request.POST
-        context = {key: data.get(key) for key in data}
-        context['note_recommandation_choices'] = note_recommandation_choices
-        html = render_to_string('front/pdf_satisfaction_b2b.html', context)
+        # On construit un objet 'reponse' pour le template PDF
+        reponse = {
+            'date_soumission': timezone.now(),
+            'qualite_satisfait': data.get('qualite_satisfait'),
+            'note_qualite_globale': data.get('note_qualite_globale'),
+            'probleme_qualite': data.get('probleme_qualite'),
+            'type_probleme': data.get('type_probleme'),
+            'delai_satisfait': data.get('delai_satisfait'),
+            'delai_moyen': data.get('delai_moyen'),
+            'delai_ideal': data.get('delai_ideal'),
+            'delai_ideal_autre': data.get('delai_ideal_autre'),
+            'recours_sav': data.get('recours_sav'),
+            'note_sav': data.get('note_sav'),
+            'pieces_non_dispo': data.get('pieces_non_dispo'),
+            'experience_satisfait': data.get('experience_satisfait'),
+            'personnel_joignable': data.get('personnel_joignable'),
+            'note_accueil': data.get('note_accueil'),
+            'commande_simple': data.get('commande_simple'),
+            'moyen_commande': data.get('moyen_commande'),
+            'moyen_commande_autre': data.get('moyen_commande_autre'),
+            'suggestions': data.get('suggestions'),
+            'motivation_commande': data.get('motivation_commande'),
+            'note_recommandation': data.get('note_recommandation'),
+        }
+        html = render_to_string('front/pdf_satisfaction_b2b.html', {'reponse': reponse})
         result = BytesIO()
         pisa.CreatePDF(html, dest=result)
         pdf_bytes = result.getvalue()

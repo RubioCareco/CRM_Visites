@@ -4,49 +4,79 @@
   <meta charset="UTF-8">
   <style>
     body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; }
-    h1 { color: #e53935; }
-    .question { margin-bottom: 10px; font-weight: bold; }
-    .reponse { margin-bottom: 18px; }
+    h1 { color: #000000; text-align: center; margin-top: 30px; margin-bottom: 40px; }
+    .content { max-width: 700px; margin: 0 auto; }
+    .question {
+      margin-bottom: 6px;
+      font-weight: bold;
+      text-align: left;
+      padding-left: 0;
+      color: #222;
+    }
+    .reponse {
+      margin-bottom: 18px;
+      text-align: left;
+      padding-left: 0;
+      color: #444;
+    }
+    .date-soumission {
+      width: 100%;
+      text-align: center;
+      font-size: 1em;
+      color: #555;
+      margin-top: 60px;
+      margin-bottom: 20px;
+      position: relative;
+      bottom: 0;
+    }
   </style>
 </head>
 <body>
   <h1>Enquête de satisfaction B2B Careco Rubio</h1>
-  <p>Date de soumission : {{ reponse.date_soumission|date:"d/m/Y H:i" }}</p>
-  <div class="question">1. Qualité des pièces reçues :</div>
-  <div class="reponse">{{ reponse.qualite_satisfait }}</div>
-  <div class="question">2. Note qualité globale :</div>
-  <div class="reponse">{{ reponse.note_qualite_globale }}</div>
-  <div class="question">3. Problème de qualité rencontré :</div>
-  <div class="reponse">{{ reponse.probleme_qualite }}</div>
-  <div class="question">4. Type de problème :</div>
-  <div class="reponse">{{ reponse.type_probleme }}</div>
-  <div class="question">5. Satisfait du délai de livraison :</div>
-  <div class="reponse">{{ reponse.delai_satisfait }}</div>
-  <div class="question">6. Délai moyen :</div>
-  <div class="reponse">{{ reponse.delai_moyen }}</div>
-  <div class="question">7. Délai idéal :</div>
-  <div class="reponse">{{ reponse.delai_ideal }} {% if reponse.delai_ideal == 'autre' %} ({{ reponse.delai_ideal_autre }}){% endif %}</div>
-  <div class="question">8. Recours au SAV :</div>
-  <div class="reponse">{{ reponse.recours_sav }}</div>
-  <div class="question">9. Note SAV :</div>
-  <div class="reponse">{{ reponse.note_sav }}</div>
-  <div class="question">10. Pièces non dispo :</div>
-  <div class="reponse">{{ reponse.pieces_non_dispo }}</div>
-  <div class="question">11. Satisfait expérience :</div>
-  <div class="reponse">{{ reponse.experience_satisfait }}</div>
-  <div class="question">12. Personnel joignable :</div>
-  <div class="reponse">{{ reponse.personnel_joignable }}</div>
-  <div class="question">13. Note accueil :</div>
-  <div class="reponse">{{ reponse.note_accueil }}</div>
-  <div class="question">14. Processus commande simple :</div>
-  <div class="reponse">{{ reponse.commande_simple }}</div>
-  <div class="question">15. Moyen de commande préféré :</div>
-  <div class="reponse">{{ reponse.moyen_commande }} {% if reponse.moyen_commande == 'autre' %} ({{ reponse.moyen_commande_autre }}){% endif %}</div>
-  <div class="question">16. Suggestions :</div>
-  <div class="reponse">{{ reponse.suggestions }}</div>
-  <div class="question">17. Motivation commande :</div>
-  <div class="reponse">{{ reponse.motivation_commande }}</div>
-  <div class="question">18. Note de recommandation :</div>
-  <div class="reponse">{{ reponse.note_recommandation }}</div>
+  <div class="content">
+    <div class="question">1. Êtes-vous satisfait de la qualité des pièces que vous avez reçues ? *</div>
+    <div class="reponse">{{ reponse.qualite_satisfait }}</div>
+    <div class="question">2. Sur une échelle de 1 à 5, comment jugez-vous la qualité globale des pièces d'occasion achetées chez Caréco Rubio ? *</div>
+    <div class="reponse">{{ reponse.note_qualite_globale }}</div>
+    <div class="question">3. Avez-vous rencontré des problèmes de qualité avec les pièces reçues ? *</div>
+    <div class="reponse">{{ reponse.probleme_qualite }}</div>
+    <div class="question">4. Si oui, quel type de problème avez-vous rencontré ?</div>
+    <div class="reponse">{{ reponse.type_probleme }}</div>
+    <div class="question">5. Êtes-vous satisfait du délai de livraison des pièces ? *</div>
+    <div class="reponse">{{ reponse.delai_satisfait }}</div>
+    <div class="question">6. Quel a été le délai de livraison moyen des pièces que vous avez commandées ? *</div>
+    <div class="reponse">{{ reponse.delai_moyen }}</div>
+    <div class="question">7. Quel délai de livraison serait idéal pour vous ? *</div>
+    <div class="reponse">{{ reponse.delai_ideal }} {% if reponse.delai_ideal == 'autre' %} ({{ reponse.delai_ideal_autre }}){% endif %}</div>
+    <div class="question">8. Si autre, précisez :</div>
+    <div class="reponse">{{ reponse.delai_ideal_autre }}</div>
+    <div class="question">9. Avez-vous eu recours au service après-vente ? *</div>
+    <div class="reponse">{{ reponse.recours_sav }}</div>
+    <div class="question">10. Si oui, sur une échelle de 1 à 5, à combien évaluez-vous la réactivité et la qualité de l'assistance SAV ?</div>
+    <div class="reponse">{{ reponse.note_sav }}</div>
+    <div class="question">11. Quels types de pièces dont vous avez fréquemment besoin ne sont pas disponibles chez Careco Rubio ?</div>
+    <div class="reponse">{{ reponse.pieces_non_dispo }}</div>
+    <div class="question">12. Êtes-vous satisfait de votre expérience avec Careco Rubio ? *</div>
+    <div class="reponse">{{ reponse.experience_satisfait }}</div>
+    <div class="question">13. Le personnel Caréco Rubio est-il facilement joignable ? *</div>
+    <div class="reponse">{{ reponse.personnel_joignable }}</div>
+    <div class="question">14. Comment évaluez-vous la qualité de l'accueil et des conseils reçus ? *</div>
+    <div class="reponse">{{ reponse.note_accueil }}</div>
+    <div class="question">15. Le processus de commande est-il simple et rapide à vos yeux ? *</div>
+    <div class="reponse">{{ reponse.commande_simple }}</div>
+    <div class="question">16. Préférez-vous commander par : *</div>
+    <div class="reponse">{{ reponse.moyen_commande }} {% if reponse.moyen_commande == 'autre' %} ({{ reponse.moyen_commande_autre }}){% endif %}</div>
+    <div class="question">17. Si autre, précisez :</div>
+    <div class="reponse">{{ reponse.moyen_commande_autre }}</div>
+    <div class="question">18. Quelles améliorations suggéreriez-vous pour améliorer votre expérience ?</div>
+    <div class="reponse">{{ reponse.suggestions }}</div>
+    <div class="question">19. Qu'est-ce qui vous ferait commander davantage chez nous ?</div>
+    <div class="reponse">{{ reponse.motivation_commande }}</div>
+    <div class="question">20. Sur une échelle de 1 à 10, à combien recommanderiez-vous Caréco Rubio à d'autres garages ? *</div>
+    <div class="reponse">{{ reponse.note_recommandation }}</div>
+  </div>
+  <div class="date-soumission">
+    Date de soumission : {{ reponse.date_soumission|date:"d/m/Y H:i" }}
+  </div>
 </body>
 </html> 

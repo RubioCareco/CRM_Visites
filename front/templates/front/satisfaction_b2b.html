@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enquête de satisfaction B2B Careco Rubio</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'front/css/satisfaction_b2b.css' %}">
+</head>
+<body>
+  <div class="satisfaction-container">
+    <h1>Enquête de satisfaction B2B Careco Rubio</h1>
+    <p class="intro">L'objectif de ce formulaire est d'améliorer les performances de Careco Rubio auprès des garages clients.<br>Temps nécessaire à la réponse : 3 minutes.</p>
+    {% if success %}
+      <div style="color: green; text-align: center; font-size: 1.2em; margin: 30px 0;">Merci, votre PDF a bien été généré et archivé.</div>
+    {% endif %}
+    <form method="post" autocomplete="off" class="satisfaction-form">
+      {% csrf_token %}
+      <input type="hidden" name="rs_nom" value="{{ rs_nom|default:'' }}">
+      <input type="hidden" name="commercial_id" value="{{ request.session.commercial_id }}">
+      <input type="hidden" name="rdv_id" value="{{ request.GET.rdv_id|default:'' }}">
+      <!-- 1 -->
+      <div class="form-group required">
+        <label>1. Êtes-vous satisfait de la qualité des pièces que vous avez reçues ? *</label>
+        <div class="radio-group">
+          <label><input type="radio" name="qualite_satisfait" value="oui" required> Oui</label>
+          <label><input type="radio" name="qualite_satisfait" value="non"> Non</label>
+        </div>
+      </div>
+      <!-- 2 -->
+      <div class="form-group required">
+        <label>2. Sur une échelle de 1 à 5, comment jugez-vous la qualité globale des pièces d'occasion achetées chez Caréco Rubio ? *</label>
+        <div class="note-group">
+          {% for i in "12345" %}
+            <label><input type="radio" name="note_qualite_globale" value="{{ i }}" required> {{ i }}</label>
+          {% endfor %}
+        </div>
+      </div>
+      <!-- 3 -->
+      <div class="form-group required">
+        <label>3. Avez-vous rencontré des problèmes de qualité avec les pièces reçues ? *</label>
+        <div class="radio-group">
+          <label><input type="radio" name="probleme_qualite" value="oui" required> Oui</label>
+          <label><input type="radio" name="probleme_qualite" value="non"> Non</label>
+        </div>
+      </div>
+      <!-- 4 -->
+      <div class="form-group">
+        <label>4. Si oui, quel type de problème avez-vous rencontré ?</label>
+        <textarea name="type_probleme" rows="2"></textarea>
+      </div>
+      <!-- 5 -->
+      <div class="form-group required">
+        <label>5. Êtes-vous satisfait du délai de livraison des pièces ? *</label>
+        <div class="radio-group">
+          <label><input type="radio" name="delai_satisfait" value="oui" required> Oui</label>
+          <label><input type="radio" name="delai_satisfait" value="non"> Non</label>
+        </div>
+      </div>
+      <!-- 6 -->
+      <div class="form-group required">
+        <label>6. Quel a été le délai de livraison moyen des pièces que vous avez commandées ? *</label>
+        <div class="radio-group">
+          <label><input type="radio" name="delai_moyen" value="moins_24h" required> Moins de 24h</label>
+          <label><input type="radio" name="delai_moyen" value="1_2j"> 1-2 jours</label>
+          <label><input type="radio" name="delai_moyen" value="3_4j"> 3-4 jours</label>
+          <label><input type="radio" name="delai_moyen" value="plus_5j"> Plus de 5 jours</label>
+        </div>
+      </div>
+      <!-- 7 -->
+      <div class="form-group required">
+        <label>7. Quel délai de livraison serait idéal pour vous ? *</label>
+        <div class="radio-group">
+          <label><input type="radio" name="delai_ideal" value="moins_24h" required> Moins de 24h</label>
+          <label><input type="radio" name="delai_ideal" value="1_2j"> 1-2 jours</label>
+          <label><input type="radio" name="delai_ideal" value="3_4j"> 3-4 jours</label>
+          <label><input type="radio" name="delai_ideal" value="autre"> Autre</label>
+        </div>
+      </div>
+      <!-- 8 -->
+      <div class="form-group">
+        <label>8. Si autre, précisez :</label>
+        <input type="text" name="delai_ideal_autre">
+      </div>
+      <!-- 9 -->
+      <div class="form-group required">
+        <label>9. Avez-vous eu recours au service après-vente ? *</label>
+        <div class="radio-group">
+          <label><input type="radio" name="recours_sav" value="oui" required> Oui</label>
+          <label><input type="radio" name="recours_sav" value="non"> Non</label>
+        </div>
+      </div>
+      <!-- 10 -->
+      <div class="form-group">
+        <label>10. Si oui, sur une échelle de 1 à 5, à combien évaluez-vous la réactivité et la qualité de l'assistance SAV ?</label>
+        <div class="note-group">
+          {% for i in "12345" %}
+            <label><input type="radio" name="note_sav" value="{{ i }}"> {{ i }}</label>
+          {% endfor %}
+        </div>
+      </div>
+      <!-- 11 -->
+      <div class="form-group">
+        <label>11. Quels types de pièces dont vous avez fréquemment besoin ne sont pas disponibles chez Careco Rubio ?</label>
+        <textarea name="pieces_non_dispo" rows="2"></textarea>
+      </div>
+      <!-- 12 -->
+      <div class="form-group required">
+        <label>12. Êtes-vous satisfait de votre expérience avec Careco Rubio ? *</label>
+        <div class="radio-group">
+          <label><input type="radio" name="experience_satisfait" value="oui" required> Oui</label>
+          <label><input type="radio" name="experience_satisfait" value="non"> Non</label>
+        </div>
+      </div>
+      <!-- 13 -->
+      <div class="form-group required">
+        <label>13. Le personnel Caréco Rubio est-il facilement joignable ? *</label>
+        <div class="radio-group">
+          <label><input type="radio" name="personnel_joignable" value="oui" required> Oui</label>
+          <label><input type="radio" name="personnel_joignable" value="non"> Non</label>
+        </div>
+      </div>
+      <!-- 14 -->
+      <div class="form-group required">
+        <label>14. Comment évaluez-vous la qualité de l'accueil et des conseils reçus ? *</label>
+        <div class="note-group">
+          {% for i in "12345" %}
+            <label><input type="radio" name="note_accueil" value="{{ i }}" required> {{ i }}</label>
+          {% endfor %}
+        </div>
+      </div>
+      <!-- 15 -->
+      <div class="form-group required">
+        <label>15. Le processus de commande est-il simple et rapide à vos yeux ? *</label>
+        <div class="radio-group">
+          <label><input type="radio" name="commande_simple" value="oui" required> Oui</label>
+          <label><input type="radio" name="commande_simple" value="non"> Non</label>
+        </div>
+      </div>
+      <!-- 16 -->
+      <div class="form-group required">
+        <label>16. Préférez-vous commander par : *</label>
+        <div class="radio-group">
+          <label><input type="radio" name="moyen_commande" value="telephone" required> Téléphone</label>
+          <label><input type="radio" name="moyen_commande" value="mail"> Mail</label>
+          <label><input type="radio" name="moyen_commande" value="site_web"> Site web</label>
+          <label><input type="radio" name="moyen_commande" value="terrain"> Commercial terrain</label>
+          <label><input type="radio" name="moyen_commande" value="autre"> Autre</label>
+        </div>
+      </div>
+      <!-- 17 -->
+      <div class="form-group">
+        <label>17. Si autre, précisez :</label>
+        <input type="text" name="moyen_commande_autre">
+      </div>
+      <!-- 18 -->
+      <div class="form-group">
+        <label>18. Quelles améliorations suggéreriez-vous pour améliorer votre expérience ?</label>
+        <textarea name="suggestions" rows="2"></textarea>
+      </div>
+      <!-- 19 -->
+      <div class="form-group">
+        <label>19. Qu'est-ce qui vous ferait commander davantage chez nous ?</label>
+        <textarea name="motivation_commande" rows="2"></textarea>
+      </div>
+      <!-- 20 -->
+      <div class="form-group required">
+        <label>20. Sur une échelle de 1 à 10, à combien recommanderiez-vous Caréco Rubio à d'autres garages ? *</label>
+        <div class="note-group">
+          {% for i in note_recommandation_choices %}
+            <label><input type="radio" name="note_recommandation" value="{{ i }}" required> {{ i }}</label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="submit-btn">Envoyer</button>
+      </div>
+    </form>
+  </div>
+</body>
+</html> 

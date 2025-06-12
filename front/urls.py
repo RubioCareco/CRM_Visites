@@ -20,4 +20,6 @@ urlpatterns = [
     path('client-file/', views.client_file, name='client_file'),
     path('historique-rdv/', views.historique_rdv, name='historique_rdv'),
     path('update-client/<int:client_id>/', views.update_client, name='update_client'),
+    path('check-satisfaction/<int:rdv_id>/', views.check_satisfaction_exists, name='check_satisfaction'),
+    path('download-satisfaction/<int:rdv_id>/', views.download_satisfaction_pdf, name='download_satisfaction_pdf'),
 ]

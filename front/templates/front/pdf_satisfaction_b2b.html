@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; }
+    h1 { color: #e53935; }
+    .question { margin-bottom: 10px; font-weight: bold; }
+    .reponse { margin-bottom: 18px; }
+  </style>
+</head>
+<body>
+  <h1>Enquête de satisfaction B2B Careco Rubio</h1>
+  <p>Date de soumission : {{ reponse.date_soumission|date:"d/m/Y H:i" }}</p>
+  <div class="question">1. Qualité des pièces reçues :</div>
+  <div class="reponse">{{ reponse.qualite_satisfait }}</div>
+  <div class="question">2. Note qualité globale :</div>
+  <div class="reponse">{{ reponse.note_qualite_globale }}</div>
+  <div class="question">3. Problème de qualité rencontré :</div>
+  <div class="reponse">{{ reponse.probleme_qualite }}</div>
+  <div class="question">4. Type de problème :</div>
+  <div class="reponse">{{ reponse.type_probleme }}</div>
+  <div class="question">5. Satisfait du délai de livraison :</div>
+  <div class="reponse">{{ reponse.delai_satisfait }}</div>
+  <div class="question">6. Délai moyen :</div>
+  <div class="reponse">{{ reponse.delai_moyen }}</div>
+  <div class="question">7. Délai idéal :</div>
+  <div class="reponse">{{ reponse.delai_ideal }} {% if reponse.delai_ideal == 'autre' %} ({{ reponse.delai_ideal_autre }}){% endif %}</div>
+  <div class="question">8. Recours au SAV :</div>
+  <div class="reponse">{{ reponse.recours_sav }}</div>
+  <div class="question">9. Note SAV :</div>
+  <div class="reponse">{{ reponse.note_sav }}</div>
+  <div class="question">10. Pièces non dispo :</div>
+  <div class="reponse">{{ reponse.pieces_non_dispo }}</div>
+  <div class="question">11. Satisfait expérience :</div>
+  <div class="reponse">{{ reponse.experience_satisfait }}</div>
+  <div class="question">12. Personnel joignable :</div>
+  <div class="reponse">{{ reponse.personnel_joignable }}</div>
+  <div class="question">13. Note accueil :</div>
+  <div class="reponse">{{ reponse.note_accueil }}</div>
+  <div class="question">14. Processus commande simple :</div>
+  <div class="reponse">{{ reponse.commande_simple }}</div>
+  <div class="question">15. Moyen de commande préféré :</div>
+  <div class="reponse">{{ reponse.moyen_commande }} {% if reponse.moyen_commande == 'autre' %} ({{ reponse.moyen_commande_autre }}){% endif %}</div>
+  <div class="question">16. Suggestions :</div>
+  <div class="reponse">{{ reponse.suggestions }}</div>
+  <div class="question">17. Motivation commande :</div>
+  <div class="reponse">{{ reponse.motivation_commande }}</div>
+  <div class="question">18. Note de recommandation :</div>
+  <div class="reponse">{{ reponse.note_recommandation }}</div>
+</body>
+</html> 

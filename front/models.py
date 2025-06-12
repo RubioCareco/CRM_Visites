@@ -77,3 +77,13 @@ class ImportClientCorrected(models.Model):
     class Meta:
         db_table = 'import_clients_corrected'
         managed = False
+
+class SatisfactionB2B(models.Model):
+    pdf_base64 = models.TextField(blank=True, null=True)
+    date_soumission = models.DateTimeField(auto_now_add=True)
+    rs_nom = models.CharField(max_length=255, default="Inconnu")  # Obligatoire, valeur par défaut pour migration
+    commercial = models.ForeignKey('Commercial', on_delete=models.SET_NULL, null=True, blank=True)
+    rdv = models.ForeignKey('Rendezvous', on_delete=models.SET_NULL, null=True, blank=True)
+
+    def __str__(self):
+        return f"Satisfaction B2B #{self.id} - {self.rs_nom} - {self.date_soumission.strftime('%d/%m/%Y')}"

@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Commercial, Client, Rendezvous, CommentaireRdv, ImportClientCorrected
+from .models import Commercial, Client, Rendezvous, CommentaireRdv, ImportClientCorrected, SatisfactionB2B
 from django.contrib.auth.hashers import check_password, make_password
 from functools import wraps
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse, Http404
 from datetime import datetime
 from django.utils import timezone
 import json
@@ -13,6 +13,10 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.core.paginator import Paginator
 from django.views.decorators.csrf import csrf_exempt
+import base64
+from django.template.loader import render_to_string
+from xhtml2pdf import pisa
+from io import BytesIO
 
 # 🔐 Décorateur de protection
 def login_required(view_func):
@@ -465,3 +469,47 @@ def update_client(request, client_id):
         except Exception as e:
             return JsonResponse({"success": False, "error": str(e)})
     return JsonResponse({"success": False, "error": "Méthode non autorisée"})    
+
+def satisfaction_b2b(request):
+    note_recommandation_choices = list(range(1, 11))
+    rs_nom = request.GET.get('rs_nom') or request.POST.get('rs_nom')
+    commercial_id = request.GET.get('commercial_id') or request.POST.get('commercial_id')
+    rdv_id = request.GET.get('rdv_id') or request.POST.get('rdv_id')
+
+    if request.method == 'POST':
+        data = request.POST
+        context = {key: data.get(key) for key in data}
+        context['note_recommandation_choices'] = note_recommandation_choices
+        html = render_to_string('front/pdf_satisfaction_b2b.html', context)
+        result = BytesIO()
+        pisa.CreatePDF(html, dest=result)
+        pdf_bytes = result.getvalue()
+        pdf_b64 = base64.b64encode(pdf_bytes).decode('utf-8')
+
+        from .models import Commercial, Rendezvous
+        commercial = Commercial.objects.filter(id=commercial_id).first() if commercial_id else None
+        rdv = Rendezvous.objects.filter(id=rdv_id).first() if rdv_id else None
+
+        SatisfactionB2B.objects.create(
+            pdf_base64=pdf_b64,
+            rs_nom=rs_nom or "Inconnu",
+            commercial=commercial,
+            rdv=rdv
+        )
+        return render(request, 'front/satisfaction_b2b.html', {'success': True, 'note_recommandation_choices': note_recommandation_choices, 'rs_nom': rs_nom})
+    return render(request, 'front/satisfaction_b2b.html', {'note_recommandation_choices': note_recommandation_choices, 'rs_nom': rs_nom})    
+
+def check_satisfaction_exists(request, rdv_id):
+    from .models import SatisfactionB2B
+    exists = SatisfactionB2B.objects.filter(rdv_id=rdv_id).exists()
+    return JsonResponse({'exists': exists})
+
+def download_satisfaction_pdf(request, rdv_id):
+    from .models import SatisfactionB2B
+    satisfaction = SatisfactionB2B.objects.filter(rdv_id=rdv_id).first()
+    if not satisfaction or not satisfaction.pdf_base64:
+        raise Http404("PDF non trouvé")
+    pdf_bytes = base64.b64decode(satisfaction.pdf_base64)
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="satisfaction_{rdv_id}.pdf"'
+    return response

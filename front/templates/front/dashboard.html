@@ -25,6 +25,23 @@
     .note-icon {
       position:absolute;right:18px;top:50%;transform:translateY(-50%);cursor:pointer;color:#4dd0e1;font-size:1.2rem;z-index:2;
     }
+    .pdf-download-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      margin-left: 8px;
+      color: #e53935;
+      font-size: 2rem;
+      transition: color 0.18s;
+    }
+    .pdf-download-icon:hover {
+      color: #b71c1c;
+    }
   </style>
 </head>
 <body>
@@ -82,6 +99,17 @@
               <p><strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong></p>
               <p class="status validée"><i class="fa fa-check-square"></i> Validée</p>
               <p class="visit-date">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
+              {% with satisfaction=rdv.satisfactionb2b_set.first %}
+                {% if satisfaction %}
+                  <a href="{% url 'download_satisfaction_pdf' rdv.id %}" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le PDF de satisfaction">
+                    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect width="64" height="64" rx="12" fill="#fff"/>
+                      <path d="M20 16C20 14.8954 20.8954 14 22 14H42C43.1046 14 44 14.8954 44 16V48C44 49.1046 43.1046 50 42 50H22C20.8954 50 20 49.1046 20 48V16Z" fill="#111"/>
+                      <text x="32" y="40" text-anchor="middle" font-size="18" font-family="Arial, Helvetica, sans-serif" fill="#fff" font-weight="bold">PDF</text>
+                    </svg>
+                  </a>
+                {% endif %}
+              {% endwith %}
             </div>
           </div>
         {% empty %}
@@ -161,7 +189,9 @@
       <label for="commentaire">Commentaire :</label>
       <textarea id="commentaire" rows="4" style="width: 100%; margin-top: 10px; margin-bottom: 22px;"></textarea>
 
-      <button class="action-button" id="completerFormulaireBtn" style="display:none;margin-bottom:4px;width:360px;max-width:95vw;display:flex;align-items:center;justify-content:center;gap:10px;margin-left:auto;margin-right:auto;">
+      <div id="pdfDownloadContainer" style="text-align:center;margin-bottom:10px;"></div>
+
+      <button class="action-button" id="completerFormulaireBtn" style="display:none;">
         <i class="fa-solid fa-clipboard-list"></i><span>Compléter le formulaire</span>
       </button>
 
@@ -237,6 +267,13 @@
       const title = document.getElementById('clientName');
       const details = document.getElementById('clientDetails');
       const buttons = document.getElementById('modal-buttons');
+      const completerBtn = document.getElementById('completerFormulaireBtn');
+      if (completerBtn) {
+        completerBtn.style.display = 'none';
+        completerBtn.onclick = null;
+        completerBtn.innerHTML = '<i class="fa-solid fa-clipboard-list"></i><span> Compléter le formulaire</span>';
+        completerBtn.style.background = '';
+      }
 
       // Affichage des infos de base
       title.textContent = (civilite ? civilite + ' ' : '') + (rs_nom || nom);
@@ -247,6 +284,10 @@
         <b>Statut :</b> ${statut || 'N/A'}<br>
         <b>Code comptable :</b> ${code_comptable || 'N/A'}
       </div>`;
+
+      // Affichage du bouton PDF uniquement pour les RDV validés
+      const pdfContainer = document.getElementById('pdfDownloadContainer');
+      if (pdfContainer) pdfContainer.innerHTML = ""; // reset
 
       // Chargement AJAX des infos complémentaires
       fetch(`/get-rdv-info/${rdvId}/`)
@@ -271,32 +312,57 @@
 
       currentRdvId = rdvId;
       modal.style.display = 'flex';
-      // Afficher ou masquer/modifier les boutons selon la section
-      if (isReminder) {
-        // Section 'À rappeler' : un seul bouton 'Ajouter un nouveau rendez-vous'
+      // Gestion des boutons d'action selon le statut
+      if (statut && (
+            statut.toLowerCase() === 'a_venir' ||
+            statut.toLowerCase() === 'à venir' ||
+            statut.toLowerCase() === 'a venir'
+          )) {
+        // Afficher les deux boutons classiques
+        buttons.style.display = 'flex';
         const validerBtn = buttons.querySelector('.action-button[onclick*="valider"]');
         const annulerBtn = buttons.querySelector('.action-button[onclick*="annuler"]');
         if (validerBtn) {
           validerBtn.style.display = '';
-          validerBtn.textContent = 'Ajouter un nouveau rendez-vous';
-          const card = document.querySelector(`.reminder-entry[data-id='${rdvId}']`);
-          const clientId = card ? card.getAttribute('data-client-id') : '';
+          validerBtn.textContent = 'Valider le rendez-vous';
           validerBtn.onclick = function() {
-            window.location.href = '/add-rdv/?next=/dashboard' + (clientId ? ('&client_id=' + clientId) : '');
+            updateStatutRdv(currentRdvId, 'valider');
           };
         }
-        if (annulerBtn) annulerBtn.style.display = 'none';
-      } else if (isRecent) {
-        // Section 'Visites récentes' : un seul bouton 'Valider le commentaire'
+        if (annulerBtn) {
+          annulerBtn.style.display = '';
+          annulerBtn.textContent = 'Annuler le rendez-vous';
+          annulerBtn.onclick = function() {
+            updateStatutRdv(currentRdvId, 'annuler');
+          };
+        }
+        // Affichage du bouton Compléter le formulaire
+        if (completerBtn) {
+          completerBtn.style.display = '';
+          completerBtn.disabled = false;
+          completerBtn.classList.remove('disabled');
+          completerBtn.title = "";
+          completerBtn.onclick = function() {
+            const rsNom = document.getElementById('clientName').textContent.trim();
+            const commercialId = "{{ request.session.commercial_id }}";
+            const url = `/satisfaction-b2b/?rs_nom=${encodeURIComponent(rsNom)}&commercial_id=${commercialId}&rdv_id=${currentRdvId}`;
+            window.open(url, '_blank', 'noopener,noreferrer');
+          };
+        }
+      } else if (statut && statut.toLowerCase() === 'valide') {
+        // Visites récentes : un seul bouton "Valider le commentaire"
+        buttons.style.display = 'flex';
         const validerBtn = buttons.querySelector('.action-button[onclick*="valider"]');
         const annulerBtn = buttons.querySelector('.action-button[onclick*="annuler"]');
-        if (validerBtn) validerBtn.style.display = 'none';
+        if (validerBtn) {
+          validerBtn.style.display = 'none';
+        }
         if (annulerBtn) {
           annulerBtn.style.display = '';
           annulerBtn.textContent = 'Valider le commentaire';
           annulerBtn.onclick = function() {
             const commentaire = document.getElementById('commentaire').value;
-            fetch(`/update-statut/${rdvId}/commentaire/`, {
+            fetch(`/update-statut/${currentRdvId}/commentaire/`, {
               method: 'POST',
               headers: {
                 'X-CSRFToken': getCSRFToken(),
@@ -315,22 +381,20 @@
             });
           };
         }
-      } else {
-        // Section 'Visites à venir' : les deux boutons classiques
+      } else if (statut && statut.toLowerCase() === 'annule') {
+        // À rappeler : un seul bouton "Ajouter un nouveau rendez-vous"
         buttons.style.display = 'flex';
         const validerBtn = buttons.querySelector('.action-button[onclick*="valider"]');
         const annulerBtn = buttons.querySelector('.action-button[onclick*="annuler"]');
-        const completerBtn = document.getElementById('completerFormulaireBtn');
-        if (completerBtn) completerBtn.style.display = '';
         if (validerBtn) {
           validerBtn.style.display = '';
-          validerBtn.textContent = 'Valider le rendez-vous';
-          validerBtn.onclick = function() { updateStatutRdv(currentRdvId, 'valider'); };
+          validerBtn.textContent = 'Ajouter un nouveau rendez-vous';
+          validerBtn.onclick = function() {
+            window.location.href = '/add-rdv/?next=/dashboard';
+          };
         }
         if (annulerBtn) {
-          annulerBtn.style.display = '';
-          annulerBtn.textContent = 'Annuler le rendez-vous';
-          annulerBtn.onclick = function() { updateStatutRdv(currentRdvId, 'annuler'); };
+          annulerBtn.style.display = 'none';
         }
       }
     }
@@ -491,9 +555,16 @@
           const email = this.getAttribute('data-email');
           const code_comptable = this.getAttribute('data-code_comptable') || 'N/A';
           const statut = this.getAttribute('data-statut');
-          // Détecter la section
-          const isRecent = this.classList.contains('visit-entry') && this.closest('#recent-visits');
-          const isReminder = this.classList.contains('reminder-entry') && this.closest('#reminders');
+          // Détecter la section (booléens réels)
+          const isRecent = this.classList.contains('visit-entry') && this.closest('#recent-visits') ? true : false;
+          const isReminder = this.classList.contains('reminder-entry') && this.closest('#reminders') ? true : false;
+          // Log debug pour vérifier le statut transmis
+          console.log('DEBUG carte cliquée', {
+            id,
+            statut,
+            classList: this.classList.value,
+            dataStatut: this.getAttribute('data-statut')
+          });
           openClientModal(nom, prenom, entreprise, id, date, heure, adresse, cp, isRecent, isReminder, civilite, rs_nom, ville, telephone, email, code_comptable, statut);
         });
       });

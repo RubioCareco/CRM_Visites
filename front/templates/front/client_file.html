@@ -64,32 +64,34 @@
           <button id="closeFilterPanelClient" type="button" style="position:absolute;top:18px;right:18px;background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;">&times;</button>
         </form>
       </div>
-      <table class="client-table">
-        <thead>
-          <tr style="background:transparent;">
-            <th>Civilité</th>
-            <th>Raison sociale</th>
-            <th>Prénom</th>
-            <th>Adresse</th>
-            <th>Code postal</th>
-            <th>Ville</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for client in page_obj %}
-          <tr class="client-card" data-client-id="{{ client.id }}" data-client-nom="{{ client.rs_nom|escapejs }}" data-client-prenom="{{ client.prénom|escapejs }}" style="cursor:pointer;" onclick="openClientModal('{{ client.rs_nom|escapejs }}', '{{ client.prénom|escapejs }}', '{{ client.civilite|escapejs }}', '{{ client.adresse|escapejs }}', '{{ client.code_postal|escapejs }}', '{{ client.ville|escapejs }}', '{{ client.telephone|escapejs }}', '{{ client.e_mail|escapejs }}', '{{ client.statut|escapejs }}', '{{ client.id }}', '{{ client.code_comptable|escapejs }}')">
-            <td>{{ client.civilite|default:" " }}</td>
-            <td>{{ client.rs_nom|default:" " }}</td>
-            <td>{{ client.prénom|default:" " }}</td>
-            <td>{{ client.adresse|default:" " }}</td>
-            <td>{{ client.code_postal|default:" " }}</td>
-            <td>{{ client.ville|default:" " }}</td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="6" style="text-align:center;">Aucun client importé trouvé.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      <div class="table-container" style="max-height: 500px; overflow-y: auto;">
+        <table class="client-table">
+          <thead>
+            <tr style="background:transparent;">
+              <th>Civilité</th>
+              <th>Raison sociale</th>
+              <th>Prénom</th>
+              <th>Adresse</th>
+              <th>Code postal</th>
+              <th>Ville</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for client in page_obj %}
+            <tr class="client-card" data-client-id="{{ client.id }}" data-client-nom="{{ client.rs_nom|escapejs }}" data-client-prenom="{{ client.prénom|escapejs }}" style="cursor:pointer;" onclick="openClientModal('{{ client.rs_nom|escapejs }}', '{{ client.prénom|escapejs }}', '{{ client.civilite|escapejs }}', '{{ client.adresse|escapejs }}', '{{ client.code_postal|escapejs }}', '{{ client.ville|escapejs }}', '{{ client.telephone|escapejs }}', '{{ client.e_mail|escapejs }}', '{{ client.statut|escapejs }}', '{{ client.id }}', '{{ client.code_comptable|escapejs }}')">
+              <td>{{ client.civilite|default:" " }}</td>
+              <td>{{ client.rs_nom|default:" " }}</td>
+              <td>{{ client.prénom|default:" " }}</td>
+              <td>{{ client.adresse|default:" " }}</td>
+              <td>{{ client.code_postal|default:" " }}</td>
+              <td>{{ client.ville|default:" " }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" style="text-align:center;">Aucun client importé trouvé.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
       <div style="text-align:center;margin:18px 0;">
         {% if page_obj.has_previous %}
           <a href="?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}">&laquo; Précédent</a>
@@ -119,6 +121,7 @@
           <div class="input-icon-group"><b>Statut :</b> <input type="text" id="inputStatut" name="statut" disabled></div>
           <div class="input-icon-group"><b>Code comptable :</b> <input type="text" id="inputCodeComptable" name="code_comptable" disabled></div>
         </div>
+        <div id="clientComments" style="margin-top:18px;text-align:left;"></div>
         <div class="modal-buttons" style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:20px;">
           <button class="action-button" type="button" id="addRdvBtn" style="width:260px;display:flex;align-items:center;justify-content:center;gap:7px;">
             <i class="fa-solid fa-calendar-plus"></i> <span>Ajouter un rendez-vous</span>
@@ -357,6 +360,27 @@ document.addEventListener("DOMContentLoaded", function () {
     if (btnRdv) {
       btnRdv.setAttribute('onclick', `window.location.href='/add-rdv/?next=/client-file/&client_id=${clientId}'`);
     }
+    // --- Affichage des commentaires ---
+    const commentsDiv = document.getElementById('clientComments');
+    commentsDiv.innerHTML = '<i>Chargement de l\'historique des commentaires...</i>';
+    fetch(`/get-client-comments/${clientId}/`)
+      .then(response => response.json())
+      .then(data => {
+        const commentaires = data.commentaires || [];
+        let html = '<b>Historique des commentaires :</b><div style="max-height:180px;overflow-y:auto;margin-top:8px;">';
+        if (commentaires.length === 0) {
+          html += '<span style="color:#aaa;">Aucun commentaire pour ce client.</span>';
+        } else {
+          commentaires.forEach(c => {
+            html += `<div class='comment-card'><div class='comment-text'>${c.texte}</div><div class='comment-meta'><span class='comment-date'>${c.date}</span> <span class='comment-author'>${c.auteur}</span></div></div>`;
+          });
+        }
+        html += '</div>';
+        commentsDiv.innerHTML = html;
+      })
+      .catch(() => {
+        commentsDiv.innerHTML = '<span style="color:#e53935;">Erreur lors du chargement des commentaires.</span>';
+      });
   }
 });
 function closeClientModal() {

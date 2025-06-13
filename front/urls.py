@@ -22,4 +22,5 @@ urlpatterns = [
     path('update-client/<int:client_id>/', views.update_client, name='update_client'),
     path('check-satisfaction/<uuid:uuid>/', views.check_satisfaction_exists, name='check_satisfaction'),
     path('download-satisfaction/<uuid:uuid>/', views.download_satisfaction_pdf, name='download_satisfaction_pdf'),
+    path('get-client-comments/<int:client_id>/', views.get_client_comments, name='get_client_comments'),
 ]

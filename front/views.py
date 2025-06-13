@@ -18,6 +18,7 @@ from django.template.loader import render_to_string
 from xhtml2pdf import pisa
 from io import BytesIO
 from django.core.exceptions import PermissionDenied
+from django.views.decorators.http import require_GET
 
 # 🔐 Décorateur de protection
 def login_required(view_func):
@@ -522,11 +523,32 @@ def satisfaction_b2b(request):
         if rdv and not (request.user.is_superuser or (rdv.commercial and rdv.commercial.user == request.user)):
             raise PermissionDenied("Vous n'avez pas le droit d'accéder à ce rendez-vous.")
 
+        # Création de l'objet SatisfactionB2B avec toutes les réponses du formulaire
         SatisfactionB2B.objects.create(
             pdf_base64=pdf_b64,
             rs_nom=rs_nom or "Inconnu",
             commercial=commercial,
-            rdv=rdv
+            rdv=rdv,
+            satisfaction_qualite_pieces=data.get('qualite_satisfait'),
+            note_qualite_pieces=data.get('note_qualite_globale'),
+            probleme_qualite_piece=data.get('probleme_qualite'),
+            type_probleme_qualite_piece=data.get('type_probleme'),
+            satisfaction_delai_livraison=data.get('delai_satisfait'),
+            delai_livraison_moyen=data.get('delai_moyen'),
+            delai_livraison_ideal=data.get('delai_ideal'),
+            delai_livraison_ideal_autre=data.get('delai_ideal_autre'),
+            recours_sav=data.get('recours_sav'),
+            note_sav=data.get('note_sav'),
+            piece_non_dispo=data.get('pieces_non_dispo'),
+            satisfaction_experience_rubio=data.get('experience_satisfait'),
+            personnel_joignable=data.get('personnel_joignable'),
+            note_accueil=data.get('note_accueil'),
+            commande_simple=data.get('commande_simple'),
+            moyen_commande=data.get('moyen_commande'),
+            moyen_commande_autre=data.get('moyen_commande_autre'),
+            suggestion=data.get('suggestions'),
+            motivation_commande=data.get('motivation_commande'),
+            note_recommandation=data.get('note_recommandation'),
         )
         return render(request, 'front/satisfaction_b2b.html', {'success': True, 'note_recommandation_choices': note_recommandation_choices, 'rs_nom': rs_nom})
     return render(request, 'front/satisfaction_b2b.html', {'note_recommandation_choices': note_recommandation_choices, 'rs_nom': rs_nom})    
@@ -553,3 +575,20 @@ def download_satisfaction_pdf(request, uuid):
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="satisfaction_{uuid}.pdf"'
     return response
+
+@require_GET
+@login_required
+def get_client_comments(request, client_id):
+    # On récupère tous les rendez-vous de ce client
+    rdvs = Rendezvous.objects.filter(client_id=client_id)
+    # On récupère tous les commentaires liés à ces rendez-vous
+    commentaires = CommentaireRdv.objects.filter(rdv__in=rdvs).order_by('-date_creation')
+    data = [
+        {
+            'texte': c.texte,
+            'date': c.date_creation.strftime('%d/%m/%Y %H:%M'),
+            'auteur': c.commercial.commercial if c.commercial else (c.auteur.username if c.auteur else 'Système')
+        }
+        for c in commentaires
+    ]
+    return JsonResponse({'commentaires': data})

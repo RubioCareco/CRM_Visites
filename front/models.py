@@ -87,5 +87,27 @@ class SatisfactionB2B(models.Model):
     commercial = models.ForeignKey('Commercial', on_delete=models.SET_NULL, null=True, blank=True)
     rdv = models.ForeignKey('Rendezvous', on_delete=models.SET_NULL, null=True, blank=True)
 
+    # Champs pour chaque question du formulaire
+    satisfaction_qualite_pieces = models.CharField(max_length=5, choices=[('oui', 'Oui'), ('non', 'Non')], blank=True, null=True)
+    note_qualite_pieces = models.PositiveSmallIntegerField(blank=True, null=True)
+    probleme_qualite_piece = models.CharField(max_length=5, choices=[('oui', 'Oui'), ('non', 'Non')], blank=True, null=True)
+    type_probleme_qualite_piece = models.TextField(blank=True, null=True)
+    satisfaction_delai_livraison = models.CharField(max_length=5, choices=[('oui', 'Oui'), ('non', 'Non')], blank=True, null=True)
+    delai_livraison_moyen = models.CharField(max_length=20, blank=True, null=True)
+    delai_livraison_ideal = models.CharField(max_length=20, blank=True, null=True)
+    delai_livraison_ideal_autre = models.TextField(blank=True, null=True)
+    recours_sav = models.CharField(max_length=5, choices=[('oui', 'Oui'), ('non', 'Non')], blank=True, null=True)
+    note_sav = models.PositiveSmallIntegerField(blank=True, null=True)
+    piece_non_dispo = models.TextField(blank=True, null=True)
+    satisfaction_experience_rubio = models.CharField(max_length=5, choices=[('oui', 'Oui'), ('non', 'Non')], blank=True, null=True)
+    personnel_joignable = models.CharField(max_length=5, choices=[('oui', 'Oui'), ('non', 'Non')], blank=True, null=True)
+    note_accueil = models.PositiveSmallIntegerField(blank=True, null=True)
+    commande_simple = models.CharField(max_length=5, choices=[('oui', 'Oui'), ('non', 'Non')], blank=True, null=True)
+    moyen_commande = models.CharField(max_length=20, blank=True, null=True)
+    moyen_commande_autre = models.TextField(blank=True, null=True)
+    suggestion = models.TextField(blank=True, null=True)
+    motivation_commande = models.TextField(blank=True, null=True)
+    note_recommandation = models.PositiveSmallIntegerField(blank=True, null=True)
+
     def __str__(self):
         return f"Satisfaction B2B #{self.id} - {self.rs_nom} - {self.date_soumission.strftime('%d/%m/%Y')}"

@@ -106,7 +106,7 @@
                 <p class="visit-date" style="margin:0;">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
                 {% with satisfaction=rdv.satisfactionb2b_set.first %}
                   {% if satisfaction %}
-                    <a href="/download-satisfaction/{{ rdv.uuid }}/" download target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction" style="margin-left:10px;">
+                    <a href="/download-satisfaction/{{ rdv.uuid }}/" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction" style="margin-left:10px;">
                       <img src="{% static 'front/img/PDF.svg' %}" alt="PDF" style="height: 28px; width: auto; display: block;">
                     </a>
                   {% endif %}
@@ -524,13 +524,9 @@
               ${statusHtml}
               <div style="display: flex; align-items: center; justify-content: space-between;">
                 <p class="visit-date" style="margin:0;">Dernières visites le : ${date}</p>
-                {% with satisfaction=rdv.satisfactionb2b_set.first %}
-                  {% if satisfaction %}
-                    <a href="/download-satisfaction/{{ rdv.uuid }}/" download target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le PDF de satisfaction" style="margin-left:10px;">
-                      <img src="{% static 'front/img/PDF.svg' %}" alt="PDF" style="height: 28px; width: auto; display: block;">
-                    </a>
-                  {% endif %}
-                {% endwith %}
+                <div id="pdfDownloadContainer">
+                  <span class="pdf-placeholder"></span>
+                </div>
               </div>
             `;
             // Réattacher l'écouteur d'ouverture de modal

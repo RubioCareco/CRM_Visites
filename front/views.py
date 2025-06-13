@@ -551,5 +551,5 @@ def download_satisfaction_pdf(request, uuid):
         raise Http404("PDF non trouvé")
     pdf_bytes = base64.b64decode(satisfaction.pdf_base64)
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="satisfaction_{uuid}.pdf"'
+    response['Content-Disposition'] = f'inline; filename="satisfaction_{uuid}.pdf"'
     return response

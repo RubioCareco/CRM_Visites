@@ -184,5 +184,24 @@
       </div>
     </form>
   </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.querySelector('.satisfaction-form');
+      if (form) {
+        form.addEventListener('submit', function(e) {
+          // On laisse la soumission normale, mais on prépare le postMessage
+          setTimeout(function() {
+            if (window.opener) {
+              const rdvId = document.querySelector('input[name="rdv_id"]').value;
+              window.opener.postMessage({
+                type: 'satisfaction_submitted',
+                rdv_id: rdvId
+              }, '*');
+            }
+          }, 500); // Laisse le temps au backend de traiter
+        });
+      }
+    });
+  </script>
 </body>
 </html> 

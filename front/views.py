@@ -287,6 +287,7 @@ def delete_temp_rdv(request):
 # ✅ Mise à jour du statut via modal dynamique
 @login_required
 def update_statut(request, uuid, statut):
+    print("DEBUG méthode reçue :", request.method)
     rdv = get_object_or_404(Rendezvous, uuid=uuid)
     if not (request.user.is_superuser or (rdv.commercial and rdv.commercial.user == request.user)):
         raise PermissionDenied("Vous n'avez pas le droit d'accéder à ce rendez-vous.")
@@ -360,13 +361,14 @@ def update_statut(request, uuid, statut):
             'telephone': getattr(client, 'telephone', ''),
             'e_mail': getattr(client, 'e_mail', ''),
             'code_comptable': getattr(client, 'code_comptable', ''),
-            'statut': getattr(client, 'statut', ''),
+            'statut': rdv.statut_rdv,
             'date': rdv.date_rdv.strftime('%d/%m/%Y'),
             'heure': rdv.heure_rdv.strftime('%H:%M'),
             'date_statut': rdv.date_statut.strftime('%d/%m/%Y %H:%M') if rdv.date_statut else '',
         })
-
-    return JsonResponse({'status': 'error', 'message': 'Méthode non autorisée'}, status=400)
+    else:
+        print("DEBUG : Méthode non autorisée pour update_statut")
+        return JsonResponse({'status': 'error', 'message': f"Méthode {request.method} non autorisée"}, status=405)
 
 from django.http import JsonResponse
 

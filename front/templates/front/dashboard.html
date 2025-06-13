@@ -40,6 +40,12 @@
     .pdf-download-icon:hover {
       transform: scale(1.6);
     }
+    #completerFormulaireBtn.disabled {
+      background: #ccc !important;
+      color: #888 !important;
+      cursor: not-allowed !important;
+      opacity: 0.7;
+    }
   </style>
 </head>
 <body>
@@ -302,6 +308,25 @@
         })
         .catch(error => console.error("Erreur lors du chargement des infos :", error));
 
+      // Vérification AJAX si le formulaire de satisfaction a déjà été rempli
+      if (completerBtn) {
+        fetch(`/check-satisfaction/${rdvId}/`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.exists) {
+              completerBtn.disabled = true;
+              completerBtn.classList.add('disabled');
+              completerBtn.title = "Formulaire déjà rempli";
+              completerBtn.style.background = '#888';
+            } else {
+              completerBtn.disabled = false;
+              completerBtn.classList.remove('disabled');
+              completerBtn.title = "";
+              completerBtn.style.background = '';
+            }
+          });
+      }
+
       currentRdvId = rdvId;
       modal.style.display = 'flex';
       // Gestion des boutons d'action selon le statut
@@ -343,22 +368,16 @@
               alert("La fenêtre du formulaire a été bloquée par votre navigateur. Veuillez autoriser les popups pour ce site.");
               return;
             }
-            // Détection dynamique de la soumission du formulaire dans la popup
-            const timer = setInterval(() => {
-              if (win.closed) {
-                fetch(`/check-satisfaction/${currentRdvId}/`)
-                  .then(response => response.json())
-                  .then(data => {
-                    if (data.exists) {
-                      completerBtn.disabled = true;
-                      completerBtn.classList.add('disabled');
-                      completerBtn.title = "Formulaire déjà rempli";
-                      completerBtn.style.background = '#888';
-                    }
-                  });
-                clearInterval(timer);
+            // Ajout d'un listener pour postMessage (plus fiable que setInterval)
+            window.addEventListener('message', function handler(event) {
+              if (event.data && event.data.type === 'satisfaction_submitted' && event.data.rdv_id == currentRdvId) {
+                completerBtn.disabled = true;
+                completerBtn.classList.add('disabled');
+                completerBtn.title = "Formulaire déjà rempli";
+                completerBtn.style.background = '#888';
+                window.removeEventListener('message', handler);
               }
-            }, 800);
+            });
           };
         }
       } else if (statut && statut.toLowerCase() === 'valide') {
@@ -466,7 +485,7 @@
           let containerId = '';
           let cardClass = '';
           let statusHtml = '';
-          const statutNorm = (statut || '').toLowerCase().normalize('NFD').replace(/[-- 0- b]/g, '').replace(/[éèêë]/g, 'e');
+          const statutNorm = (statut || '').toLowerCase().normalize('NFD').replace(/[éèêë]/g, 'e');
           if (statutNorm.startsWith('valid')) {
             containerId = 'recent-visits';
             cardClass = 'visit-entry open-modal-btn';
@@ -480,7 +499,7 @@
             cardClass = 'upcoming-entry open-modal-btn';
             statusHtml = '<p class="status-à-venir"><i class="fa-solid fa-calendar-days"></i> à venir</p>';
           }
-
+          console.log('containerId choisi:', containerId, 'statutNorm:', statutNorm, 'statut:', statut);
           if (containerId) {
         const container = document.getElementById(containerId);
         const newCard = document.createElement('div');

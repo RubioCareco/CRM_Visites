@@ -51,6 +51,13 @@
                   <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
                   {% if rdv.statut_rdv == 'valide' %}
                     <p class="status validée"><i class="fa fa-check-square"></i> Validée</p>
+                    {% with satisfaction=rdv.satisfactionb2b_set.first %}
+                      {% if satisfaction %}
+                        <a href="/download-satisfaction/{{ rdv.uuid }}/" download target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction" style="margin-left:10px;">
+                          <img src="{% static 'front/img/PDF.svg' %}" alt="PDF" style="height: 28px; width: auto; display: block;">
+                        </a>
+                      {% endif %}
+                    {% endwith %}
                   {% elif rdv.statut_rdv == 'annule' %}
                     <p class="status-à-rappeler"><i class="fa-solid fa-triangle-exclamation"></i> Annulé</p>
                   {% endif %}

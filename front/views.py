@@ -17,6 +17,7 @@ import base64
 from django.template.loader import render_to_string
 from xhtml2pdf import pisa
 from io import BytesIO
+from django.core.exceptions import PermissionDenied
 
 # 🔐 Décorateur de protection
 def login_required(view_func):
@@ -285,8 +286,10 @@ def delete_temp_rdv(request):
 
 # ✅ Mise à jour du statut via modal dynamique
 @login_required
-def update_statut(request, rdv_id, statut):
-    rdv = get_object_or_404(Rendezvous, id=rdv_id)
+def update_statut(request, uuid, statut):
+    rdv = get_object_or_404(Rendezvous, uuid=uuid)
+    if not (request.user.is_superuser or (rdv.commercial and rdv.commercial.user == request.user)):
+        raise PermissionDenied("Vous n'avez pas le droit d'accéder à ce rendez-vous.")
 
     if request.method == 'POST':
         data = json.loads(request.body)
@@ -368,9 +371,11 @@ def update_statut(request, rdv_id, statut):
 from django.http import JsonResponse
 
 @login_required
-def get_rdv_info(request, rdv_id):
+def get_rdv_info(request, uuid):
     try:
-        rdv = Rendezvous.objects.get(id=rdv_id)
+        rdv = Rendezvous.objects.get(uuid=uuid)
+        if not (request.user.is_superuser or (rdv.commercial and rdv.commercial.user == request.user)):
+            raise PermissionDenied("Vous n'avez pas le droit d'accéder à ce rendez-vous.")
         client = rdv.client
         # Récupérer les commentaires liés à ce rendez-vous
         commentaires = rdv.commentaires.order_by('date_creation').all()
@@ -474,7 +479,7 @@ def satisfaction_b2b(request):
     note_recommandation_choices = list(range(1, 11))
     rs_nom = request.GET.get('rs_nom') or request.POST.get('rs_nom')
     commercial_id = request.GET.get('commercial_id') or request.POST.get('commercial_id')
-    rdv_id = request.GET.get('rdv_id') or request.POST.get('rdv_id')
+    rdv_uuid = request.GET.get('rdv_id') or request.POST.get('rdv_id')
 
     if request.method == 'POST':
         data = request.POST
@@ -510,7 +515,10 @@ def satisfaction_b2b(request):
 
         from .models import Commercial, Rendezvous
         commercial = Commercial.objects.filter(id=commercial_id).first() if commercial_id else None
-        rdv = Rendezvous.objects.filter(id=rdv_id).first() if rdv_id else None
+        rdv = Rendezvous.objects.filter(uuid=rdv_uuid).first() if rdv_uuid else None
+
+        if rdv and not (request.user.is_superuser or (rdv.commercial and rdv.commercial.user == request.user)):
+            raise PermissionDenied("Vous n'avez pas le droit d'accéder à ce rendez-vous.")
 
         SatisfactionB2B.objects.create(
             pdf_base64=pdf_b64,
@@ -521,17 +529,25 @@ def satisfaction_b2b(request):
         return render(request, 'front/satisfaction_b2b.html', {'success': True, 'note_recommandation_choices': note_recommandation_choices, 'rs_nom': rs_nom})
     return render(request, 'front/satisfaction_b2b.html', {'note_recommandation_choices': note_recommandation_choices, 'rs_nom': rs_nom})    
 
-def check_satisfaction_exists(request, rdv_id):
-    from .models import SatisfactionB2B
-    exists = SatisfactionB2B.objects.filter(rdv_id=rdv_id).exists()
+def check_satisfaction_exists(request, uuid):
+    from .models import SatisfactionB2B, Rendezvous
+    rdv = Rendezvous.objects.filter(uuid=uuid).first()
+    if rdv and not (request.user.is_superuser or (rdv.commercial and rdv.commercial.user == request.user)):
+        raise PermissionDenied("Vous n'avez pas le droit d'accéder à ce rendez-vous.")
+    exists = False
+    if rdv:
+        exists = SatisfactionB2B.objects.filter(rdv=rdv).exists()
     return JsonResponse({'exists': exists})
 
-def download_satisfaction_pdf(request, rdv_id):
-    from .models import SatisfactionB2B
-    satisfaction = SatisfactionB2B.objects.filter(rdv_id=rdv_id).first()
+def download_satisfaction_pdf(request, uuid):
+    from .models import SatisfactionB2B, Rendezvous
+    rdv = Rendezvous.objects.filter(uuid=uuid).first()
+    if rdv and not (request.user.is_superuser or (rdv.commercial and rdv.commercial.user == request.user)):
+        raise PermissionDenied("Vous n'avez pas le droit d'accéder à ce rendez-vous.")
+    satisfaction = SatisfactionB2B.objects.filter(rdv=rdv).first() if rdv else None
     if not satisfaction or not satisfaction.pdf_base64:
         raise Http404("PDF non trouvé")
     pdf_bytes = base64.b64decode(satisfaction.pdf_base64)
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="satisfaction_{rdv_id}.pdf"'
+    response['Content-Disposition'] = f'attachment; filename="satisfaction_{uuid}.pdf"'
     return response

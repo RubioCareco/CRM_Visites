@@ -92,7 +92,7 @@
       <div class="card recent-visits" id="recent-visits">
         <h2 class="titre-colonne titre-vert">Visites récentes</h2>
         {% for rdv in visites_recentes %}
-          <div class="visit-entry open-modal-btn" data-id="{{ rdv.id }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}" data-civilite="{{ rdv.client.civilite|default_if_none:'' }}" data-rs_nom="{{ rdv.client.rs_nom|default_if_none:'' }}" data-ville="{{ rdv.client.ville|default_if_none:'' }}" data-telephone="{{ rdv.client.telephone|default_if_none:'' }}" data-email="{{ rdv.client.e_mail|default_if_none:'' }}" data-code_comptable="{{ rdv.client.code_comptable|default_if_none:'' }}" data-statut="valide" style="position:relative;display:flex;align-items:center;">
+          <div class="visit-entry open-modal-btn" data-id="{{ rdv.uuid }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}" data-civilite="{{ rdv.client.civilite|default_if_none:'' }}" data-rs_nom="{{ rdv.client.rs_nom|default_if_none:'' }}" data-ville="{{ rdv.client.ville|default_if_none:'' }}" data-telephone="{{ rdv.client.telephone|default_if_none:'' }}" data-email="{{ rdv.client.e_mail|default_if_none:'' }}" data-code_comptable="{{ rdv.client.code_comptable|default_if_none:'' }}" data-statut="valide" style="position:relative;display:flex;align-items:center;">
             <div style="flex:1;min-width:0;">
               <p><strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong></p>
               <p class="status validée"><i class="fa fa-check-square"></i> Validée</p>
@@ -100,7 +100,7 @@
                 <p class="visit-date" style="margin:0;">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
                 {% with satisfaction=rdv.satisfactionb2b_set.first %}
                   {% if satisfaction %}
-                    <a href="/download-satisfaction/{{ rdv.id }}/" download target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction" style="margin-left:10px;">
+                    <a href="/download-satisfaction/{{ rdv.uuid }}/" download target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction" style="margin-left:10px;">
                       <img src="{% static 'front/img/PDF.svg' %}" alt="PDF" style="height: 28px; width: auto; display: block;">
                     </a>
                   {% endif %}
@@ -116,7 +116,7 @@
       <div class="card upcoming-visits" id="upcoming-visits">
         <h2 class="titre-colonne titre-orange">Visites à venir</h2>
         {% for rdv in rdvs_a_venir %}
-          <div class="upcoming-entry open-modal-btn" data-id="{{ rdv.id }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}" data-civilite="{{ rdv.client.civilite|default_if_none:'' }}" data-rs_nom="{{ rdv.client.rs_nom|default_if_none:'' }}" data-ville="{{ rdv.client.ville|default_if_none:'' }}" data-telephone="{{ rdv.client.telephone|default_if_none:'' }}" data-email="{{ rdv.client.e_mail|default_if_none:'' }}" data-code_comptable="{{ rdv.client.code_comptable|default_if_none:'' }}" data-statut="a_venir" style="position:relative;display:flex;align-items:center;">
+          <div class="upcoming-entry open-modal-btn" data-id="{{ rdv.uuid }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}" data-civilite="{{ rdv.client.civilite|default_if_none:'' }}" data-rs_nom="{{ rdv.client.rs_nom|default_if_none:'' }}" data-ville="{{ rdv.client.ville|default_if_none:'' }}" data-telephone="{{ rdv.client.telephone|default_if_none:'' }}" data-email="{{ rdv.client.e_mail|default_if_none:'' }}" data-code_comptable="{{ rdv.client.code_comptable|default_if_none:'' }}" data-statut="a_venir" style="position:relative;display:flex;align-items:center;">
             <div style="flex:1;min-width:0;">
               <p><strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong></p>
               <p class="status-à-venir"><i class="fa-solid fa-calendar-days"></i> à venir</p>
@@ -131,7 +131,7 @@
       <div class="card reminders" id="reminders">
         <h2 class="titre-colonne titre-rouge">A Rappeler</h2>
         {% for rdv in a_rappeler %}
-          <div class="reminder-entry open-modal-btn" data-id="{{ rdv.id }}" data-client-id="{{ rdv.client.id }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}" data-civilite="{{ rdv.client.civilite|default_if_none:'' }}" data-rs_nom="{{ rdv.client.rs_nom|default_if_none:'' }}" data-ville="{{ rdv.client.ville|default_if_none:'' }}" data-telephone="{{ rdv.client.telephone|default_if_none:'' }}" data-email="{{ rdv.client.e_mail|default_if_none:'' }}" data-code_comptable="{{ rdv.client.code_comptable|default_if_none:'' }}" data-statut="annule" style="position:relative;display:flex;align-items:center;">
+          <div class="reminder-entry open-modal-btn" data-id="{{ rdv.uuid }}" data-client-id="{{ rdv.client.id }}" data-nom="{{ rdv.client.nom }}" data-prenom="{{ rdv.client.prenom }}" data-entreprise="{{ rdv.client.entreprise|default_if_none:'' }}" data-date="{{ rdv.date_rdv|date:'d/m/Y' }}" data-heure="{{ rdv.heure_rdv|time:'H:i' }}" data-adresse="{{ rdv.client.adresse|default_if_none:'' }}" data-cp="{{ rdv.client.code_postal|default_if_none:'' }}" data-civilite="{{ rdv.client.civilite|default_if_none:'' }}" data-rs_nom="{{ rdv.client.rs_nom|default_if_none:'' }}" data-ville="{{ rdv.client.ville|default_if_none:'' }}" data-telephone="{{ rdv.client.telephone|default_if_none:'' }}" data-email="{{ rdv.client.e_mail|default_if_none:'' }}" data-code_comptable="{{ rdv.client.code_comptable|default_if_none:'' }}" data-statut="annule" style="position:relative;display:flex;align-items:center;">
             <div style="flex:1;min-width:0;">
               <p><strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong></p>
               <p class="status-à-rappeler"><i class="fa-solid fa-triangle-exclamation"></i> A rappeler</p>
@@ -507,7 +507,7 @@
                 <p class="visit-date" style="margin:0;">Dernières visites le : ${date}</p>
                 {% with satisfaction=rdv.satisfactionb2b_set.first %}
                   {% if satisfaction %}
-                    <a href="/download-satisfaction/{{ rdv.id }}/" download target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le PDF de satisfaction" style="margin-left:10px;">
+                    <a href="/download-satisfaction/{{ rdv.uuid }}/" download target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le PDF de satisfaction" style="margin-left:10px;">
                       <img src="{% static 'front/img/PDF.svg' %}" alt="PDF" style="height: 28px; width: auto; display: block;">
                     </a>
                   {% endif %}

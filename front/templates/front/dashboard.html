@@ -259,6 +259,28 @@
   <script>
     let currentRdvId = null;
 
+    // Fonction globale pour afficher dynamiquement l'icône PDF après soumission du formulaire de satisfaction
+    function afficherIconePDFSiExiste(rdv_uuid, carteSelector) {
+      fetch(`/check-satisfaction-exists/${rdv_uuid}/`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.exists) {
+            const carte = document.querySelector(carteSelector);
+            if (carte && !carte.querySelector('.pdf-download-icon')) {
+              const pdfIcon = document.createElement('a');
+              pdfIcon.href = `/download-satisfaction-pdf/${rdv_uuid}/`;
+              pdfIcon.target = '_blank';
+              pdfIcon.className = 'pdf-download-icon';
+              pdfIcon.title = 'Télécharger le formulaire de satisfaction';
+              pdfIcon.innerHTML = '<img src="/static/front/img/PDF.svg" alt="PDF" style="height: 28px; width: auto; display: block;">';
+              // Ajoute l'icône dans la zone d'action de la carte
+              const actions = carte.querySelector('.actions') || carte.querySelector('#pdfDownloadContainer') || carte;
+              actions.appendChild(pdfIcon);
+            }
+          }
+        });
+    }
+
     function toggleUserMenu() {
       const menu = document.getElementById("userMenu");
       menu.style.display = menu.style.display === "block" ? "none" : "block";
@@ -464,7 +486,11 @@
       if (data.status === 'ok') {
           // Retirer la carte du DOM
           const card = document.querySelector(`[data-id='${rdvId}']`);
-          if (card) card.remove();
+          let commercialId = null;
+          if (card) {
+            commercialId = card.getAttribute('data-commercial-id');
+            card.remove();
+          }
 
           // Créer la nouvelle carte dans la bonne colonne
           const nom = data.nom || '';
@@ -505,6 +531,7 @@
         const newCard = document.createElement('div');
             newCard.className = cardClass;
             newCard.setAttribute('data-id', rdvId);
+            newCard.setAttribute('data-commercial-id', commercialId);
             newCard.setAttribute('data-nom', nom);
             newCard.setAttribute('data-prenom', prenom);
             newCard.setAttribute('data-entreprise', entreprise);
@@ -541,7 +568,15 @@
               openClientModal(nom, prenom, entreprise, rdvId, date, heure, adresse, cp, false, false, civilite, rs_nom, ville, telephone, email, code_comptable, statut);
             });
         container.appendChild(newCard);
+        // Ajout dynamique de l'icône PDF si un formulaire existe
+        if (statutNorm.startsWith('valid')) {
+          afficherIconePDFSiExiste(rdvId, `[data-id='${rdvId}']`);
+        }
           }
+        // --- Mise à jour dynamique de la carte commercial ---
+        if (commercialId) {
+          updateCommercialCard(commercialId);
+        }
         closeClientModal();
       } else {
           alert("Erreur lors de la mise à jour");

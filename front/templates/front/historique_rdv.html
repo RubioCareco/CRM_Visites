@@ -147,7 +147,7 @@
       </div>
     </div>
   </div>
-  <a href="{% url 'dashboard' %}" class="back-login" style="position:fixed; left:24px; bottom:20px; z-index:9999; color:#f55; text-shadow: 1px 1px 6px #000, 0 0 2px #fff2; font-size: 12px;">&larr; Retour au tableau de bord</a>
+  <a href="{% url 'dashboard' %}" class="back-login" id="backDashboardBtn" style="position:fixed; left:24px; bottom:20px; z-index:9999; color:#f55; text-shadow: 1px 1px 6px #000, 0 0 2px #fff2; font-size: 12px;">&larr; Retour au tableau de bord</a>
   <script>
     function showTab(tab) {
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -374,6 +374,17 @@
         // Réinitialise l'input
         renderInput(currentType);
       });
+    });
+
+    // Redirection conditionnelle du bouton retour
+    document.addEventListener('DOMContentLoaded', function() {
+      const backBtn = document.getElementById('backDashboardBtn');
+      const role = "{{ role|default:'' }}";
+      if (role === "responsable" || role === "admin") {
+        backBtn.setAttribute('href', '/dashboard-responsable/');
+      } else {
+        backBtn.setAttribute('href', '/dashboard');
+      }
     });
   </script>
 </body>

@@ -298,7 +298,7 @@ def delete_temp_rdv(request):
 def update_statut(request, uuid, statut):
     print("DEBUG méthode reçue :", request.method)
     rdv = get_object_or_404(Rendezvous, uuid=uuid)
-    if not (request.user.is_superuser or (rdv.commercial and rdv.commercial.user == request.user)):
+    if not (request.user.is_superuser or (rdv.commercial and rdv.commercial.id == request.session.get('commercial_id'))):
         raise PermissionDenied("Vous n'avez pas le droit d'accéder à ce rendez-vous.")
 
     if request.method == 'POST':
@@ -385,7 +385,7 @@ from django.http import JsonResponse
 def get_rdv_info(request, uuid):
     try:
         rdv = Rendezvous.objects.get(uuid=uuid)
-        if not (request.user.is_superuser or (rdv.commercial and rdv.commercial.user == request.user)):
+        if not (request.user.is_superuser or (rdv.commercial and rdv.commercial.id == request.session.get('commercial_id'))):
             raise PermissionDenied("Vous n'avez pas le droit d'accéder à ce rendez-vous.")
         client = rdv.client
         # Récupérer les commentaires liés à ce rendez-vous
@@ -443,6 +443,7 @@ def client_file(request):
         'page_obj': page_obj,
         'per_page': per_page,
         'paginator': paginator,
+        'role': request.session.get('role'),
     })    
 
 @login_required
@@ -467,6 +468,7 @@ def historique_rdv(request):
         'visites_recentes': visites_recentes,
         'a_rappeler': a_rappeler,
         'historique_general': historique_general,
+        'role': request.session.get('role'),
     })    
 
 @csrf_exempt  # À remplacer par @login_required + gestion CSRF si besoin
@@ -528,7 +530,7 @@ def satisfaction_b2b(request):
         commercial = Commercial.objects.filter(id=commercial_id).first() if commercial_id else None
         rdv = Rendezvous.objects.filter(uuid=rdv_uuid).first() if rdv_uuid else None
 
-        if rdv and not (request.user.is_superuser or (rdv.commercial and rdv.commercial.user == request.user)):
+        if rdv and not (request.user.is_superuser or (rdv.commercial and rdv.commercial.id == request.session.get('commercial_id'))):
             raise PermissionDenied("Vous n'avez pas le droit d'accéder à ce rendez-vous.")
 
         # Création de l'objet SatisfactionB2B avec toutes les réponses du formulaire
@@ -564,7 +566,7 @@ def satisfaction_b2b(request):
 def check_satisfaction_exists(request, uuid):
     from .models import SatisfactionB2B, Rendezvous
     rdv = Rendezvous.objects.filter(uuid=uuid).first()
-    if rdv and not (request.user.is_superuser or (rdv.commercial and rdv.commercial.user == request.user)):
+    if rdv and not (request.user.is_superuser or (rdv.commercial and rdv.commercial.id == request.session.get('commercial_id'))):
         raise PermissionDenied("Vous n'avez pas le droit d'accéder à ce rendez-vous.")
     exists = False
     if rdv:
@@ -574,7 +576,12 @@ def check_satisfaction_exists(request, uuid):
 def download_satisfaction_pdf(request, uuid):
     from .models import SatisfactionB2B, Rendezvous
     rdv = Rendezvous.objects.filter(uuid=uuid).first()
-    if rdv and not (request.user.is_superuser or (rdv.commercial and rdv.commercial.user == request.user)):
+    role = request.session.get('role')
+    if rdv and not (
+        request.user.is_superuser or
+        (rdv.commercial and rdv.commercial.id == request.session.get('commercial_id')) or
+        (role in ['responsable', 'admin'])
+    ):
         raise PermissionDenied("Vous n'avez pas le droit d'accéder à ce rendez-vous.")
     satisfaction = SatisfactionB2B.objects.filter(rdv=rdv).first() if rdv else None
     if not satisfaction or not satisfaction.pdf_base64:
@@ -606,4 +613,35 @@ def dashboard_responsable(request):
     role = request.session.get('role')
     if role not in ['responsable', 'admin'] and not getattr(request.user, 'is_superuser', False):
         return redirect('dashboard')
-    return render(request, 'front/dashboard_responsable.html')
+    # On ne prend que les commerciaux (pas les responsables ni les admins)
+    commerciaux = Commercial.objects.filter(role='commercial')
+    for commercial in commerciaux:
+        # On ne prend que le dernier RDV validé ou annulé
+        dernier_rdv = Rendezvous.objects.filter(commercial=commercial, statut_rdv__in=['valide', 'annule']).order_by('-date_rdv', '-heure_rdv').first()
+        commercial.dernier_rdv = dernier_rdv
+        # Cherche le PDF de satisfaction lié à ce RDV
+        if dernier_rdv:
+            satisfaction_pdf = SatisfactionB2B.objects.filter(rdv=dernier_rdv).first()
+            commercial.dernier_rdv_pdf = satisfaction_pdf
+        else:
+            commercial.dernier_rdv_pdf = None
+    return render(request, 'front/dashboard_responsable.html', {'commerciaux': commerciaux})
+
+@login_required
+def get_last_rdv_commercial(request, commercial_id):
+    commercial = Commercial.objects.get(id=commercial_id)
+    dernier_rdv = Rendezvous.objects.filter(
+        commercial=commercial,
+        statut_rdv__in=['valide', 'annule']
+    ).order_by('-date_rdv', '-heure_rdv').first()
+    if dernier_rdv:
+        client = dernier_rdv.client
+        return JsonResponse({
+            'statut': dernier_rdv.statut_rdv,
+            'date': dernier_rdv.date_rdv.strftime('%d/%m/%Y'),
+            'heure': dernier_rdv.heure_rdv.strftime('%H:%M'),
+            'civilite': getattr(client, 'civilite', ''),
+            'rs_nom': getattr(client, 'rs_nom', ''),
+        })
+    else:
+        return JsonResponse({'statut': None})

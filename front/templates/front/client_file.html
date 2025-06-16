@@ -142,7 +142,7 @@
     </div>
   </div>
 
-  <a href="{% url 'dashboard' %}" class="back-login" style="position:fixed;left:32px;bottom:24px;z-index:10001;">&larr; Retour au tableau de bord</a>
+  <a href="{% url 'dashboard' %}" class="back-login" id="backDashboardBtn" style="position:fixed;left:32px;bottom:24px;z-index:10001;">&larr; Retour au tableau de bord</a>
 
 </body>
 <script>
@@ -381,6 +381,15 @@ document.addEventListener("DOMContentLoaded", function () {
       .catch(() => {
         commentsDiv.innerHTML = '<span style="color:#e53935;">Erreur lors du chargement des commentaires.</span>';
       });
+  }
+
+  // Redirection conditionnelle du bouton retour
+  const backBtn = document.getElementById('backDashboardBtn');
+  const role = "{{ role|default:'' }}";
+  if (role === "responsable" || role === "admin") {
+    backBtn.setAttribute('href', '/dashboard-responsable/');
+  } else {
+    backBtn.setAttribute('href', '/dashboard');
   }
 });
 function closeClientModal() {

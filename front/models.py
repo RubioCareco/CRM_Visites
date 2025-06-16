@@ -53,6 +53,7 @@ class Rendezvous(models.Model):
     date_creation = models.DateTimeField(auto_now_add=True)
     date_statut = models.DateTimeField(null=True, blank=True)  # Date du dernier changement de statut
     statut_rdv = models.CharField(max_length=16, choices=STATUT_CHOICES, default='a_venir')
+    rs_nom = models.CharField(max_length=128, blank=True, null=True)
 
     def __str__(self):
         return f"RDV avec {self.client} le {self.date_rdv} à {self.heure_rdv}"

@@ -42,38 +42,42 @@
     <div class="dashboard-resp-commerciaux">
       <h2 class="dashboard-resp-section-title">Commerciaux :</h2>
       <div class="dashboard-resp-commerciaux-list">
-        <div class="commercial-card jean-dupont">
-          <div class="commercial-avatar">JD</div>
-          <div class="commercial-info">
-            <div class="commercial-name">Jean Dupont</div>
-            <div class="commercial-last-rdv">Dernier RDV : Garage X<br>Le 29/09/2025 à 15:30</div>
-            <div class="commercial-status realise">Réalisé</div>
+        {% for commercial in commerciaux %}
+          <div class="commercial-card" data-id="{{ commercial.id }}" data-prenom="{{ commercial.prenom }}" data-nom="{{ commercial.nom }}">
+            <div class="commercial-avatar">
+              {{ commercial.prenom|slice:":1"|upper }}{{ commercial.nom|slice:":1"|upper }}
+            </div>
+            <div class="commercial-info">
+              <div class="commercial-name">{{ commercial.prenom }} {{ commercial.nom }}</div>
+              {% if commercial.dernier_rdv %}
+                <div class="commercial-last-rdv">
+                  {% if commercial.dernier_rdv.statut_rdv == 'valide' or commercial.dernier_rdv.statut_rdv == 'annule' %}
+                    Dernier rendez-vous :
+                  {% endif %}
+                  {{ commercial.dernier_rdv.client.civilite|default:"" }} {{ commercial.dernier_rdv.client.rs_nom|default:"" }}
+                  {% if commercial.dernier_rdv_pdf %}
+                    <a href="{% url 'download_satisfaction_pdf' commercial.dernier_rdv.uuid %}" target="_blank" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction" style="margin-left:8px;vertical-align:middle;display:inline-block;">
+                      <img src="{% static 'front/img/PDF.svg' %}" alt="PDF" style="height: 22px; width: auto; display: inline-block;vertical-align:middle;">
+                    </a>
+                  {% endif %}<br>
+                  Statut : 
+                  {% if commercial.dernier_rdv.statut_rdv == 'valide' %}
+                    <span style="color:#1ecb6b;font-weight:bold;">Validé</span>
+                  {% elif commercial.dernier_rdv.statut_rdv == 'annule' %}
+                    <span style="color:#e53935;font-weight:bold;">Annulé</span>
+                  {% else %}
+                    <span style="color:#ffb347;font-weight:bold;">À venir</span>
+                  {% endif %}<br>
+                  Le {{ commercial.dernier_rdv.date_rdv|date:"d/m/Y" }} à {{ commercial.dernier_rdv.heure_rdv|time:"H:i" }}
+                </div>
+              {% else %}
+                <div class="commercial-last-rdv" style="color:#aaa;">Aucun RDV</div>
+              {% endif %}
+            </div>
           </div>
-        </div>
-        <div class="commercial-card marie-dupont">
-          <div class="commercial-avatar">MD</div>
-          <div class="commercial-info">
-            <div class="commercial-name">Marie Dupont</div>
-            <div class="commercial-last-rdv">Dernier RDV : Garage X<br>Le 29/09/2025 à 15:30</div>
-            <div class="commercial-status a-venir">À venir</div>
-          </div>
-        </div>
-        <div class="commercial-card bastien-dupont">
-          <div class="commercial-avatar">BD</div>
-          <div class="commercial-info">
-            <div class="commercial-name">Bastien Dupont</div>
-            <div class="commercial-last-rdv">Dernier RDV : Garage X<br>Le 29/09/2025 à 15:30</div>
-            <div class="commercial-status realise">Réalisé</div>
-          </div>
-        </div>
-        <div class="commercial-card antoine-dupont">
-          <div class="commercial-avatar">AD</div>
-          <div class="commercial-info">
-            <div class="commercial-name">Antoine Dupont</div>
-            <div class="commercial-last-rdv">Dernier RDV : Garage X<br>Le 29/09/2025 à 15:30</div>
-            <div class="commercial-status annule">Annulé</div>
-          </div>
-        </div>
+        {% empty %}
+          <p>Aucun commercial enregistré.</p>
+        {% endfor %}
       </div>
     </div>
     <div class="dashboard-resp-stats">
@@ -111,5 +115,39 @@
       userMenu.style.display = "none";
     }
   });
+
+  // Fonction pour mettre à jour dynamiquement la carte d'un commercial
+  function updateCommercialCard(commercialId) {
+    fetch(`/get-last-rdv-commercial/${commercialId}/`)
+      .then(response => response.json())
+      .then(data => {
+        const card = document.querySelector(`.commercial-card[data-id='${commercialId}']`);
+        if (!card) return;
+        const infoDiv = card.querySelector('.commercial-info');
+        const prenom = card.getAttribute('data-prenom');
+        const nom = card.getAttribute('data-nom');
+        if (data.statut) {
+          let statutHtml = '';
+          if (data.statut === 'valide') {
+            statutHtml = '<span style="color:#1ecb6b;font-weight:bold;">Validé</span>';
+          } else if (data.statut === 'annule') {
+            statutHtml = '<span style="color:#e53935;font-weight:bold;">Annulé</span>';
+          }
+          infoDiv.innerHTML = `
+            <div class="commercial-name">${prenom} ${nom}</div>
+            <div class="commercial-last-rdv">
+              Dernier rendez-vous : ${data.civilite} ${data.rs_nom}<br>
+              Statut : ${statutHtml}<br>
+              Le ${data.date} à ${data.heure}
+            </div>
+          `;
+        } else {
+          infoDiv.innerHTML = `
+            <div class="commercial-name">${prenom} ${nom}</div>
+            <div class="commercial-last-rdv" style="color:#aaa;">Aucun RDV</div>
+          `;
+        }
+      });
+  }
 </script>
 </html> 

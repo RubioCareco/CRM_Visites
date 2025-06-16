@@ -40,7 +40,11 @@ def login_view(request):
         if commercial and check_password(password, commercial.password):
             request.session['commercial_id'] = commercial.id
             request.session['commercial_nom'] = commercial.commercial
-            return redirect('dashboard')
+            request.session['role'] = commercial.role
+            if commercial.role in ['responsable', 'admin']:
+                return redirect('dashboard_responsable')
+            else:
+                return redirect('dashboard')
         else:
             erreur = True
     return render(request, 'front/login.html', {'erreur': erreur})
@@ -275,9 +279,13 @@ def profil(request):
         commercial.email = request.POST.get('email') or commercial.email
         commercial.telephone = request.POST.get('telephone') or commercial.telephone
         commercial.save()
-        return redirect('profil')
+        role = request.session.get('role')
+        if role in ['responsable', 'admin']:
+            return redirect('dashboard_responsable')
+        else:
+            return redirect('dashboard')
 
-    return render(request, 'front/profil.html', {'commercial': commercial})
+    return render(request, 'front/profil.html', {'commercial': commercial, 'role': request.session.get('role')})
 
 # ❌ Supprimer le rdv temporaire
 @login_required
@@ -592,3 +600,10 @@ def get_client_comments(request, client_id):
         for c in commentaires
     ]
     return JsonResponse({'commentaires': data})
+
+@login_required
+def dashboard_responsable(request):
+    role = request.session.get('role')
+    if role not in ['responsable', 'admin'] and not getattr(request.user, 'is_superuser', False):
+        return redirect('dashboard')
+    return render(request, 'front/dashboard_responsable.html')

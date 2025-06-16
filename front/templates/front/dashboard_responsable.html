@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Tableau de bord - Responsable Commercial</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'front/css/dashboard_responsable.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body class="dashboard-resp-bg">
+  <h1 class="dashboard-resp-title">Tableau de bord</h1>
+  <div class="dashboard-resp-search" style="margin-bottom: 18px;">
+    <i class="fa fa-search search-icon"></i>
+    <input type="text" placeholder="Rechercher par clients, entreprises ..." class="dashboard-resp-search-input">
+  </div>
+  <div class="dashboard-resp-filters" style="margin-bottom: 28px;">
+    <select class="dashboard-resp-filter-select">
+      <option>Filtrer par date</option>
+    </select>
+    <select class="dashboard-resp-filter-select">
+      <option>Filtrer par statut</option>
+    </select>
+    <select class="dashboard-resp-filter-select">
+      <option>Filtrer par commercial</option>
+    </select>
+  </div>
+  <div class="user-container">
+    <div class="user-profile" onclick="toggleUserMenu()">
+      <i class="fa fa-user"></i>
+      <span>Responsable</span>
+    </div>
+    <div class="user-menu" id="userMenu">
+      <ul>
+        <li><a href="{% url 'profil' %}" class="menu-link">Profil</a></li>
+        <li><a href="{% url 'client_file' %}" class="menu-link">Fichier Clients</a></li>
+        <li><a href="{% url 'historique_rdv' %}" class="menu-link">Historique RDV</a></li>
+        <li><a href="{% url 'logout' %}" class="logout-btn">Se déconnecter</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="dashboard-resp-main">
+    <div class="dashboard-resp-commerciaux">
+      <h2 class="dashboard-resp-section-title">Commerciaux :</h2>
+      <div class="dashboard-resp-commerciaux-list">
+        <div class="commercial-card jean-dupont">
+          <div class="commercial-avatar">JD</div>
+          <div class="commercial-info">
+            <div class="commercial-name">Jean Dupont</div>
+            <div class="commercial-last-rdv">Dernier RDV : Garage X<br>Le 29/09/2025 à 15:30</div>
+            <div class="commercial-status realise">Réalisé</div>
+          </div>
+        </div>
+        <div class="commercial-card marie-dupont">
+          <div class="commercial-avatar">MD</div>
+          <div class="commercial-info">
+            <div class="commercial-name">Marie Dupont</div>
+            <div class="commercial-last-rdv">Dernier RDV : Garage X<br>Le 29/09/2025 à 15:30</div>
+            <div class="commercial-status a-venir">À venir</div>
+          </div>
+        </div>
+        <div class="commercial-card bastien-dupont">
+          <div class="commercial-avatar">BD</div>
+          <div class="commercial-info">
+            <div class="commercial-name">Bastien Dupont</div>
+            <div class="commercial-last-rdv">Dernier RDV : Garage X<br>Le 29/09/2025 à 15:30</div>
+            <div class="commercial-status realise">Réalisé</div>
+          </div>
+        </div>
+        <div class="commercial-card antoine-dupont">
+          <div class="commercial-avatar">AD</div>
+          <div class="commercial-info">
+            <div class="commercial-name">Antoine Dupont</div>
+            <div class="commercial-last-rdv">Dernier RDV : Garage X<br>Le 29/09/2025 à 15:30</div>
+            <div class="commercial-status annule">Annulé</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dashboard-resp-stats">
+      <h2 class="dashboard-resp-section-title">Total rendez-vous :</h2>
+      <div class="dashboard-resp-stats-grid">
+        <div class="stat-card realise">
+          <div class="stat-label">Rendez-vous réalisé</div>
+          <div class="stat-value">12</div>
+        </div>
+        <div class="stat-card a-venir">
+          <div class="stat-label">Rendez-vous à venir</div>
+          <div class="stat-value">21</div>
+        </div>
+        <div class="stat-card annule">
+          <div class="stat-label">Rendez-vous annulé</div>
+          <div class="stat-value">13</div>
+        </div>
+        <div class="stat-card add">
+          <div class="stat-label">Ajouter un rdv</div>
+          <div class="stat-value"><i class="fa fa-plus"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+<script>
+  function toggleUserMenu() {
+    const menu = document.getElementById("userMenu");
+    menu.style.display = menu.style.display === "block" ? "none" : "block";
+  }
+  document.addEventListener("click", function(event) {
+    const userProfile = document.querySelector(".user-profile");
+    const userMenu = document.getElementById("userMenu");
+    if (userMenu && !userProfile.contains(event.target) && !userMenu.contains(event.target)) {
+      userMenu.style.display = "none";
+    }
+  });
+</script>
+</html> 

@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 from .views import reset_password, new_password
 from django.contrib.auth.models import User
+from django.views.generic import TemplateView
 
 urlpatterns = [
     path('', views.login_view, name='home'),  # Route pour la page principale
@@ -23,4 +24,5 @@ urlpatterns = [
     path('check-satisfaction/<uuid:uuid>/', views.check_satisfaction_exists, name='check_satisfaction'),
     path('download-satisfaction/<uuid:uuid>/', views.download_satisfaction_pdf, name='download_satisfaction_pdf'),
     path('get-client-comments/<int:client_id>/', views.get_client_comments, name='get_client_comments'),
+    path('dashboard-responsable/', views.dashboard_responsable, name='dashboard_responsable'),
 ]

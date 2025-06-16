@@ -51,7 +51,12 @@
 
   <script>
     document.querySelector('.close-button').addEventListener('click', () => {
-      window.location.href = '/dashboard';
+      const role = "{{ role|default:'' }}";
+      if (role === "responsable" || role === "admin") {
+        window.location.href = "/dashboard-responsable/";
+      } else {
+        window.location.href = "/dashboard";
+      }
     });
   
     document.addEventListener('DOMContentLoaded', function () {

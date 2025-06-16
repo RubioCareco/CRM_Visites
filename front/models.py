@@ -10,6 +10,12 @@ class Commercial(models.Model):
     telephone = models.CharField(max_length=15)
     password = models.CharField(max_length=255)
     date_creation = models.DateTimeField(auto_now_add=True)
+    ROLE_CHOICES = [
+        ('commercial', 'Commercial'),
+        ('responsable', 'Responsable'),
+        ('admin', 'Admin'),
+    ]
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='commercial')
 
     def __str__(self):
         return f"{self.prenom} {self.nom}"

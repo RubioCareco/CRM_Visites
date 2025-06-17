@@ -9,6 +9,11 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
+  {% if error_message %}
+    <div style="background:#e53935;color:#fff;padding:12px 18px;border-radius:8px;margin-bottom:18px;text-align:center;font-weight:bold;">
+      Erreur lors de la création du rendez-vous : {{ error_message }}
+    </div>
+  {% endif %}
   <div class="rdv-modal">
     <div class="rdv-box">
       <h2>Ajouter un rendez-vous</h2>
@@ -29,6 +34,18 @@
           <i class="fa fa-clock"></i>
           <input type="time" name="heure_rdv" required>
         </div>
+
+        {% if role in 'responsable,admin' and commerciaux_list %}
+        <div class="rdv-field">
+          <i class="fa fa-user-tie"></i>
+          <select name="commercial_id" id="commercialSelect" class="rdv-select" required>
+            <option value="">Sélectionner un commercial</option>
+            {% for comm in commerciaux_list %}
+              <option value="{{ comm.id }}">{{ comm.prenom }} {{ comm.nom }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
 
         <div class="rdv-field autocomplete-container">
           <i class="fa fa-user"></i>
@@ -82,64 +99,82 @@
       const cancelBtn = document.getElementById("cancelBtn");
       const inputs = form.querySelectorAll("input, textarea, select");
       const nextUrl = document.querySelector("input[name='next']").value || "/dashboard";
+      const role = '{{ request.session.role|default:"" }}';
+      const dashboardRespUrl = "/dashboard-responsable/";
+
+      // --- Autocomplétion dynamique selon le commercial sélectionné ---
+      const commercialSelect = document.getElementById("commercialSelect");
+      const input = document.getElementById("clientSearch");
+      const results = document.getElementById("clientResults");
+      const hiddenInput = document.getElementById("client_id");
+      let clients = [];
+
+      function updateAutocompleteClients(newClients) {
+        clients = newClients;
+        input.value = "";
+        hiddenInput.value = "";
+        results.innerHTML = "";
+      }
+
+      if (commercialSelect) {
+        commercialSelect.addEventListener("change", function () {
+          const commercialId = this.value;
+          if (!commercialId) {
+            updateAutocompleteClients([]);
+            return;
+          }
+          fetch(`/api/clients-by-commercial/?commercial_id=${commercialId}`)
+            .then(response => response.json())
+            .then(data => {
+              updateAutocompleteClients(data.clients || []);
+            });
+        });
+      }
+
+      if (input && results && hiddenInput) {
+        input.addEventListener("input", function () {
+          const value = this.value.toLowerCase();
+          results.innerHTML = "";
+          if (value.length === 0) return;
+          const matches = clients.filter(c =>
+            (`${c.prenom} ${c.nom}`).toLowerCase().includes(value)
+          );
+          matches.forEach(client => {
+            const li = document.createElement("li");
+            li.textContent = `${client.prenom} ${client.nom}`;
+            li.classList.add("autocomplete-item");
+            li.addEventListener("click", () => {
+              input.value = `${client.prenom} ${client.nom}`;
+              hiddenInput.value = client.id;
+              results.innerHTML = "";
+            });
+            results.appendChild(li);
+          });
+        });
+        document.addEventListener("click", (e) => {
+          if (!results.contains(e.target) && e.target !== input) {
+            results.innerHTML = "";
+          }
+        });
+      }
 
       form.addEventListener("submit", function (e) {
         e.preventDefault();
         if (form.checkValidity()) {
           successMessage.style.display = "flex";
-          setTimeout(() => form.submit(), 1500);
+          setTimeout(() => {
+            form.submit();
+          }, 1500);
         } else {
           form.reportValidity();
         }
       });
 
-      cancelBtn.addEventListener("click", () => {
-        let hasData = false;
-        inputs.forEach(input => {
-          if (input.value.trim() !== "") hasData = true;
-        });
-        if (hasData) {
-          if (confirm("Des informations ont été saisies. Voulez-vous vraiment quitter cette page ?")) {
-            window.location.href = nextUrl;
-          }
+      cancelBtn.addEventListener("click", function () {
+        if (role === 'responsable' || role === 'admin') {
+          window.location.href = dashboardRespUrl;
         } else {
           window.location.href = nextUrl;
-        }
-      });
-
-      // Code d'autocomplétion client
-      const input = document.getElementById("clientSearch");
-      const results = document.getElementById("clientResults");
-      const hiddenInput = document.getElementById("client_id");
-
-      const rawJson = document.getElementById("client-data").textContent;
-      const clients = JSON.parse(rawJson);
-
-      input.addEventListener("input", function () {
-        const value = this.value.toLowerCase();
-        results.innerHTML = "";
-        if (value.length === 0) return;
-
-        const matches = clients.filter(c =>
-          (`${c.prenom} ${c.nom}`).toLowerCase().includes(value)
-        );
-
-        matches.forEach(client => {
-          const li = document.createElement("li");
-          li.textContent = `${client.prenom} ${client.nom}`;
-          li.classList.add("autocomplete-item");
-          li.addEventListener("click", () => {
-            input.value = `${client.prenom} ${client.nom}`;
-            hiddenInput.value = client.id;
-            results.innerHTML = "";
-          });
-          results.appendChild(li);
-        });
-      });
-
-      document.addEventListener("click", (e) => {
-        if (!results.contains(e.target) && e.target !== input) {
-          results.innerHTML = "";
         }
       });
     });
@@ -152,31 +187,28 @@
       const cancelBtn = document.getElementById("cancelBtn");
       const inputs = form.querySelectorAll("input, textarea, select");
       const nextUrl = document.querySelector("input[name='next']").value || "/dashboard";
+      const role = '{{ request.session.role|default:"" }}';
+      const dashboardRespUrl = "/dashboard-responsable/";
 
       form.addEventListener("submit", function (e) {
         e.preventDefault();
         if (form.checkValidity()) {
           successMessage.style.display = "flex";
-          setTimeout(() => form.submit(), 1500);
+          setTimeout(() => {
+            form.submit();
+          }, 1500);
         } else {
           form.reportValidity();
         }
       });
 
-      cancelBtn.addEventListener("click", () => {
-        let hasData = false;
-        inputs.forEach(input => {
-          if (input.value.trim() !== "") hasData = true;
-        });
-        if (hasData) {
-          if (confirm("Des informations ont été saisies. Voulez-vous vraiment quitter cette page ?")) {
-            window.location.href = nextUrl;
-          }
+      cancelBtn.addEventListener("click", function () {
+        if (role === 'responsable' || role === 'admin') {
+          window.location.href = dashboardRespUrl;
         } else {
           window.location.href = nextUrl;
         }
       });
-      // Pas de code d'autocomplétion client ici
     });
   </script>
   {% endif %}

@@ -27,4 +27,7 @@ urlpatterns = [
     path('dashboard-responsable/', views.dashboard_responsable, name='dashboard_responsable'),
     path('check-satisfaction-exists/<uuid:uuid>/', views.check_satisfaction_exists, name='check_satisfaction_exists'),
     path('get-last-rdv-commercial/<int:commercial_id>/', views.get_last_rdv_commercial, name='get_last_rdv_commercial'),
+    path('api/rdv-counters/', views.api_rdv_counters, name='api_rdv_counters'),
+    path('api/rdvs-a-venir/', views.api_rdvs_a_venir, name='api_rdvs_a_venir'),
+    path('api/clients-by-commercial/', views.api_clients_by_commercial, name='api_clients_by_commercial'),
 ]

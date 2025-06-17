@@ -934,6 +934,35 @@
           }
         }
       });
+
+      function updateUpcomingVisits() {
+        fetch('/api/rdvs-a-venir/')
+          .then(response => response.json())
+          .then(data => {
+            const container = document.getElementById('upcoming-visits');
+            if (!container) return;
+            let html = '<h2 class="titre-colonne titre-orange">Visites à venir</h2>';
+            if (data.rdvs && data.rdvs.length > 0) {
+              data.rdvs.forEach(rdv => {
+                html += `<div class="upcoming-entry open-modal-btn" data-id="${rdv.uuid}" data-nom="" data-prenom="" data-entreprise="" data-date="${rdv.date}" data-heure="${rdv.heure}" data-statut="a_venir" style="position:relative;display:flex;align-items:center;">
+                  <div style="flex:1;min-width:0;">
+                    <p><strong>${rdv.client}</strong></p>
+                    <p class="status-à-venir"><i class="fa-solid fa-calendar-days"></i> à venir</p>
+                    <p class="visit-date-futur">Rendez-vous le : ${rdv.date}</p>
+                  </div>
+                </div>`;
+              });
+            } else {
+              html += '<p>Aucun rendez-vous à venir.</p>';
+            }
+            container.innerHTML = html;
+          });
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        updateUpcomingVisits();
+        setInterval(updateUpcomingVisits, 10000);
+      });
     });
   </script>
 </body>

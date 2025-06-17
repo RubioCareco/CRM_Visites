@@ -85,15 +85,15 @@
       <div class="dashboard-resp-stats-grid">
         <div class="stat-card realise">
           <div class="stat-label">Rendez-vous réalisé</div>
-          <div class="stat-value">12</div>
+          <div class="stat-value">{{ total_realise }}</div>
         </div>
         <div class="stat-card a-venir">
           <div class="stat-label">Rendez-vous à venir</div>
-          <div class="stat-value">21</div>
+          <div class="stat-value">{{ total_avenir }}</div>
         </div>
         <div class="stat-card annule">
           <div class="stat-label">Rendez-vous annulé</div>
-          <div class="stat-value">13</div>
+          <div class="stat-value">{{ total_annule }}</div>
         </div>
         <div class="stat-card add">
           <div class="stat-label">Ajouter un rdv</div>
@@ -149,5 +149,28 @@
         }
       });
   }
+
+  function updateRdvCounters() {
+    fetch('/api/rdv-counters/')
+      .then(response => response.json())
+      .then(data => {
+        document.querySelector('.stat-card.realise .stat-value').textContent = data.total_realise;
+        document.querySelector('.stat-card.a-venir .stat-value').textContent = data.total_avenir;
+        document.querySelector('.stat-card.annule .stat-value').textContent = data.total_annule;
+      });
+  }
+
+  document.addEventListener('DOMContentLoaded', updateRdvCounters);
+  setInterval(updateRdvCounters, 10000);
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const addCard = document.querySelector('.stat-card.add');
+    if (addCard) {
+      addCard.style.cursor = 'pointer';
+      addCard.addEventListener('click', function() {
+        window.location.href = '/add-rdv/';
+      });
+    }
+  });
 </script>
 </html> 

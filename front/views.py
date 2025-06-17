@@ -219,6 +219,12 @@ def add_rdv(request):
         except ImportClientCorrected.DoesNotExist:
             client_prefill = None
 
+    role = request.session.get('role')
+    commerciaux_list = None
+    if role in ['responsable', 'admin']:
+        commerciaux_list = Commercial.objects.filter(role='commercial')
+
+    error_message = None
     if request.method == 'POST':
         try:
             if 'is_temp_rdv' in request.POST:
@@ -230,8 +236,16 @@ def add_rdv(request):
                 }
                 return redirect('new_client')
 
+            # Si responsable/admin, on prend le commercial choisi, sinon celui de la session
+            if role in ['responsable', 'admin']:
+                commercial_id_selected = request.POST.get('commercial_id')
+                commercial = Commercial.objects.get(id=commercial_id_selected)
+            else:
+                commercial_id = request.session.get('commercial_id')
+                commercial = Commercial.objects.get(id=commercial_id)
+
             client_id = request.POST.get('client_id')
-            client = ImportClientCorrected.objects.get(id=client_id, commercial__iexact=commercial.commercial)
+            client = ImportClientCorrected.objects.get(id=client_id)
 
             Rendezvous.objects.create(
                 client=client,
@@ -242,6 +256,8 @@ def add_rdv(request):
                 notes=request.POST.get('notes'),
                 statut_rdv='a_venir'  # Par défaut, à venir
             )
+            if role in ['responsable', 'admin']:
+                return redirect('dashboard_responsable')
             next_url = request.POST.get('next') or request.GET.get('next')
             if next_url:
                 return redirect(next_url)
@@ -249,8 +265,13 @@ def add_rdv(request):
 
         except Exception as e:
             print("❌ Erreur :", e)
+            error_message = str(e)
 
-    clients = ImportClientCorrected.objects.filter(commercial__iexact=commercial.commercial)
+    # Si responsable/admin, on affiche tous les clients, sinon seulement ceux du commercial
+    if role in ['responsable', 'admin']:
+        clients = ImportClientCorrected.objects.all()
+    else:
+        clients = ImportClientCorrected.objects.filter(commercial__iexact=commercial.commercial)
     client_temp = request.session.get('client_temp') if from_new_client else None
     next_url = request.GET.get('next', '/dashboard')
 
@@ -260,6 +281,9 @@ def add_rdv(request):
         'next': next_url,
         'from_new_client': from_new_client,
         'client_prefill': client_prefill,
+        'role': role,
+        'commerciaux_list': commerciaux_list,
+        'error_message': error_message,
     })
 
 # 📁 Fiche client
@@ -613,19 +637,26 @@ def dashboard_responsable(request):
     role = request.session.get('role')
     if role not in ['responsable', 'admin'] and not getattr(request.user, 'is_superuser', False):
         return redirect('dashboard')
-    # On ne prend que les commerciaux (pas les responsables ni les admins)
+    # Compteurs du mois en cours
+    now = timezone.now()
+    total_realise = Rendezvous.objects.filter(statut_rdv='valide', date_rdv__year=now.year, date_rdv__month=now.month).count()
+    total_avenir = Rendezvous.objects.filter(statut_rdv='a_venir', date_rdv__year=now.year, date_rdv__month=now.month).count()
+    total_annule = Rendezvous.objects.filter(statut_rdv='annule', date_rdv__year=now.year, date_rdv__month=now.month).count()
     commerciaux = Commercial.objects.filter(role='commercial')
     for commercial in commerciaux:
-        # On ne prend que le dernier RDV validé ou annulé
         dernier_rdv = Rendezvous.objects.filter(commercial=commercial, statut_rdv__in=['valide', 'annule']).order_by('-date_rdv', '-heure_rdv').first()
         commercial.dernier_rdv = dernier_rdv
-        # Cherche le PDF de satisfaction lié à ce RDV
         if dernier_rdv:
             satisfaction_pdf = SatisfactionB2B.objects.filter(rdv=dernier_rdv).first()
             commercial.dernier_rdv_pdf = satisfaction_pdf
         else:
             commercial.dernier_rdv_pdf = None
-    return render(request, 'front/dashboard_responsable.html', {'commerciaux': commerciaux})
+    return render(request, 'front/dashboard_responsable.html', {
+        'commerciaux': commerciaux,
+        'total_realise': total_realise,
+        'total_avenir': total_avenir,
+        'total_annule': total_annule,
+    })
 
 @login_required
 def get_last_rdv_commercial(request, commercial_id):
@@ -645,3 +676,62 @@ def get_last_rdv_commercial(request, commercial_id):
         })
     else:
         return JsonResponse({'statut': None})
+
+@login_required
+def api_rdv_counters(request):
+    now = timezone.now()
+    total_realise = Rendezvous.objects.filter(statut_rdv='valide', date_rdv__year=now.year, date_rdv__month=now.month).count()
+    total_avenir = Rendezvous.objects.filter(statut_rdv='a_venir', date_rdv__year=now.year, date_rdv__month=now.month).count()
+    total_annule = Rendezvous.objects.filter(statut_rdv='annule', date_rdv__year=now.year, date_rdv__month=now.month).count()
+    return JsonResponse({
+        'total_realise': total_realise,
+        'total_avenir': total_avenir,
+        'total_annule': total_annule,
+    })
+
+@login_required
+@require_GET
+def api_rdvs_a_venir(request):
+    commercial_id = request.session.get('commercial_id')
+    if not commercial_id:
+        return JsonResponse({'error': 'Non authentifié'}, status=403)
+    rdvs = Rendezvous.objects.filter(commercial_id=commercial_id, statut_rdv='a_venir').order_by('date_rdv', 'heure_rdv')
+    data = [
+        {
+            'uuid': str(rdv.uuid),
+            'client': str(rdv.client),
+            'date': rdv.date_rdv.strftime('%d/%m/%Y'),
+            'heure': rdv.heure_rdv.strftime('%H:%M'),
+            'objet': rdv.objet,
+            'notes': rdv.notes,
+        }
+        for rdv in rdvs
+    ]
+    return JsonResponse({'rdvs': data})
+
+@require_GET
+@login_required
+def api_clients_by_commercial(request):
+    commercial_id = request.GET.get('commercial_id')
+    role = request.session.get('role')
+    if not commercial_id:
+        return JsonResponse({'clients': []})
+    if role in ['responsable', 'admin']:
+        # On récupère le nom du commercial à partir de son id
+        from .models import Commercial
+        comm = Commercial.objects.filter(id=commercial_id).first()
+        if not comm:
+            return JsonResponse({'clients': []})
+        clients = ImportClientCorrected.objects.filter(commercial__iexact=comm.commercial)
+    else:
+        # Pour un commercial classique, on suppose que commercial_id est le nom déjà
+        clients = ImportClientCorrected.objects.filter(commercial__iexact=commercial_id)
+    data = [
+        {
+            'id': client.id,
+            'nom': client.rs_nom or client.nom,
+            'prenom': getattr(client, 'prénom', '')
+        }
+        for client in clients
+    ]
+    return JsonResponse({'clients': data})

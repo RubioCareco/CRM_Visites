@@ -1,245 +1,327 @@
-body, html {
+body {
     margin: 0;
     padding: 0;
-    font-family: 'Segoe UI', sans-serif;
-    height: 100%;
-    background: url('../img/background3.png') no-repeat center center fixed;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #1a0508 url('/static/front/img/background3.png') no-repeat center center fixed;
     background-size: cover;
-}
-
-.modal {
+  }
+  
+  .nc-modal-bg {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
     display: flex;
-    justify-content: center;
     align-items: center;
-    height: 100vh;
-}
-
-.modal-content {
-    background-color: rgba(250, 250, 250, 0.219);
-    padding: 20px;
-    border-radius: 10px;
+    justify-content: center;
+    z-index: 100;
+    background: rgba(0,0,0,0.5);
+  }
+  
+  .nc-card {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px 0 rgba(0,0,0,0.45);
     width: 600px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    max-width: 96vw;
     position: relative;
-}
-
-.close-button {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    width: 32px;
-    height: 32px;
-    border: 2px solid #e53935;
-    border-radius: 50%;
-    background: transparent;
-    color: #e53935;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background-color 0.3s ease, color 0.3s ease;
-    box-sizing: border-box;
-    padding: 0;
-}
-
-.close-button:hover {
-    background-color: #e53935;
-    color: white;
-}
-
-.close-button i {
-    pointer-events: none;
-}
-
-h2 {
-    text-align: center;
-    color: white;
-    margin-bottom: 40px;
-}
-
-.form-group {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 15px;
-    gap: 12px;
-}
-
-.input-icon-group {
-    position: relative;
-    width: 45%;
-}
-
-.input-icon-group i {
-    position: absolute;
-    top: 50%;
-    left: 10px;
-    transform: translateY(-50%);
-    color: rgb(255, 253, 253);
-    font-size: 14px;
-    pointer-events: none;
-}
-
-.input-icon-group input {
-    width: 70%;
-    padding: 12px 40px 12px 40px;
-    border: none;
-    border-radius: 8px;
-    background-color: rgba(255, 255, 255, 0.1);
-    color: white;
-    font-size: 14px;
-    transition: background-color 0.3s ease, border 0.3s ease;
-    outline: none;
-}
-
-.input-icon-group input::placeholder {
-    color: rgba(255, 255, 255, 0.85);
-    opacity: 1;
-}
-
-.input-icon-group input:focus {
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    background-color: rgba(255, 255, 255, 0.15);
-}
-
-.input-icon-group input.invalid {
-    border: 1px solid #ff4d4d;
-    box-shadow: 0 0 4px rgba(255, 0, 0, 0.4);
-}
-
-.input-icon-group .error-message {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    margin-top: 5px;
-    background-color: #ff4d4d;
-    color: white;
-    padding: 6px 10px;
-    font-size: 12px;
-    border-radius: 5px;
-    white-space: nowrap;
-    z-index: 10;
-    display: none;
-}
-
-.input-icon-group .error-message::before {
-    content: '';
-    position: absolute;
-    top: -5px;
-    left: 10px;
-    border-width: 5px;
-    border-style: solid;
-    border-color: transparent transparent #ff4d4d transparent;
-}
-
-.modal-actions {
+    color: #fff;
+    padding: 64px 64px 32px 64px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    align-items: center;
-    margin-top: 20px;
-}
-
-.action-button {
-    width: 260px;
-    padding: 12px 12px;
-    border-radius: 8px;
-    border: none;
-    background-color: #e53935;
-    color: white;
-    font-size: 14px;
-    font-weight: 300;
-    cursor: pointer;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-    transition: background-color 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.action-button:hover {
-    background-color: #cc2e2e;
-}
-
-.action-button i {
-    font-size: 16px;
-}
-
-.success-message {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(76, 172, 84, 0.6);
-    color: rgb(255, 255, 255);
-    padding: 12px 24px;
-    border: 1px solid rgba(21, 255, 0, 0.6);
-    border-radius: 8px;
-    font-size: 16px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-    display: none;
-    opacity: 0;
-    transition: opacity 0.5s ease;
-    z-index: 999;
-}
-
-.success-message.show {
-    display: block;
-    opacity: 1;
-}
-
-/* 💬 Carte du rendez-vous temporaire */
-.rdv-card {
-    position: relative;
-    background-color: rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-    padding: 15px 20px;
-    margin: 20px 0;
-    color: white;
-    font-size: 14px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    cursor: pointer;
-}
-
-.rdv-card:hover {
-    background-color: rgba(255, 255, 255, 0.12);
-    transform: scale(1.01);
-}
-
-.rdv-title {
-    font-weight: bold;
-    font-size: 15px;
-    margin-bottom: 10px;
-    color: white;
-    text-align: center;
-}
-
-.rdv-line {
-    margin-bottom: 6px;
-    line-height: 1.5;
-    font-size: 14px;
-    color: white;
-}
-
-.rdv-delete {
+    animation: fadeIn 0.7s;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-30px);}
+    to { opacity: 1; transform: translateY(0);}
+  }
+  
+  .nc-close-btn {
     position: absolute;
-    top: 10px;
-    right: 12px;
-    width: 20px;
-    height: 20px;
-    font-size: 14px;
+    top: 20px;
+    right: 36px;
+    font-size: 1.3em;
+    color: #ff3b3b;
+    background: none;
+    border: none;
+    cursor: pointer;
+    z-index: 2;
+    transition: color 0.2s, background 0.2s;
     border-radius: 50%;
-    background-color: #e53935;
-    color: white;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+  .nc-close-btn:hover {
+    color: #fff;
+    background: #ff3b3b;
+  }
+  
+  .nc-accordion {
+    background: rgba(255, 255, 255, 0.18);
+    width: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 24px 0 rgba(0,0,0,0.18);
+  }
+  
+  .nc-accordion-section {
+    background: rgba(255, 255, 255, 0.18);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    transition: background 0.2s;
+  }
+  .nc-accordion-section:last-child {
+    border-bottom: none;
+  }
+  
+  .nc-accordion-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 1.15em;
+    font-weight: 600;
+    padding: 22px 32px 12px 32px;
+    color: #fff;
+    background: none;
+    user-select: none;
+    gap: 10px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.rdv-delete:hover {
-    background-color: #ff4d4d;
-}
+  }
+  .nc-accordion-header:hover {
+    background: rgba(255,0,0,0.08);
+  }
+  
+  .nc-chevron {
+    transition: transform 0.3s;
+  }
+  .nc-accordion-section:not(.nc-open) .nc-chevron {
+    transform: rotate(-90deg);
+  }
+  
+  .nc-accordion-content {
+    overflow: hidden;
+    opacity: 0;
+    max-height: 0;
+    transition: opacity 0.4s, max-height 0.4s cubic-bezier(0.4, 0.2, 0.2, 1);
+    padding: 0 32px 0 32px;
+  }
+  .nc-accordion-section.nc-open .nc-accordion-content {
+    opacity: 1;
+    max-height: 800px;
+    padding-bottom: 24px;
+    transition: opacity 0.4s, max-height 0.4s cubic-bezier(0.4, 0.2, 0.2, 1), padding-bottom 0.4s;
+  }
+  
+  .nc-excel-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #d32f2f;
+    color: #fff;
+    font-weight: 600;
+    font-size: 1.08em;
+    border: none;
+    border-radius: 8px;
+    padding: 13px 0;
+    margin-top: 24px;
+    margin-bottom: 0;
+    cursor: pointer;
+    box-shadow: 0 2px 8px 0 rgba(211,47,47,0.10);
+    transition: background 0.2s, box-shadow 0.2s;
+    gap: 10px;
+    width: 100%;
+  }
+  .nc-excel-btn:hover {
+    background: #ff3b3b;
+    box-shadow: 0 4px 16px 0 rgba(255,59,59,0.15);
+  }
+  
+  .nc-fields-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 18px;
+    margin: 24px 0 22px 0;
+  }
+  
+  .nc-field {
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 7px;
+    padding: 7px 12px;
+    color: #ffffffb7;
+    font-size: 1.08em;
+  }
+  .nc-field i {
+    margin-right: 10px;
+    font-size: 1.1em;
+    min-width: 18px;
+  }
+  .nc-field input {
+    border: none;
+    background: transparent;
+    color: #fff;
+    font-size: 1em;
+    width: 100%;
+    outline: none;
+    padding: 7px 0;
+  }
+  .nc-field input::placeholder {
+    color: #ffffffc7;
+    opacity: 1;
+  }
+  
+  .nc-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: center;
+    margin-top: 10px;
+  }
+  .nc-action-btn {
+    background: #d32f2f;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 13px 0;
+    font-weight: 600;
+    font-size: 1.08em;
+    cursor: pointer;
+    box-shadow: 0 2px 8px 0 rgba(211,47,47,0.10);
+    transition: background 0.2s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    justify-content: center;
+    max-width: 320px;
+  }
+  .nc-action-btn:hover {
+    background: #ff3b3b;
+    box-shadow: 0 4px 16px 0 rgba(255,59,59,0.15);
+  }
+  
+  @media (max-width: 700px) {
+    .nc-card {
+      width: 99vw;
+      border-radius: 0;
+    }
+    .nc-accordion-header, .nc-accordion-content {
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+    .nc-fields-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  .nc-card-header {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding-bottom: 32px;
+    margin-bottom: 16px;
+  }
+  .nc-card-title {
+    font-size: 1.45em;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 0.5px;
+    text-align: center;
+    flex: 1;
+  }
+  
+  .nc-dropzone {
+    margin-top: 36px;
+    width: 100%;
+    background: rgba(120, 20, 20, 0.18);
+    border: 2px dashed #ff3b3b;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 1.18em;
+    text-align: center;
+    padding: 28px 0 24px 0;
+    transition: border-color 0.2s, background 0.2s;
+    cursor: pointer;
+    box-sizing: border-box;
+  }
+  .nc-dropzone.dragover {
+    border-color: #fff;
+    background: rgba(255,59,59,0.10);
+  }
+  
+  .nc-dropzone i {
+    font-size: 2em;
+    color: #ff3b3b;
+    display: block;
+    margin-bottom: 8px;
+  }
+  .nc-dropzone span {
+    display: block;
+  }
+  
+  .nc-dropzone:hover {
+    background: rgba(255,59,59,0.13);
+    border-color: #fff;
+  }
+  
+  .import-toast {
+    position: fixed;
+    left: 50%;
+    bottom: -100px;
+    transform: translateX(-50%);
+    z-index: 9999;
+    min-width: 220px;
+    max-width: 90vw;
+    padding: 15px 28px 15px 18px;
+    background: rgba(40, 167, 69, 0.97);
+    color: #fff;
+    font-size: 1.08em;
+    font-weight: 600;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 4px 24px 0 rgba(40,167,69,0.18);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    opacity: 0;
+    pointer-events: none;
+    transition: bottom 0.6s cubic-bezier(.7,.2,.2,1), opacity 0.3s, background 0.2s;
+  }
+  .import-toast.show {
+    bottom: 32px;
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .import-toast.error {
+    background: rgba(211, 47, 47, 0.97);
+    box-shadow: 0 4px 24px 0 rgba(211,47,47,0.18);
+  }
+  .import-toast i {
+    font-size: 1.4em;
+    color: #fff;
+    margin-right: 8px;
+  }
+  
+  .excel-preview {
+    margin-top: 18px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 8px;
+    padding: 12px 8px;
+    overflow-x: auto;
+    max-width: 100%;
+  }
+  .excel-table-preview {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.98em;
+  }
+  .excel-table-preview td, .excel-table-preview th {
+    border: 1px solid #fff2;
+    padding: 4px 10px;
+    color: #fff;
+    background: rgba(0,0,0,0.10);
+  } 

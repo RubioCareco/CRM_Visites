@@ -23,9 +23,19 @@ from front.views import satisfaction_b2b
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('front.urls')),
-    path('mot-de-passe-oublie/', auth_views.PasswordResetView.as_view(template_name='front/password_reset.html'), name='password_reset'),
-    path('mot-de-passe-envoye/', auth_views.PasswordResetDoneView.as_view(template_name='front/password_reset_done.html'), name='password_reset_done'),
-    path('reinitialisation/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(template_name='front/reset_password.html'), name='password_reset_confirm'),
-    path('mot-de-passe-reinitialise/', auth_views.PasswordResetCompleteView.as_view(template_name='front/password_reset_complete.html'), name='password_reset_complete'),
+    path('reset-password/', auth_views.PasswordResetView.as_view(
+        template_name='front/reset_password.html',
+        email_template_name='front/reset_password_email.html',
+        subject_template_name='front/reset_password_subject.txt'
+    ), name='reset_password'),
+    path('reset-password/done/', auth_views.PasswordResetDoneView.as_view(
+        template_name='front/reset_password_done.html'
+    ), name='password_reset_done'),
+    path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(
+        template_name='front/new_password.html'
+    ), name='password_reset_confirm'),
+    path('reset/done/', auth_views.PasswordResetCompleteView.as_view(
+        template_name='front/reset_password_complete.html'
+    ), name='password_reset_complete'),
     path('satisfaction-b2b/', satisfaction_b2b, name='satisfaction_b2b'),
 ]

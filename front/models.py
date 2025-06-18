@@ -118,3 +118,20 @@ class SatisfactionB2B(models.Model):
 
     def __str__(self):
         return f"Satisfaction B2B #{self.id} - {self.rs_nom} - {self.date_soumission.strftime('%d/%m/%Y')}"
+
+class FrontClient(models.Model):
+    nom = models.CharField(max_length=100)
+    prenom = models.CharField(max_length=100)
+    entreprise = models.CharField(max_length=150)
+    siret = models.CharField(max_length=14)
+    adresse = models.CharField(max_length=250, null=True, blank=True)
+    code_postal = models.CharField(max_length=10, null=True, blank=True)
+    email = models.CharField(max_length=254, null=True, blank=True)
+    telephone = models.CharField(max_length=15, null=True, blank=True)
+    date_creation = models.DateTimeField(auto_now_add=True)
+    commercial_id = models.BigIntegerField(null=True, blank=True)
+    commentaires = models.TextField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'front_client'
+        managed = False

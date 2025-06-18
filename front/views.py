@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Commercial, Client, Rendezvous, CommentaireRdv, ImportClientCorrected, SatisfactionB2B
+from .models import Commercial, Client, Rendezvous, CommentaireRdv, ImportClientCorrected, SatisfactionB2B, FrontClient
 from django.contrib.auth.hashers import check_password, make_password
 from functools import wraps
 from django.http import JsonResponse, HttpResponse, Http404
@@ -19,6 +19,7 @@ from xhtml2pdf import pisa
 from io import BytesIO
 from django.core.exceptions import PermissionDenied
 from django.views.decorators.http import require_GET
+import pandas as pd
 
 # 🔐 Décorateur de protection
 def login_required(view_func):
@@ -735,3 +736,31 @@ def api_clients_by_commercial(request):
         for client in clients
     ]
     return JsonResponse({'clients': data})
+
+@csrf_exempt  # À sécuriser en prod !
+def import_clients_excel(request):
+    if request.method == 'POST' and request.FILES.get('excel_file'):
+        excel_file = request.FILES['excel_file']
+        try:
+            df = pd.read_excel(excel_file)
+            commercial_id = request.session.get('commercial_id')
+            clients = []
+            for _, row in df.iterrows():
+                clients.append(FrontClient(
+                    nom=row.get('nom', ''),
+                    prenom=row.get('prenom', ''),
+                    entreprise=row.get('entreprise', ''),
+                    siret=row.get('siret', ''),
+                    adresse=row.get('adresse', ''),
+                    code_postal=row.get('code_postal', ''),
+                    email=row.get('email', ''),
+                    telephone=row.get('telephone', ''),
+                    date_creation=datetime.now(),
+                    commercial_id=commercial_id,
+                    commentaires=row.get('commentaires', ''),
+                ))
+            FrontClient.objects.bulk_create(clients)
+            return JsonResponse({'message': f'Import réussi ({len(clients)} clients)'})
+        except Exception as e:
+            return JsonResponse({'message': f'Erreur lors de l\'import : {e}'}, status=400)
+    return JsonResponse({'message': 'Aucun fichier reçu'}, status=400)

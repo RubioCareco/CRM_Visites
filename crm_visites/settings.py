@@ -137,6 +137,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # settings.py
 CSRF_COOKIE_SECURE = False  # Important pour le local en HTTP
 SESSION_COOKIE_SECURE = False
-CSRF_USE_SESSIONS = False  # (désactive l’attente d’un token stocké côté session)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'noreply@rubio.fr'
+CSRF_USE_SESSIONS = False  # (désactive l'attente d'un token stocké côté session)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'bznjamin.gillens@gmail.com'
+EMAIL_HOST_PASSWORD = 'uyba hdmc azag dyta'  # (voir ci-dessous)
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = 'bznjamin.gillens@gmail.com'

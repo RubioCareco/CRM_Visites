@@ -7,134 +7,187 @@
   {% load static %}
   <link rel="stylesheet" href="{% static 'front/css/new_client.css' %}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
-  <div class="modal">
-    <div class="modal-content">
-      <span class="close-button" onclick="window.location.href='/dashboard'">
-        <i class="fa-solid fa-xmark"></i>
-      </span>
-      <h2>Ajoutez un nouveau client</h2>
-
-      <form method="POST">
-        {% csrf_token %}
-        <div class="form-group">
-          <div class="input-icon-group">
-            <i class="fa fa-user"></i>
-            <input type="text" name="nom" placeholder="Nom" required value="{{ client_temp.nom|default:'' }}">
-            <div class="error-message">Veuillez saisir un nom.</div>
+  <div class="nc-modal-bg">
+    <div class="nc-card">
+      <div class="nc-card-header">
+        <span class="nc-card-title">Ajouter un client</span>
+        <button class="nc-close-btn" onclick="window.location.href='/dashboard'" aria-label="Fermer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="nc-accordion">
+        <!-- Section Import Excel -->
+        <section class="nc-accordion-section nc-open">
+          <header class="nc-accordion-header" onclick="toggleAccordion(this)">
+            <span><i class="fa-solid fa-file-excel"></i> Importer des clients via fichier Excel</span>
+            <i class="fa-solid fa-chevron-down nc-chevron"></i>
+          </header>
+          <div class="nc-accordion-content">
+            <!-- <button type="button" class="nc-excel-btn" id="openFileBtn">
+              <i class="fa-solid fa-file-excel"></i> Importer un fichier
+            </button> -->
+            <input type="file" id="excelInput" name="excel_file" accept=".xlsx,.xls" style="display:none;">
+            <div class="nc-dropzone" id="excelDropzone">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <span>Ajoutez vos fichiers ici</span>
+            </div>
+            <div id="excelPreview" class="excel-preview"></div>
           </div>
-          <div class="input-icon-group">
-            <i class="fa fa-building"></i>
-            <input type="text" name="entreprise" placeholder="Nom de l'entreprise" value="{{ client_temp.entreprise|default:'' }}">
+        </section>
+        <!-- Section Ajout manuel -->
+        <section class="nc-accordion-section">
+          <header class="nc-accordion-header" onclick="toggleAccordion(this)">
+            <span><i class="fa-solid fa-user-plus"></i> Ajouter un client manuellement</span>
+            <i class="fa-solid fa-chevron-down nc-chevron"></i>
+          </header>
+          <div class="nc-accordion-content">
+            <form method="POST" autocomplete="off">
+              {% csrf_token %}
+              <div class="nc-fields-grid">
+                <div class="nc-field"><i class="fa-solid fa-user"></i><input type="text" name="nom" placeholder="Nom" required value="{{ client_temp.nom|default:'' }}"></div>
+                <div class="nc-field"><i class="fa-solid fa-building"></i><input type="text" name="entreprise" placeholder="Nom de l'entreprise" value="{{ client_temp.entreprise|default:'' }}"></div>
+                <div class="nc-field"><i class="fa-solid fa-user"></i><input type="text" name="prenom" placeholder="Prénom" required value="{{ client_temp.prenom|default:'' }}"></div>
+                <div class="nc-field"><i class="fa-solid fa-id-card"></i><input type="text" name="siret" placeholder="Numéro SIRET" pattern="[0-9]{14}" value="{{ client_temp.siret|default:'' }}"></div>
+                <div class="nc-field"><i class="fa-solid fa-location-dot"></i><input type="text" name="adresse" placeholder="Adresse" value="{{ client_temp.adresse|default:'' }}"></div>
+                <div class="nc-field"><i class="fa-solid fa-location-dot"></i><input type="text" name="code_postal" placeholder="Code Postal" pattern="[0-9]{5}" value="{{ client_temp.code_postal|default:'' }}"></div>
+                <div class="nc-field"><i class="fa-solid fa-envelope"></i><input type="email" name="email" placeholder="E-mail" value="{{ client_temp.email|default:'' }}"></div>
+                <div class="nc-field"><i class="fa-solid fa-phone"></i><input type="tel" name="telephone" placeholder="Téléphone" pattern="[0-9]{10}" value="{{ client_temp.telephone|default:'' }}"></div>
+              </div>
+              <div class="nc-actions">
+                <button type="submit" class="nc-action-btn" name="add_rdv"><i class="fa-solid fa-calendar-plus"></i> Ajouter un rendez-vous</button>
+                <button type="submit" class="nc-action-btn">Valider</button>
+              </div>
+            </form>
           </div>
-        </div>
-
-        <div class="form-group">
-          <div class="input-icon-group">
-            <i class="fa fa-user"></i>
-            <input type="text" name="prenom" placeholder="Prénom" required value="{{ client_temp.prenom|default:'' }}">
-            <div class="error-message">Veuillez saisir un prénom.</div>
-          </div>
-          <div class="input-icon-group">
-            <i class="fa fa-id-card"></i>
-            <input type="text" name="siret" placeholder="Numéro SIRET" pattern="[0-9]{14}" value="{{ client_temp.siret|default:'' }}">
-          </div>
-        </div>
-
-        <div class="form-group">
-          <div class="input-icon-group">
-            <i class="fa fa-map-marker-alt"></i>
-            <input type="text" name="adresse" placeholder="Adresse" value="{{ client_temp.adresse|default:'' }}">
-          </div>
-          <div class="input-icon-group">
-            <i class="fa fa-location-dot"></i>
-            <input type="text" name="code_postal" placeholder="Code Postal" pattern="[0-9]{5}" value="{{ client_temp.code_postal|default:'' }}">
-          </div>
-        </div>
-
-        <div class="form-group">
-          <div class="input-icon-group">
-            <i class="fa fa-envelope"></i>
-            <input type="email" name="email" placeholder="E-mail" value="{{ client_temp.email|default:'' }}">
-          </div>
-          <div class="input-icon-group">
-            <i class="fa fa-phone"></i>
-            <input type="tel" name="telephone" placeholder="Téléphone" pattern="[0-9]{10}" value="{{ client_temp.telephone|default:'' }}">
-          </div>
-        </div>
-        {% if rdv_temp %}
-  <div class="rdv-card" onclick="window.location.href='/add-rdv?from=new-client'">
-    <div class="rdv-delete" onclick="deleteTempRdv(event)"><i class="fa fa-times"></i></div>
-    <div class="rdv-title">📌 Rendez-vous en attente</div>
-    <div class="rdv-line"><strong>Date :</strong> {{ rdv_temp.date_rdv }}</div>
-    <div class="rdv-line"><strong>Heure :</strong> {{ rdv_temp.heure_rdv }}</div>
-    <div class="rdv-line"><strong>Objet :</strong> {{ rdv_temp.objet|default:"(aucun)" }}</div>
-    <div class="rdv-line"><strong>Notes :</strong> {{ rdv_temp.notes|default:"(aucune)" }}</div>
-  </div>
-{% endif %}
-
-        <div class="modal-actions">
-          <button type="submit" class="action-button" name="add_rdv">
-            <i class="fa-solid fa-calendar-plus"></i>
-            Ajouter un rendez-vous
-          </button>
-          <button type="submit" class="action-button">
-            Valider
-          </button>
-        </div>
-      </form>
+        </section>
+      </div>
     </div>
   </div>
-
-  <div class="success-message">
+  <div class="success-message" style="display:none;">
     Client ajouté avec succès
   </div>
-
+  <div id="import-toast" class="import-toast">
+    <i class="fa-solid fa-circle-check"></i>
+    Import réussi&nbsp;!
+  </div>
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const form = document.querySelector("form");
-      const inputs = form.querySelectorAll("input[required]");
-      const successMessage = document.querySelector(".success-message");
+    function toggleAccordion(header) {
+      const section = header.parentElement;
+      const isOpen = section.classList.contains('nc-open');
+      document.querySelectorAll('.nc-accordion-section').forEach(s => s.classList.remove('nc-open'));
+      if (!isOpen) section.classList.add('nc-open');
+    }
+    // Drag & drop Excel (visuel uniquement)
+    const dropzone = document.getElementById('excelDropzone');
+    const excelInput = document.getElementById('excelInput');
 
-      form.addEventListener("submit", (e) => {
-        let isValid = true;
-
-        inputs.forEach((input) => {
-          const parent = input.closest(".input-icon-group");
-          const errorMessage = parent.querySelector(".error-message");
-
-          if (!input.checkValidity()) {
-            input.classList.add("invalid");
-            if (errorMessage) errorMessage.style.display = "block";
-            isValid = false;
-          } else {
-            input.classList.remove("invalid");
-            if (errorMessage) errorMessage.style.display = "none";
-          }
-        });
-
-        if (!isValid) {
-          e.preventDefault();
+    if (dropzone) {
+      dropzone.addEventListener('dragover', e => {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+      });
+      dropzone.addEventListener('dragleave', e => {
+        dropzone.classList.remove('dragover');
+      });
+      dropzone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          excelInput.files = files;
+          // Déclenche l'import AJAX
+          const event = new Event('change', { bubbles: true });
+          excelInput.dispatchEvent(event);
+          // Prévisualisation
+          previewExcelFile(files[0]);
         }
       });
-    });
-  </script>
-<script>
-  function deleteTempRdv(event) {
-    event.stopPropagation(); // évite que le clic supprime ET redirige
-    if (confirm("Supprimer ce rendez-vous temporaire ?")) {
-      fetch("/delete-temp-rdv/")
-        .then(response => response.json())
-        .then(data => {
-          if (data.status === "ok") {
-            location.reload();
-          }
-        });
+      dropzone.addEventListener('click', function() {
+        excelInput.click();
+      });
     }
-  }
-</script>
+    // Envoi AJAX du fichier sélectionné
+    document.getElementById('excelInput').addEventListener('change', function() {
+      const file = this.files[0];
+      if (!file) return;
+      const formData = new FormData();
+      formData.append('excel_file', file);
 
+      fetch('/import-clients-excel/', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: formData
+      })
+      .then(async response => {
+        const data = await response.json();
+        if (response.ok) {
+          showImportToast(data.message || 'Import terminé');
+        } else {
+          showImportToast(data.message || 'Erreur lors de l\'import', true);
+        }
+        this.value = '';
+      })
+      .catch(() => showImportToast('Erreur lors de l\'import', true));
+    });
 
+    // Fonction utilitaire pour récupérer le CSRF token
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    function showImportToast(message, isError = false) {
+      const toast = document.getElementById('import-toast');
+      if (isError) {
+        toast.classList.add('error');
+        toast.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> ' + message;
+      } else {
+        toast.classList.remove('error');
+        toast.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + message;
+      }
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3500);
+    }
+
+    function previewExcelFile(file) {
+      const previewDiv = document.getElementById('excelPreview');
+      previewDiv.innerHTML = '<em>Lecture du fichier...</em>';
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type: 'array'});
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+        // Affiche les 5 premières lignes
+        let html = '<table class="excel-table-preview"><tbody>';
+        json.slice(0, 6).forEach(row => {
+          html += '<tr>' + row.map(cell => `<td>${cell !== undefined ? cell : ''}</td>`).join('') + '</tr>';
+        });
+        html += '</tbody></table>';
+        previewDiv.innerHTML = html;
+      };
+      reader.onerror = function() {
+        previewDiv.innerHTML = '<span style="color:red">Erreur de lecture du fichier</span>';
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  </script>
 </body>
 </html>

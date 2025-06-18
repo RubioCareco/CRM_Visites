@@ -1,14 +1,12 @@
 from django.urls import path
 from . import views
-from .views import reset_password, new_password
 from django.contrib.auth.models import User
 from django.views.generic import TemplateView
+from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     path('', views.login_view, name='home'),  # Route pour la page principale
     path('login/', views.login_view, name='login'),
-    path('reset-password/', reset_password, name='reset_password'),
-    path('new-password/', new_password, name='new_password'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('new-client/', views.new_client, name='new_client'),
     path('add-rdv/', views.add_rdv, name='add_rdv'),
@@ -30,4 +28,5 @@ urlpatterns = [
     path('api/rdv-counters/', views.api_rdv_counters, name='api_rdv_counters'),
     path('api/rdvs-a-venir/', views.api_rdvs_a_venir, name='api_rdvs_a_venir'),
     path('api/clients-by-commercial/', views.api_clients_by_commercial, name='api_clients_by_commercial'),
+    path('import-clients-excel/', views.import_clients_excel, name='import_clients_excel'),
 ]

@@ -279,10 +279,12 @@ table.client-table tr.client-card td {
   overflow-y: auto;
   scrollbar-width: thin !important; /* Firefox */
   scrollbar-color: rgba(255,255,255,0.2) transparent !important;
+  padding-right: 8px; /* Décale le contenu pour laisser la place à la scrollbar */
 }
 .table-container::-webkit-scrollbar {
-  width: 6px !important;
+  width: 8px !important;
   background: transparent;
+  margin-left: 10px;
 }
 
 .table-container::-webkit-scrollbar-thumb {

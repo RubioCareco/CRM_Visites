@@ -2,15 +2,15 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Historique des rendez-vous</title>
+  <title>Historique des rendez-vous (Responsable)</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'front/css/dashboard.css' %}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link rel="stylesheet" href="{% static 'front/css/historique_rdv.css' %}">  
+  <link rel="stylesheet" href="{% static 'front/css/historique_rdv_resp.css' %}">  
 </head>
 <body>
   <div class="dashboard">
-    <h1 class="dashboard-title">Historique des rendez-vous</h1>
+    <h1 class="dashboard-title">Historique des rendez-vous (Responsable)</h1>
     <div class="search-bar" style="position:relative; margin-top: 60px; margin-bottom: 48px; display:flex; align-items:center; gap:12px;">
         <i class="fa fa-search search-icon"></i>
         <input type="text" id="historiqueSearch" placeholder="Rechercher par clients, entreprises ..." autocomplete="off">
@@ -20,6 +20,14 @@
         </button>
         <div id="filterPopoverHistorique" style="display:none;position:absolute;top:48px;right:0;z-index:1001;background:rgba(40,40,40,0.98);color:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.25);padding:24px 28px 18px 28px;min-width:260px;">
           <div style="font-size:1.15rem;font-weight:bold;margin-bottom:14px;color:#fff;">Filtrer par&nbsp;:</div>
+          <div style="margin-bottom:18px;">
+            <label for="statutFilter" style="font-weight:500;margin-bottom:4px;display:block;color:#fff;">Statut du rendez-vous :</label>
+            <select id="statutFilter" style="width:100%;padding:8px;background:#555;border:1px solid #777;border-radius:6px;color:#fff;">
+              <option value="">Tous les statuts</option>
+              <option value="valide">Validé</option>
+              <option value="annule">Annulé</option>
+            </select>
+          </div>
           <div style="display:flex;gap:10px;margin-bottom:18px;">
             <button type="button" class="filter-type-btn" data-type="jour" style="padding:6px 14px;border-radius:8px;border:none;background:#333;color:#fff;cursor:pointer;">Jour</button>
             <button type="button" class="filter-type-btn" data-type="semaine" style="padding:6px 14px;border-radius:8px;border:none;background:#333;color:#fff;cursor:pointer;">Semaine</button>
@@ -162,7 +170,7 @@
       </div>
     </div>
   </div>
-  <a href="{% if role == 'responsable' or role == 'admin' %}{% url 'dashboard_responsable' %}{% else %}{% url 'dashboard' %}{% endif %}" class="back-login" id="backDashboardBtn" style="position:fixed; left:24px; bottom:20px; z-index:9999; color:#f55; text-shadow: 1px 1px 6px #000, 0 0 2px #fff2; font-size: 12px;">&larr; Retour au tableau de bord</a>
+  <a href="{% url 'dashboard_responsable' %}" class="back-login" id="backDashboardBtn" style="position:fixed; left:24px; bottom:20px; z-index:9999; color:#f55; text-shadow: 1px 1px 6px #000, 0 0 2px #fff2; font-size: 12px;">&larr; Retour au tableau de bord</a>
   <script>
     function showTab(tab) {
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -179,216 +187,178 @@
       }
     }
 
-    // --- Autocomplétion & filtre barre de recherche historique ---
+    // Activation de l'onglet selon le paramètre ?tab= dans l'URL
     document.addEventListener('DOMContentLoaded', function() {
-      // Récupère toutes les cartes rdv (tous onglets)
-      const allCards = Array.from(document.querySelectorAll('.visit-entry, .reminder-entry'));
-      // Génère la liste des suggestions (nom, prénom, entreprise)
-      const allClients = allCards.map(card => {
-        const strong = card.querySelector('strong');
-        return strong ? strong.textContent.trim() : '';
-      });
-      const suggestions = Array.from(new Set(allClients.filter(Boolean)));
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      if(tab) showTab(tab);
+
       const searchInput = document.getElementById('historiqueSearch');
-      const suggestionBox = document.getElementById('historiqueSearchSuggestions');
+      const allEntries = document.querySelectorAll('.visit-entry, .reminder-entry');
 
-      function showSuggestions(value) {
-        const v = value.trim().toLowerCase();
-        if (!v) {
-          suggestionBox.style.display = 'none';
-          suggestionBox.innerHTML = '';
-          return;
-        }
-        const filtered = suggestions.filter(s => s.toLowerCase().includes(v));
-        if (filtered.length === 0) {
-          suggestionBox.style.display = 'none';
-          suggestionBox.innerHTML = '';
-          return;
-        }
-        suggestionBox.innerHTML = filtered.map(s => `<li class='autocomplete-item' style='padding:8px 12px;cursor:pointer;'>${s}</li>`).join('');
-        suggestionBox.style.display = 'block';
-        Array.from(suggestionBox.children).forEach(li => {
-          li.addEventListener('mousedown', function(e) {
-            e.preventDefault();
-            searchInput.value = this.textContent;
-            filterCards(this.textContent);
-            suggestionBox.style.display = 'none';
-          });
+      function filterEntries() {
+        const query = searchInput.value.toLowerCase().trim();
+
+        allEntries.forEach(entry => {
+          const clientName = (entry.querySelector('.client-name strong')?.textContent || '').toLowerCase();
+          const clientAddress = (entry.querySelector('.client-name .infos-adresse')?.textContent || '').toLowerCase();
+          
+          const match = clientName.includes(query) || clientAddress.includes(query);
+          
+          entry.style.display = match ? '' : 'none';
         });
       }
 
-      function filterCards(query) {
-        const lowerQuery = query.trim().toLowerCase();
-        allCards.forEach(card => {
-          const strong = card.querySelector('strong');
-          const nom = strong ? strong.textContent.toLowerCase() : '';
-          if (nom.includes(lowerQuery)) {
-            card.style.display = '';
-          } else {
-            card.style.display = 'none';
-          }
-        });
-      }
+      searchInput.addEventListener('input', filterEntries);
 
-      searchInput.addEventListener('input', function() {
-        showSuggestions(this.value);
-        filterCards(this.value);
-      });
-      searchInput.addEventListener('focus', function() {
-        showSuggestions(this.value);
-      });
-      searchInput.addEventListener('blur', function() {
-        setTimeout(() => { suggestionBox.style.display = 'none'; }, 120);
-      });
-    });
-
-    // --- LOGIQUE FILTRE HISTORIQUE ---
-    document.addEventListener('DOMContentLoaded', function() {
-      // --- Filtres date ---
+      // --- Logique des filtres ---
       const filterBtn = document.getElementById('filterBtnHistorique');
       const filterPopover = document.getElementById('filterPopoverHistorique');
-      const closeFilter = document.getElementById('closeFilterPopoverHistorique');
+      const closeFilterPopover = document.getElementById('closeFilterPopoverHistorique');
       const filterTypeBtns = document.querySelectorAll('.filter-type-btn');
-      const filterInputs = document.getElementById('filterInputsHistorique');
-      const applyBtn = document.getElementById('applyFilterHistorique');
-      const resetBtn = document.getElementById('resetFilterHistorique');
-      let currentType = 'jour';
-      let currentValue = '';
+      const filterInputsContainer = document.getElementById('filterInputsHistorique');
+      const applyFilterBtn = document.getElementById('applyFilterHistorique');
+      const resetFilterBtn = document.getElementById('resetFilterHistorique');
 
-      // Ouvre/ferme le panneau
-      filterBtn.addEventListener('click', function(e) {
-        filterPopover.style.display = (filterPopover.style.display === 'block') ? 'none' : 'block';
-        filterPopover.style.right = '0';
-        filterPopover.style.left = 'auto';
-        e.stopPropagation();
+      filterBtn.addEventListener('click', () => {
+        filterPopover.style.display = 'block';
       });
-      closeFilter.addEventListener('click', function() {
+
+      closeFilterPopover.addEventListener('click', () => {
         filterPopover.style.display = 'none';
       });
-      document.addEventListener('click', function(e) {
-        if (!filterPopover.contains(e.target) && e.target !== filterBtn) {
-          filterPopover.style.display = 'none';
-        }
-      });
 
-      // Affiche l'input selon le type
-      function renderInput(type) {
-        let html = '';
-        if (type === 'jour') {
-          html = '<input type="date" id="inputFiltreDate" style="width:100%;">';
-        } else if (type === 'semaine') {
-          html = '<input type="week" id="inputFiltreSemaine" style="width:100%;">';
-        } else if (type === 'mois') {
-          html = '<input type="month" id="inputFiltreMois" style="width:100%;">';
-        } else if (type === 'annee') {
-          // Génère un select d'années de 2015 à 2030
-          let options = '';
-          for(let y=2015; y<=2030; y++) {
-            options += `<option value="${y}"${y===new Date().getFullYear()?' selected':''}>${y}</option>`;
-          }
-          html = `<select id="inputFiltreAnnee">${options}</select>`;
-        }
-        filterInputs.innerHTML = html;
-        // --- Ouvre le sélecteur natif au clic sur l'input (si supporté) ---
-        const input = filterInputs.querySelector('input');
-        if (input && input.showPicker) {
-          input.addEventListener('focus', function() {
-            input.showPicker();
-          });
-          input.addEventListener('click', function() {
-            input.showPicker();
-          });
-        }
-      }
-      renderInput(currentType);
+      let currentFilterType = null;
+
       filterTypeBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-          currentType = this.dataset.type;
-          renderInput(currentType);
+        btn.addEventListener('click', () => {
+          // Gérer le style du bouton actif
+          filterTypeBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          
+          currentFilterType = btn.dataset.type;
+          generateFilterInputs(currentFilterType);
         });
       });
 
-      // Filtrage dynamique
-      function filterByDate() {
-        const allCards = Array.from(document.querySelectorAll('.visit-entry, .reminder-entry'));
-        let value = '';
-        if (currentType === 'jour') {
-          value = document.getElementById('inputFiltreDate').value;
-        } else if (currentType === 'semaine') {
-          value = document.getElementById('inputFiltreSemaine').value;
-        } else if (currentType === 'mois') {
-          value = document.getElementById('inputFiltreMois').value;
-        } else if (currentType === 'annee') {
-          value = document.getElementById('inputFiltreAnnee').value;
+      function generateFilterInputs(type) {
+        filterInputsContainer.innerHTML = '';
+        let input = '';
+        const baseStyle = "width: 100%; padding: 8px; background: #555; border: 1px solid #777; border-radius: 6px; color: #fff;";
+
+        switch (type) {
+          case 'jour':
+            input = `<input type=\"date\" id=\"dateFilter\" style=\"${baseStyle}\">`;
+            break;
+          case 'semaine':
+            input = `<input type=\"week\" id=\"weekFilter\" style=\"${baseStyle}\">`;
+            break;
+          case 'mois':
+            input = `<input type=\"month\" id=\"monthFilter\" style=\"${baseStyle}\">`;
+            break;
+          case 'annee':
+            input = `<input type=\"number\" id=\"yearFilter\" placeholder=\"YYYY\" style=\"${baseStyle}\">`;
+            break;
+          default:
+            input = '';
         }
-        allCards.forEach(card => {
-          const dateText = card.querySelector('.visit-date, .visit-date-passed, .visit-date-futur');
-          let dateStr = '';
-          if (dateText) {
-            // Extrait la date au format d/m/Y
-            const match = dateText.textContent.match(/(\d{2}\/\d{2}\/\d{4})/);
-            if (match) dateStr = match[1];
-          }
-          let show = true;
-          if (value) {
-            if (currentType === 'jour') {
-              // yyyy-mm-dd vs dd/mm/yyyy
-              const [y, m, d] = value.split('-');
-              const val = `${d}/${m}/${y}`;
-              show = (dateStr === val);
-            } else if (currentType === 'semaine') {
-              // yyyy-Wxx
-              const [year, week] = value.split('-W');
-              // On calcule la semaine de la date de la carte
-              if (dateStr) {
-                const [d, m, y] = dateStr.split('/');
-                const dateObj = new Date(`${y}-${m}-${d}`);
-                const weekNum = getWeekNumber(dateObj);
-                show = (y === year && weekNum === parseInt(week));
-              } else {
-                show = false;
-              }
-            } else if (currentType === 'mois') {
-              // yyyy-mm
-              const [y, m] = value.split('-');
-              if (dateStr) {
-                const [d, mm, yy] = dateStr.split('/');
-                show = (y === yy && m === mm);
-              } else {
-                show = false;
-              }
-            } else if (currentType === 'annee') {
-              if (dateStr) {
-                const [d, m, y] = dateStr.split('/');
-                show = (y === value);
-              } else {
-                show = false;
-              }
+        filterInputsContainer.innerHTML = input;
+      }
+
+      applyFilterBtn.addEventListener('click', () => {
+        applyFilters();
+        filterPopover.style.display = 'none';
+      });
+
+      resetFilterBtn.addEventListener('click', () => {
+        // Réinitialiser les champs et le type
+        searchInput.value = ''; // Vider la barre de recherche
+        if (document.getElementById('statutFilter')) {
+          document.getElementById('statutFilter').value = ''; // Réinitialiser le statut
+        }
+        filterInputsContainer.innerHTML = '';
+        currentFilterType = null;
+        filterTypeBtns.forEach(b => b.classList.remove('active'));
+        
+        // Appliquer les filtres (sans filtre de date)
+        applyFilters();
+        filterPopover.style.display = 'none';
+      });
+
+      function applyFilters() {
+        const searchQuery = searchInput.value.toLowerCase().trim();
+        const statutValue = document.getElementById('statutFilter') ? document.getElementById('statutFilter').value : '';
+
+        allEntries.forEach(entry => {
+          // 1. Vérification du filtre de recherche
+          const clientName = (entry.querySelector('.client-name strong')?.textContent || '').toLowerCase();
+          const clientAddress = (entry.querySelector('.client-name .infos-adresse')?.textContent || '').toLowerCase();
+          const searchMatch = clientName.includes(searchQuery) || clientAddress.includes(searchQuery);
+
+          // 2. Vérification du filtre de date
+          const dateMatch = checkDate(entry);
+
+          // 3. Vérification du statut
+          let statutMatch = true;
+          if (statutValue) {
+            if (entry.classList.contains('visit-entry')) {
+              statutMatch = (statutValue === 'valide');
+            } else if (entry.classList.contains('reminder-entry')) {
+              statutMatch = (statutValue === 'annule');
+            } else {
+              statutMatch = false;
             }
           }
-          card.style.display = show ? '' : 'none';
+
+          // Afficher si tous correspondent
+          entry.style.display = searchMatch && dateMatch && statutMatch ? '' : 'none';
         });
       }
-      // Semaine ISO
-      function getWeekNumber(date) {
-        date = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-        const dayNum = date.getUTCDay() || 7;
-        date.setUTCDate(date.getUTCDate() + 4 - dayNum);
-        const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
-        return Math.ceil((((date - yearStart) / 86400000) + 1)/7);
+
+      function checkDate(entry) {
+        if (!currentFilterType) return true; // Pas de filtre de date
+
+        const dateElement = entry.querySelector('p.infos-adresse span:last-child');
+        if (!dateElement || !dateElement.textContent.includes('Dernières visites le :')) return false;
+
+        const dateString = dateElement.textContent.split(':')[1].trim();
+        const parts = dateString.split('/');
+        if (parts.length !== 3) return false;
+        
+        // Attention: mois - 1 car les mois en JS sont de 0 à 11
+        const entryDate = new Date(parts[2], parts[1] - 1, parts[0]);
+
+        switch (currentFilterType) {
+            case 'jour':
+                const selectedDate = new Date(document.getElementById('dateFilter').value);
+                // On compare en ignorant l'heure
+                return entryDate.toDateString() === selectedDate.toDateString();
+            case 'semaine':
+                const weekValue = document.getElementById('weekFilter').value;
+                const [yearW, weekW] = weekValue.split('-W');
+                return getWeek(entryDate) === parseInt(weekW) && entryDate.getFullYear() === parseInt(yearW);
+            case 'mois':
+                const monthValue = document.getElementById('monthFilter').value;
+                const [yearM, monthM] = monthValue.split('-');
+                return entryDate.getMonth() + 1 === parseInt(monthM) && entryDate.getFullYear() === parseInt(yearM);
+            case 'annee':
+                const yearValue = document.getElementById('yearFilter').value;
+                return entryDate.getFullYear() === parseInt(yearValue);
+            default:
+                return true;
+        }
       }
 
-      applyBtn.addEventListener('click', function() {
-        filterByDate();
-        filterPopover.style.display = 'none';
-      });
-      filterInputs.addEventListener('change', filterByDate);
-      resetBtn.addEventListener('click', function() {
-        // Réaffiche tout
-        document.querySelectorAll('.visit-entry, .reminder-entry').forEach(card => card.style.display = '');
-        // Réinitialise l'input
-        renderInput(currentType);
-      });
+      function getWeek(date) {
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      }
+
+      // Remplacer l'ancien event listener
+      searchInput.removeEventListener('input', filterEntries);
+      searchInput.addEventListener('input', applyFilters);
     });
   </script>
 </body>

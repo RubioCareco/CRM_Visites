@@ -9,20 +9,9 @@
 </head>
 <body class="dashboard-resp-bg">
   <h1 class="dashboard-resp-title">Tableau de bord</h1>
-  <div class="dashboard-resp-search" style="margin-bottom: 18px;">
+  <div class="dashboard-resp-search" style="margin-bottom: 60px;">
     <i class="fa fa-search search-icon"></i>
     <input type="text" placeholder="Rechercher par clients, entreprises ..." class="dashboard-resp-search-input">
-  </div>
-  <div class="dashboard-resp-filters" style="margin-bottom: 28px;">
-    <select class="dashboard-resp-filter-select">
-      <option>Filtrer par date</option>
-    </select>
-    <select class="dashboard-resp-filter-select">
-      <option>Filtrer par statut</option>
-    </select>
-    <select class="dashboard-resp-filter-select">
-      <option>Filtrer par commercial</option>
-    </select>
   </div>
   <div class="user-container">
     <div class="user-profile" onclick="toggleUserMenu()">
@@ -33,7 +22,7 @@
       <ul>
         <li><a href="{% url 'profil' %}" class="menu-link">Profil</a></li>
         <li><a href="{% url 'client_file' %}" class="menu-link">Fichier Clients</a></li>
-        <li><a href="{% url 'historique_rdv' %}" class="menu-link">Historique RDV</a></li>
+        <li><a href="{% url 'historique_rdv_resp' %}" class="menu-link">Historique RDV</a></li>
         <li><a href="{% url 'logout' %}" class="logout-btn">Se déconnecter</a></li>
       </ul>
     </div>
@@ -102,6 +91,13 @@
       </div>
     </div>
   </div>
+  <div id="upcomingModal" class="modal-bg" style="display:none;">
+    <div class="modal-content">
+      <span class="close-modal" onclick="closeUpcomingModal()"><i class="fa-solid fa-xmark"></i></span>
+      <h2>Rendez-vous à venir</h2>
+      <div id="accordionCommerciaux"></div>
+    </div>
+  </div>
 </body>
 <script>
   function toggleUserMenu() {
@@ -160,8 +156,24 @@
       });
   }
 
+  let polling = null;
+  function startPolling() {
+    if (!polling) polling = setInterval(updateRdvCounters, 1800000); // 30 minutes
+  }
+  function stopPolling() {
+    if (polling) clearInterval(polling);
+    polling = null;
+  }
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') {
+      startPolling();
+      updateRdvCounters(); // Rafraîchit immédiatement au retour
+    } else {
+      stopPolling();
+    }
+  });
+  if (document.visibilityState === 'visible') startPolling();
   document.addEventListener('DOMContentLoaded', updateRdvCounters);
-  setInterval(updateRdvCounters, 10000);
 
   document.addEventListener('DOMContentLoaded', function() {
     const addCard = document.querySelector('.stat-card.add');
@@ -171,6 +183,70 @@
         window.location.href = '/add-rdv/';
       });
     }
+
+    // Rendre les cartes de stats cliquables
+    const realiseCard = document.querySelector('.stat-card.realise');
+    const avenirCard = document.querySelector('.stat-card.a-venir');
+    const annuleCard = document.querySelector('.stat-card.annule');
+    if (realiseCard) {
+      realiseCard.style.cursor = 'pointer';
+      realiseCard.addEventListener('click', function() {
+        window.location.href = '/historique-rdv-responsable/?tab=recent';
+      });
+    }
+    if (avenirCard) {
+      avenirCard.style.cursor = 'pointer';
+      avenirCard.addEventListener('click', function() {
+        openUpcomingModal();
+      });
+    }
+    if (annuleCard) {
+      annuleCard.style.cursor = 'pointer';
+      annuleCard.addEventListener('click', function() {
+        window.location.href = '/historique-rdv-responsable/?tab=rappeler';
+      });
+    }
   });
+
+  function openUpcomingModal() {
+    document.getElementById('upcomingModal').style.display = 'flex';
+    fetch('/api/commerciaux/')
+      .then(response => response.json())
+      .then(data => {
+        const commerciaux = data.commerciaux || [];
+        const accordion = document.getElementById('accordionCommerciaux');
+        accordion.innerHTML = '';
+        commerciaux.forEach(commercial => {
+          fetch(`/api/rdvs-a-venir/?commercial_id=${commercial.id}`)
+            .then(resp => resp.json())
+            .then(rdvData => {
+              const rdvs = rdvData.rdvs || [];
+              const section = document.createElement('div');
+              section.className = 'accordion-section';
+              section.innerHTML = `
+                <div class="accordion-header">${commercial.nom} ${commercial.prenom} (${rdvs.length} à venir)</div>
+                <div class="accordion-body">
+                  ${rdvs.length === 0 ? '<i>Aucun rendez-vous à venir</i>' : rdvs.map(rdv => `
+                    <div class=\"rdv-card\">
+                      <div class=\"rdv-card-header\"><b>${rdv.civilite ? rdv.civilite + ' ' : ''}${rdv.rs_nom || rdv.client || ''}</b></div>
+                      <div class=\"rdv-card-body\">
+                        <span class=\"rdv-objet\">${rdv.objet || ''}</span><br>
+                        <span class=\"rdv-date\">${rdv.date} à ${rdv.heure}</span>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              `;
+              section.querySelector('.accordion-header').onclick = function() {
+                section.classList.toggle('open');
+              };
+              accordion.appendChild(section);
+            });
+        });
+      });
+  }
+  function closeUpcomingModal() {
+    document.getElementById('upcomingModal').style.display = 'none';
+  }
 </script>
 </html> 

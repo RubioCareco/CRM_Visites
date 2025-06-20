@@ -29,4 +29,6 @@ urlpatterns = [
     path('api/rdvs-a-venir/', views.api_rdvs_a_venir, name='api_rdvs_a_venir'),
     path('api/clients-by-commercial/', views.api_clients_by_commercial, name='api_clients_by_commercial'),
     path('import-clients-excel/', views.import_clients_excel, name='import_clients_excel'),
+    path('historique-rdv-responsable/', views.historique_rdv_resp, name='historique_rdv_resp'),
+    path('api/commerciaux/', views.api_commerciaux, name='api_commerciaux'),
 ]

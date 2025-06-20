@@ -451,24 +451,37 @@ def get_rdv_info(request, uuid):
 def client_file(request):
     per_page = int(request.GET.get('per_page', 50))
     page_number = request.GET.get('page', 1)
+    role = request.session.get('role')
+    
+    # Récupérer la liste des commerciaux pour le sélecteur (uniquement pour les responsables/admins)
+    commerciaux = None
+    if role in ['responsable', 'admin']:
+        commerciaux = Commercial.objects.filter(role='commercial')
 
-    # Récupérer le commercial connecté
-    commercial_nom = request.session.get('commercial_nom')
-    print("DEBUG - commercial_nom en session :", commercial_nom)  # Debug
+    # Filtrage des clients
+    clients_qs = ImportClientCorrected.objects.all()
+    selected_commercial = request.GET.get('commercial') # Le nom du commercial depuis l'URL
 
-    if not commercial_nom:
-        clients_qs = ImportClientCorrected.objects.none()
-    else:
-        clients_qs = ImportClientCorrected.objects.filter(commercial__iexact=commercial_nom)
+    if role in ['responsable', 'admin']:
+        if selected_commercial:
+            clients_qs = clients_qs.filter(commercial__iexact=selected_commercial)
+    else: # Pour un commercial normal, on filtre sur son propre nom
+        commercial_nom = request.session.get('commercial_nom')
+        if commercial_nom:
+            clients_qs = clients_qs.filter(commercial__iexact=commercial_nom)
+        else:
+            clients_qs = ImportClientCorrected.objects.none()
 
-    paginator = Paginator(clients_qs, per_page)
+    paginator = Paginator(clients_qs.order_by('rs_nom'), per_page)
     page_obj = paginator.get_page(page_number)
 
     return render(request, 'front/Client_file.html', {
         'page_obj': page_obj,
         'per_page': per_page,
         'paginator': paginator,
-        'role': request.session.get('role'),
+        'role': role,
+        'commerciaux': commerciaux,
+        'selected_commercial': selected_commercial,
     })    
 
 @login_required
@@ -495,6 +508,30 @@ def historique_rdv(request):
         'historique_general': historique_general,
         'role': request.session.get('role'),
     })    
+
+@login_required
+def historique_rdv_resp(request):
+    # Filtrer selon le statut si besoin (ex: ?statut=valide)
+    statut = request.GET.get('statut')
+    rdvs_archives = Rendezvous.objects.all().order_by('-date_rdv', '-heure_rdv')
+    visites_recentes = []
+    a_rappeler = []
+    historique_general = []
+    for rdv in rdvs_archives:
+        if statut and rdv.statut_rdv != statut:
+            continue
+        if rdv.statut_rdv == 'valide':
+            visites_recentes.append(rdv)
+            historique_general.append(rdv)
+        elif rdv.statut_rdv == 'annule':
+            a_rappeler.append(rdv)
+            historique_general.append(rdv)
+    return render(request, 'front/historique_rdv_resp.html', {
+        'visites_recentes': visites_recentes,
+        'a_rappeler': a_rappeler,
+        'historique_general': historique_general,
+        'role': request.session.get('role'),
+    })
 
 @csrf_exempt  # À remplacer par @login_required + gestion CSRF si besoin
 def update_client(request, client_id):
@@ -693,49 +730,57 @@ def api_rdv_counters(request):
 @login_required
 @require_GET
 def api_rdvs_a_venir(request):
-    commercial_id = request.session.get('commercial_id')
+    role = request.session.get('role')
+    commercial_id = request.GET.get('commercial_id')
+    # Si responsable/admin, on prend l'id passé en GET, sinon celui de la session
+    if role in ['responsable', 'admin'] and commercial_id:
+        pass  # on garde commercial_id du GET
+    else:
+        commercial_id = request.session.get('commercial_id')
     if not commercial_id:
         return JsonResponse({'error': 'Non authentifié'}, status=403)
     rdvs = Rendezvous.objects.filter(commercial_id=commercial_id, statut_rdv='a_venir').order_by('date_rdv', 'heure_rdv')
-    data = [
-        {
+    data = []
+    for rdv in rdvs:
+        client = rdv.client
+        data.append({
             'uuid': str(rdv.uuid),
-            'client': str(rdv.client),
+            'client': str(client.rs_nom) if client else '',
+            'civilite': getattr(client, 'civilite', ''),
+            'rs_nom': getattr(client, 'rs_nom', ''),
             'date': rdv.date_rdv.strftime('%d/%m/%Y'),
             'heure': rdv.heure_rdv.strftime('%H:%M'),
             'objet': rdv.objet,
             'notes': rdv.notes,
-        }
-        for rdv in rdvs
-    ]
+        })
     return JsonResponse({'rdvs': data})
 
 @require_GET
 @login_required
 def api_clients_by_commercial(request):
     commercial_id = request.GET.get('commercial_id')
-    role = request.session.get('role')
     if not commercial_id:
         return JsonResponse({'clients': []})
-    if role in ['responsable', 'admin']:
-        # On récupère le nom du commercial à partir de son id
-        from .models import Commercial
-        comm = Commercial.objects.filter(id=commercial_id).first()
-        if not comm:
-            return JsonResponse({'clients': []})
-        clients = ImportClientCorrected.objects.filter(commercial__iexact=comm.commercial)
-    else:
-        # Pour un commercial classique, on suppose que commercial_id est le nom déjà
-        clients = ImportClientCorrected.objects.filter(commercial__iexact=commercial_id)
-    data = [
-        {
-            'id': client.id,
-            'nom': client.rs_nom or client.nom,
-            'prenom': getattr(client, 'prénom', '')
-        }
-        for client in clients
-    ]
-    return JsonResponse({'clients': data})
+    try:
+        commercial = Commercial.objects.get(id=commercial_id)
+        
+        # On prend le nom de code (ex: "Commercial 1") et on supprime les espaces
+        commercial_name = commercial.commercial.replace(' ', '').strip()
+
+        # On cherche les clients avec ce nom de code (insensible à la casse)
+        clients = ImportClientCorrected.objects.filter(commercial__iexact=commercial_name)
+
+        data = [
+            {
+                'id': client.id,
+                'nom': client.rs_nom or '',
+                'prenom': client.prénom or ''
+            }
+            for client in clients
+        ]
+        return JsonResponse({'clients': data})
+    except Commercial.DoesNotExist:
+        return JsonResponse({'clients': []})
 
 @csrf_exempt  # À sécuriser en prod !
 def import_clients_excel(request):
@@ -764,3 +809,16 @@ def import_clients_excel(request):
         except Exception as e:
             return JsonResponse({'message': f'Erreur lors de l\'import : {e}'}, status=400)
     return JsonResponse({'message': 'Aucun fichier reçu'}, status=400)
+
+@login_required
+def api_commerciaux(request):
+    commerciaux = Commercial.objects.filter(role='commercial')
+    data = [
+        {
+            'id': commercial.id,
+            'nom': commercial.nom,
+            'prenom': commercial.prenom
+        }
+        for commercial in commerciaux
+    ]
+    return JsonResponse({'commerciaux': data})

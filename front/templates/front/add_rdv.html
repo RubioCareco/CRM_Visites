@@ -16,6 +16,9 @@
   {% endif %}
   <div class="rdv-modal">
     <div class="rdv-box">
+      <button id="close-modal-btn" class="close-btn" aria-label="Fermer">
+        <i class="fa fa-times"></i>
+      </button>
       <h2>Ajouter un rendez-vous</h2>
       <form method="post" autocomplete="off">
         {% csrf_token %}
@@ -63,14 +66,13 @@
           <input type="text" name="objet" placeholder="Objet du rendez-vous" required>
         </div>
 
-        <div class="rdv-field">
-          <i class="fa fa-align-left"></i>
-          <textarea name="notes" placeholder="Détails/Notes" rows="3"></textarea>
-        </div>
-
         <div class="rdv-actions">
-          <button id="cancelBtn" type="button" class="cancel-button">Annuler</button>
-          <button type="submit" class="submit-button"><i class="fa fa-check"></i> Valider</button>
+          <button id="cancelBtn" type="button" class="action-btn">
+            Annuler
+          </button>
+          <button type="submit" class="action-btn">
+            Valider
+          </button>
         </div>
       </form>
     </div>
@@ -133,18 +135,22 @@
 
       if (input && results && hiddenInput) {
         input.addEventListener("input", function () {
-          const value = this.value.toLowerCase();
+          const value = this.value.toLowerCase().trim();
           results.innerHTML = "";
           if (value.length === 0) return;
+
           const matches = clients.filter(c =>
-            (`${c.prenom} ${c.nom}`).toLowerCase().includes(value)
+            (c.nom && c.nom.toLowerCase().includes(value)) ||
+            (c.prenom && c.prenom.toLowerCase().includes(value))
           );
+
           matches.forEach(client => {
             const li = document.createElement("li");
-            li.textContent = `${client.prenom} ${client.nom}`;
+            // Affiche le nom et le prénom, en gérant les cas où l'un des deux est manquant
+            li.textContent = `${client.nom || ''} ${client.prenom || ''}`.trim();
             li.classList.add("autocomplete-item");
             li.addEventListener("click", () => {
-              input.value = `${client.prenom} ${client.nom}`;
+              input.value = li.textContent;
               hiddenInput.value = client.id;
               results.innerHTML = "";
             });
@@ -177,6 +183,19 @@
           window.location.href = nextUrl;
         }
       });
+
+      // Logique pour la nouvelle croix de fermeture
+      const closeModalBtn = document.getElementById("close-modal-btn");
+      if(closeModalBtn) {
+        closeModalBtn.addEventListener("click", function() {
+          if (role === 'responsable' || role === 'admin') {
+            window.location.href = dashboardRespUrl;
+          } else {
+            window.location.href = nextUrl;
+          }
+        });
+      }
+
     });
   </script>
   {% else %}

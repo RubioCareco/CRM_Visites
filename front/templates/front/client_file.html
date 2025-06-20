@@ -7,6 +7,119 @@
   <link rel="stylesheet" href="{% static 'front/css/dashboard.css' %}">
   <link rel="stylesheet" href="{% static 'front/css/client_file.css' %}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    #filterPanelClient input {
+      width: 92%;
+      margin: 0 auto 12px auto;
+      display: block;
+      padding: 8px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+    }
+
+    #filterPanelClient input:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    #filterPanelClient input:focus {
+      outline: none;
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(229, 57, 53, 0.5);
+      box-shadow: 0 0 0 2px rgba(229, 57, 53, 0.18);
+      transform: translateY(-2px);
+    }
+
+    #filterPanelClient input::placeholder {
+      color: rgba(255,255,255,0.85);
+      transition: color 0.3s ease;
+    }
+
+    #filterPanelClient input:hover::placeholder {
+      color: rgba(255,255,255,0.92);
+    }
+
+    #filterPanelClient input:focus::placeholder {
+      color: #fff;
+    }
+
+    #resetClientFilters {
+      color: #ff3030 !important;
+      font-weight: 600;
+      font-size: 1.08rem;
+      background: rgba(255,48,48,0.08);
+      border-radius: 8px;
+      padding: 6px 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+    }
+    #resetClientFilters:hover {
+      background: rgba(255,4,0,0.18);
+      color: #ff0400 !important;
+      box-shadow: 0 4px 16px rgba(255,48,48,0.10);
+      text-decoration: underline;
+    }
+
+    .commercial-select {
+      background: rgba(255, 255, 255, 0.18);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .commercial-select:focus {
+      outline: none;
+      border-color: #e53935;
+    }
+
+    #clientModal .modal-input:disabled {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: transparent;
+    }
+
+    /* Ajustement de la taille des champs et boutons dans la modale */
+    #clientModal .input-icon-group input {
+      padding: 6px 8px !important;
+      font-size: 0.97rem !important;
+      height: 30px !important;
+      border-radius: 10px !important;
+      flex-grow: 1;
+    }
+
+    #clientModal .input-icon-group {
+        display: flex;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    #clientModal .input-icon-group b {
+        width: 145px;
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+
+    #clientModal .modal-buttons .action-button {
+      padding: 12px 18px !important;
+      font-size: 1.05rem !important;
+    }
+
+    #clientModal .modal-content h3 {
+      text-align: left;
+      margin-top: 24px;
+    }
+  </style>
 </head>
 <body class="dashboard">
 
@@ -20,7 +133,7 @@
   </div>
 
   <div class="cards" style="display:flex;justify-content:center;align-items:flex-start;min-height:10vh;">
-    <div class="card" style="width:100%;max-width:1400px;margin-top:40px;min-height:600px;">
+    <div class="card" style="width:95%;max-width:1600px;margin-top:40px;min-height:750px;">
       <h2 style="text-align:center;margin-bottom:24px;">
         Liste des clients
       </h2>
@@ -35,6 +148,23 @@
             <option value="200" {% if per_page == 200 %}selected{% endif %}>200</option>
           </select>
         </form>
+
+        {% if role in 'responsable,admin' %}
+        <form method="get" id="commercial-filter-form" class="pagination-form" style="margin-right:12px;">
+          <label for="commercial-select">Commercial :</label>
+          <select name="commercial" id="commercial-select" class="commercial-select" onchange="this.form.submit()">
+            <option value="">Tous les commerciaux</option>
+            {% for commercial in commerciaux %}
+              {% with commercial_code=commercial.commercial|cut:' ' %}
+                <option value="{{ commercial_code }}" {% if selected_commercial == commercial_code %}selected{% endif %}>
+                  {{ commercial.prenom }} {{ commercial.nom }}
+                </option>
+              {% endwith %}
+            {% endfor %}
+          </select>
+        </form>
+        {% endif %}
+
         <button class="filter-button" id="filterBtnClient" type="button">
           <i class="fa-solid fa-sliders"></i>Filtres
         </button>
@@ -59,21 +189,21 @@
             <input type="text" id="filterVille" name="filterVille" placeholder="Ville...">
           </div>
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
-            <a href="#" id="resetClientFilters" style="margin-left:auto;color:#4dd0e1;font-size:1rem;text-decoration:none;">Réinitialiser filtres</a>
+            <a href="#" id="resetClientFilters" style="margin-left:auto;color:#ff3030;font-size:1rem;text-decoration:none;"><i class="fa fa-rotate-left"></i> Réinitialiser filtres</a>
           </div>
           <button id="closeFilterPanelClient" type="button" style="position:absolute;top:18px;right:18px;background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;">&times;</button>
         </form>
       </div>
-      <div class="table-container" style="max-height: 500px; overflow-y: auto;">
-        <table class="client-table">
+      <div class="table-container" style="max-height: 650px; overflow-y: auto; padding-right: 8px; margin-top: 16px;">
+        <table class="client-table" style="width: 100%; table-layout: fixed;">
           <thead>
             <tr style="background:transparent;">
-              <th>Civilité</th>
-              <th>Raison sociale</th>
-              <th>Prénom</th>
-              <th>Adresse</th>
-              <th>Code postal</th>
-              <th>Ville</th>
+              <th style="width: 8%;">Civilité</th>
+              <th style="width: 22%;">Raison sociale</th>
+              <th style="width: 15%;">Prénom</th>
+              <th style="width: 25%;">Adresse</th>
+              <th style="width: 10%;">Code postal</th>
+              <th style="width: 20%;">Ville</th>
             </tr>
           </thead>
           <tbody>
@@ -142,7 +272,7 @@
     </div>
   </div>
 
-  <a href="{% url 'dashboard' %}" class="back-login" id="backDashboardBtn" style="position:fixed;left:32px;bottom:24px;z-index:10001;">&larr; Retour au tableau de bord</a>
+  <a href="{% if role == 'responsable' or role == 'admin' %}{% url 'dashboard_responsable' %}{% else %}{% url 'dashboard' %}{% endif %}" class="back-login" id="backDashboardBtn" style="position:fixed;left:32px;bottom:24px;z-index:10001;">&larr; Retour au tableau de bord</a>
 
 </body>
 <script>
@@ -381,15 +511,6 @@ document.addEventListener("DOMContentLoaded", function () {
       .catch(() => {
         commentsDiv.innerHTML = '<span style="color:#e53935;">Erreur lors du chargement des commentaires.</span>';
       });
-  }
-
-  // Redirection conditionnelle du bouton retour
-  const backBtn = document.getElementById('backDashboardBtn');
-  const role = "{{ role|default:'' }}";
-  if (role === "responsable" || role === "admin") {
-    backBtn.setAttribute('href', '/dashboard-responsable/');
-  } else {
-    backBtn.setAttribute('href', '/dashboard');
   }
 });
 function closeClientModal() {

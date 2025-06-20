@@ -3,7 +3,7 @@ from .models import Commercial, Client, Rendezvous, CommentaireRdv, ImportClient
 from django.contrib.auth.hashers import check_password, make_password
 from functools import wraps
 from django.http import JsonResponse, HttpResponse, Http404
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.utils import timezone
 import json
 from django.core.mail import send_mail
@@ -20,6 +20,8 @@ from io import BytesIO
 from django.core.exceptions import PermissionDenied
 from django.views.decorators.http import require_GET
 import pandas as pd
+from django.db.models import Avg, Count
+from django.db.models.functions import Coalesce
 
 # 🔐 Décorateur de protection
 def login_required(view_func):
@@ -294,23 +296,60 @@ def customer_file(request):
 
 # 👤 Profil commercial
 @login_required
-def profil(request):
-    commercial_id = request.session.get('commercial_id')
-    commercial = Commercial.objects.get(id=commercial_id)
+def profils_commerciaux(request):
+    # Assurez-vous que seul un responsable ou admin peut voir cette page
+    role = request.session.get('role')
+    if role not in ['responsable', 'admin']:
+        return redirect('dashboard') # Rediriger si pas les droits
+
+    commerciaux = Commercial.objects.filter(role='commercial')
+    return render(request, 'front/profils_commerciaux.html', {'commerciaux': commerciaux})
+
+@login_required
+def profil(request, commercial_id=None):
+    # Si un ID est fourni, on affiche le profil de ce commercial.
+    # Sinon, on affiche le profil de l'utilisateur connecté.
+    if commercial_id:
+        # Un responsable peut voir le profil d'un commercial
+        role = request.session.get('role')
+        if role in ['responsable', 'admin']:
+            commercial = get_object_or_404(Commercial, id=commercial_id)
+        else:
+            # Un commercial ne peut voir que son propre profil
+            return redirect('profil')
+    else:
+        # Pas d'ID, on prend celui de la session
+        session_commercial_id = request.session.get('commercial_id')
+        commercial = get_object_or_404(Commercial, id=session_commercial_id)
 
     if request.method == 'POST':
+        # La logique de mise à jour reste la même
         commercial.nom = request.POST.get('nom') or commercial.nom
         commercial.prenom = request.POST.get('prenom') or commercial.prenom
         commercial.email = request.POST.get('email') or commercial.email
         commercial.telephone = request.POST.get('telephone') or commercial.telephone
         commercial.save()
-        role = request.session.get('role')
-        if role in ['responsable', 'admin']:
-            return redirect('dashboard_responsable')
-        else:
-            return redirect('dashboard')
 
-    return render(request, 'front/profil.html', {'commercial': commercial, 'role': request.session.get('role')})
+        # Redirection appropriée
+        if 'commercial_id' in request.resolver_match.kwargs:
+             # Si on éditait un commercial spécifique, on retourne à la liste
+             return redirect('profils_commerciaux')
+        else:
+            # Sinon, on retourne à son propre dashboard
+            role = request.session.get('role')
+            if role in ['responsable', 'admin']:
+                return redirect('dashboard_responsable')
+            else:
+                return redirect('dashboard')
+    
+    # On passe une variable pour savoir si on peut éditer (le user peut éditer son profil, ou un responsable peut éditer un commercial)
+    can_edit = (not commercial_id) or (request.session.get('role') in ['responsable', 'admin'])
+
+    return render(request, 'front/profil.html', {
+        'commercial': commercial, 
+        'role': request.session.get('role'),
+        'can_edit': can_edit
+    })
 
 # ❌ Supprimer le rdv temporaire
 @login_required
@@ -672,29 +711,91 @@ def get_client_comments(request, client_id):
 
 @login_required
 def dashboard_responsable(request):
+    # S'assurer que seul un responsable ou admin peut voir cette page
     role = request.session.get('role')
-    if role not in ['responsable', 'admin'] and not getattr(request.user, 'is_superuser', False):
-        return redirect('dashboard')
-    # Compteurs du mois en cours
-    now = timezone.now()
-    total_realise = Rendezvous.objects.filter(statut_rdv='valide', date_rdv__year=now.year, date_rdv__month=now.month).count()
-    total_avenir = Rendezvous.objects.filter(statut_rdv='a_venir', date_rdv__year=now.year, date_rdv__month=now.month).count()
-    total_annule = Rendezvous.objects.filter(statut_rdv='annule', date_rdv__year=now.year, date_rdv__month=now.month).count()
+    if role not in ['responsable', 'admin']:
+        raise PermissionDenied
+
     commerciaux = Commercial.objects.filter(role='commercial')
+
+    # Récupérer le dernier RDV pour chaque commercial
     for commercial in commerciaux:
-        dernier_rdv = Rendezvous.objects.filter(commercial=commercial, statut_rdv__in=['valide', 'annule']).order_by('-date_rdv', '-heure_rdv').first()
+        dernier_rdv = Rendezvous.objects.filter(
+            commercial=commercial, 
+            statut_rdv__in=['valide', 'annule']
+        ).order_by('-date_rdv', '-heure_rdv').first()
         commercial.dernier_rdv = dernier_rdv
         if dernier_rdv:
             satisfaction_pdf = SatisfactionB2B.objects.filter(rdv=dernier_rdv).first()
             commercial.dernier_rdv_pdf = satisfaction_pdf
         else:
             commercial.dernier_rdv_pdf = None
-    return render(request, 'front/dashboard_responsable.html', {
+
+    # Pour le chargement initial, on prend toutes les données pour le graphique
+    stats_satisfaction = SatisfactionB2B.objects.aggregate(
+        moyenne_qualite_pieces=Avg('note_qualite_pieces'),
+        moyenne_sav=Avg('note_sav'),
+        moyenne_accueil=Avg('note_accueil'),
+        moyenne_recommandation=Avg('note_recommandation')
+    )
+
+    chart_data = {
+        "labels": ["Qualité pièces", "SAV", "Accueil", "Recommandation"],
+        "data": [
+            round(stats_satisfaction.get('moyenne_qualite_pieces') or 0, 2),
+            round(stats_satisfaction.get('moyenne_sav') or 0, 2),
+            round(stats_satisfaction.get('moyenne_accueil') or 0, 2),
+            round(stats_satisfaction.get('moyenne_recommandation') or 0, 2),
+        ],
+    }
+
+    context = {
         'commerciaux': commerciaux,
-        'total_realise': total_realise,
-        'total_avenir': total_avenir,
-        'total_annule': total_annule,
-    })
+        'stats_satisfaction_chart': json.dumps(chart_data),
+    }
+    return render(request, 'front/dashboard_responsable.html', context)
+
+@login_required
+def api_satisfaction_stats(request):
+    commercial_id = request.GET.get('commercial_id')
+    period = request.GET.get('period')
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+
+    queryset = SatisfactionB2B.objects.all()
+
+    # Filtre par commercial
+    if commercial_id and commercial_id != 'all':
+        queryset = queryset.filter(commercial_id=commercial_id)
+
+    # Filtre par période
+    if period == 'last_30_days':
+        start_date = timezone.now() - timedelta(days=30)
+        queryset = queryset.filter(date_soumission__gte=start_date)
+    elif start_date_str and end_date_str:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+        queryset = queryset.filter(date_soumission__date__range=[start_date, end_date])
+    
+    # Calcul des statistiques
+    stats = queryset.aggregate(
+        moyenne_qualite_pieces=Avg('note_qualite_pieces'),
+        moyenne_sav=Avg('note_sav'),
+        moyenne_accueil=Avg('note_accueil'),
+        moyenne_recommandation=Avg('note_recommandation')
+    )
+
+    chart_data = {
+        "labels": ["Qualité pièces", "SAV", "Accueil", "Recommandation"],
+        "data": [
+            round(stats.get('moyenne_qualite_pieces') or 0, 2),
+            round(stats.get('moyenne_sav') or 0, 2),
+            round(stats.get('moyenne_accueil') or 0, 2),
+            round(stats.get('moyenne_recommandation') or 0, 2),
+        ],
+    }
+    
+    return JsonResponse(chart_data)
 
 @login_required
 def get_last_rdv_commercial(request, commercial_id):
@@ -822,3 +923,28 @@ def api_commerciaux(request):
         for commercial in commerciaux
     ]
     return JsonResponse({'commerciaux': data})
+
+@login_required
+def fiche_commercial_view(request, commercial_id):
+    commercial = get_object_or_404(Commercial, id=commercial_id)
+    rdvs = Rendezvous.objects.filter(commercial=commercial).select_related('client').order_by('-date_rdv')
+
+    visites_recentes = [r for r in rdvs if r.statut_rdv == 'valide' and r.date_rdv <= timezone.now().date()]
+    visites_a_venir = [r for r in rdvs if r.date_rdv > timezone.now().date()]
+    a_rappeler = [r for r in rdvs if r.statut_rdv == 'annule']
+
+    total_realise = len(visites_recentes)
+    total_avenir = len(visites_a_venir)
+    total_annule = len(a_rappeler)
+
+    context = {
+        'commercial': commercial,
+        'visites_recentes': visites_recentes,
+        'visites_a_venir': visites_a_venir,
+        'a_rappeler': a_rappeler,
+        'total_realise': total_realise,
+        'total_avenir': total_avenir,
+        'total_annule': total_annule,
+        'role': getattr(request.user, 'role', '')
+    }
+    return render(request, 'front/fiche_commercial.html', context)

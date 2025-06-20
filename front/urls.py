@@ -11,6 +11,8 @@ urlpatterns = [
     path('new-client/', views.new_client, name='new_client'),
     path('add-rdv/', views.add_rdv, name='add_rdv'),
     path('profil/', views.profil, name='profil'),
+    path('profil/<int:commercial_id>/', views.profil, name='profil_commercial'),
+    path('profils-commerciaux/', views.profils_commerciaux, name='profils_commerciaux'),
     path('customer-file/', views.customer_file, name='customer_file'),
     path('logout/', views.logout_view, name='logout'),
     path('delete-temp-rdv', views.delete_temp_rdv, name='delete_temp_rdv'),
@@ -31,4 +33,6 @@ urlpatterns = [
     path('import-clients-excel/', views.import_clients_excel, name='import_clients_excel'),
     path('historique-rdv-responsable/', views.historique_rdv_resp, name='historique_rdv_resp'),
     path('api/commerciaux/', views.api_commerciaux, name='api_commerciaux'),
+    path('fiche-commercial/<int:commercial_id>/', views.fiche_commercial_view, name='fiche_commercial'),
+    path('api/satisfaction-stats/', views.api_satisfaction_stats, name='api_satisfaction_stats'),
 ]

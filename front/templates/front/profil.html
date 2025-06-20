@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Profil</title>
   {% load static %}
-  <link rel="stylesheet" href="{% static 'front/css/profil.css' %}" />
+  <link rel="stylesheet" href="{% static 'front/css/profil.css' %}?v=1.2" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
@@ -21,30 +21,34 @@
 
       <form method="POST">
         {% csrf_token %}
-        <div class="profile-field">
-          <i class="fa fa-user"></i>
-          <input type="text" name="nom" value="{{ commercial.nom }}" placeholder="Nom" disabled />
-        </div>
-        <div class="profile-field">
-          <i class="fa fa-user"></i>
-          <input type="text" name="prenom" value="{{ commercial.prenom }}" placeholder="Prénom" disabled />
-        </div>
-        <div class="profile-field">
-          <i class="fa fa-envelope"></i>
-          <input type="email" name="email" value="{{ commercial.email }}" placeholder="Adresse e-mail" disabled />
-        </div>
-        <div class="profile-field">
-          <i class="fa fa-phone"></i>
-          <input type="text" name="telephone" value="{{ commercial.telephone }}" placeholder="Téléphone" disabled />
-        </div>
-        <div class="profile-field">
-          <i class="fa fa-building"></i>
-          <input type="text" name="site" value="N/A" placeholder="Site de rattachement" disabled />
-        </div>
+        <div class="form-wrapper">
+          <div class="profile-field">
+            <i class="fa fa-user"></i>
+            <input type="text" name="nom" value="{{ commercial.nom }}" placeholder="Nom" disabled />
+          </div>
+          <div class="profile-field">
+            <i class="fa fa-user"></i>
+            <input type="text" name="prenom" value="{{ commercial.prenom }}" placeholder="Prénom" disabled />
+          </div>
+          <div class="profile-field">
+            <i class="fa fa-envelope"></i>
+            <input type="email" name="email" value="{{ commercial.email }}" placeholder="Adresse e-mail" disabled />
+          </div>
+          <div class="profile-field">
+            <i class="fa fa-phone"></i>
+            <input type="text" name="telephone" value="{{ commercial.telephone }}" placeholder="Téléphone" disabled />
+          </div>
+          <div class="profile-field">
+            <i class="fa fa-building"></i>
+            <input type="text" name="site" value="N/A" placeholder="Site de rattachement" disabled />
+          </div>
 
-        <button type="submit" class="edit-button" id="editProfileBtn">
-          <i class="fa fa-pen"></i> Modifier le profil
-        </button>
+          {% if can_edit %}
+          <button type="submit" class="edit-button" id="editProfileBtn">
+            <i class="fa fa-pen"></i> Modifier le profil
+          </button>
+          {% endif %}
+        </div>
       </form>
     </div>
   </div>
@@ -65,17 +69,23 @@
       const form = document.querySelector('form');
       let isEditing = false;
   
-      editBtn.addEventListener('click', function (e) {
-        if (!isEditing) {
-          e.preventDefault(); // Bloque l'envoi à la première étape
-          inputs.forEach(input => input.disabled = false);
-          editBtn.innerHTML = '<i class="fa fa-check"></i> Enregistrer';
-          isEditing = true;
-        } else {
-          // L'utilisateur veut enregistrer → on laisse le formulaire se soumettre
-          form.submit(); // Forcer la soumission ici
-        }
-      });
+      if (editBtn) {
+        editBtn.addEventListener('click', function (e) {
+            if (!isEditing) {
+              e.preventDefault(); // Bloque l'envoi à la première étape
+              inputs.forEach(input => {
+                  if (input.name !== 'site') { // Garde le champ site désactivé
+                    input.disabled = false
+                  }
+              });
+              editBtn.innerHTML = '<i class="fa fa-check"></i> Enregistrer';
+              isEditing = true;
+            } else {
+              // L'utilisateur veut enregistrer → on laisse le formulaire se soumettre
+              form.submit(); // Forcer la soumission ici
+            }
+        });
+      }
     });
   </script>
   

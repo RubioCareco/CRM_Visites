@@ -6,6 +6,7 @@
   {% load static %}
   <link rel="stylesheet" href="{% static 'front/css/dashboard_responsable.css' %}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="dashboard-resp-bg">
   <h1 class="dashboard-resp-title">Tableau de bord</h1>
@@ -21,6 +22,7 @@
     <div class="user-menu" id="userMenu">
       <ul>
         <li><a href="{% url 'profil' %}" class="menu-link">Profil</a></li>
+        <li><a href="{% url 'profils_commerciaux' %}" class="menu-link">Profil Commercial</a></li>
         <li><a href="{% url 'client_file' %}" class="menu-link">Fichier Clients</a></li>
         <li><a href="{% url 'historique_rdv_resp' %}" class="menu-link">Historique RDV</a></li>
         <li><a href="{% url 'logout' %}" class="logout-btn">Se déconnecter</a></li>
@@ -45,8 +47,8 @@
                   {% endif %}
                   {{ commercial.dernier_rdv.client.civilite|default:"" }} {{ commercial.dernier_rdv.client.rs_nom|default:"" }}
                   {% if commercial.dernier_rdv_pdf %}
-                    <a href="{% url 'download_satisfaction_pdf' commercial.dernier_rdv.uuid %}" target="_blank" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction" style="margin-left:8px;vertical-align:middle;display:inline-block;">
-                      <img src="{% static 'front/img/PDF.svg' %}" alt="PDF" style="height: 22px; width: auto; display: inline-block;vertical-align:middle;">
+                    <a href="{% url 'download_satisfaction_pdf' commercial.dernier_rdv.uuid %}" target="_blank" class="pdf-link" title="Télécharger le formulaire de satisfaction">
+                      <img src="{% static 'front/img/PDF.svg' %}" alt="PDF" style="height: 44px; width: auto; display: inline-block;vertical-align:middle;">
                     </a>
                   {% endif %}<br>
                   Statut : 
@@ -98,7 +100,38 @@
       <div id="accordionCommerciaux"></div>
     </div>
   </div>
-</body>
+
+  <div id="chart-section" class="chart-section">
+    <h3 class="chart-title">Moyenne des notes de satisfaction</h3>
+    <div class="filters-container">
+      <div class="filter-group">
+        <label for="commercial-filter">Commercial</label>
+        <select id="commercial-filter">
+          <option value="all">Tous les commerciaux</option>
+          {% for commercial in commerciaux %}
+            <option value="{{ commercial.id }}">{{ commercial.prenom }} {{ commercial.nom }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="period-filter">Période</label>
+        <div class="date-filters">
+          <button class="period-btn active" data-period="all_time">Totale</button>
+          <button class="period-btn" data-period="last_30_days">30 jours</button>
+          <input type="date" id="start-date">
+          <input type="date" id="end-date">
+          <button id="apply-date-filter">Appliquer</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <canvas id="satisfactionChart"></canvas>
+    </div>
+  </div>
+
+</div>
+
 <script>
   function toggleUserMenu() {
     const menu = document.getElementById("userMenu");
@@ -184,6 +217,28 @@
       });
     }
 
+    // Rendre les cartes de commerciaux cliquables
+    const commercialCards = document.querySelectorAll('.commercial-card');
+    commercialCards.forEach(card => {
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', function(event) {
+        // Ne pas rediriger si le clic vient du lien PDF
+        if (event.target.closest('.pdf-link')) {
+            return;
+        }
+        const commercialId = this.dataset.id;
+        window.location.href = `/fiche-commercial/${commercialId}/`;
+      });
+    });
+
+    // Arrêter la propagation pour les liens PDF
+    const pdfLinks = document.querySelectorAll('.pdf-link');
+    pdfLinks.forEach(link => {
+        link.addEventListener('click', function(event) {
+            event.stopPropagation();
+        });
+    });
+
     // Rendre les cartes de stats cliquables
     const realiseCard = document.querySelector('.stat-card.realise');
     const avenirCard = document.querySelector('.stat-card.a-venir');
@@ -206,6 +261,130 @@
         window.location.href = '/historique-rdv-responsable/?tab=rappeler';
       });
     }
+
+    const initialChartData = JSON.parse('{{ stats_satisfaction_chart|escapejs }}');
+    const ctx = document.getElementById('satisfactionChart').getContext('2d');
+    let satisfactionChart;
+
+    function renderChart(chartData) {
+      if (satisfactionChart) {
+        satisfactionChart.destroy();
+      }
+      satisfactionChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: chartData.labels,
+          datasets: [{
+            label: 'Moyenne des notes (sur 5)',
+            data: chartData.data,
+            backgroundColor: [
+              'rgba(229, 57, 53, 0.6)', // Rouge principal
+              'rgba(255, 138, 101, 0.6)', // Corail
+              'rgba(255, 209, 128, 0.6)', // Or
+              'rgba(120, 144, 156, 0.6)' // Gris froid
+            ],
+            borderColor: [
+              'rgba(229, 57, 53, 1)',
+              'rgba(255, 138, 101, 1)',
+              'rgba(255, 209, 128, 1)',
+              'rgba(120, 144, 156, 1)'
+            ],
+            borderWidth: 1,
+            borderRadius: 5,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 5,
+              ticks: {
+                color: '#fff',
+                font: {
+                  size: 14,
+                }
+              },
+              grid: {
+                color: 'rgba(255, 255, 255, 0.2)'
+              }
+            },
+            x: {
+              ticks: {
+                color: '#fff',
+                font: {
+                  size: 14,
+                }
+              },
+              grid: {
+                display: false
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            title: {
+              display: false,
+              text: 'Moyenne des notes de satisfaction',
+              color: '#fff',
+              font: {
+                size: 20
+              }
+            }
+          }
+        }
+      });
+    }
+
+    async function updateChart() {
+      const commercialId = document.getElementById('commercial-filter').value;
+      const activePeriodBtn = document.querySelector('.period-btn.active');
+      const period = activePeriodBtn ? activePeriodBtn.dataset.period : null;
+      const startDate = document.getElementById('start-date').value;
+      const endDate = document.getElementById('end-date').value;
+
+      let url = `/api/satisfaction-stats/?commercial_id=${commercialId}`;
+      
+      if (period && period !== 'all_time') {
+        url += `&period=${period}`;
+      } else if (startDate && endDate) {
+        url += `&start_date=${startDate}&end_date=${endDate}`;
+      }
+
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Network response was not ok');
+        const newData = await response.json();
+        renderChart(newData);
+      } catch (error) {
+        console.error('Erreur lors de la mise à jour du graphique:', error);
+      }
+    }
+
+    // Écouteurs d'événements
+    document.getElementById('commercial-filter').addEventListener('change', updateChart);
+    document.getElementById('apply-date-filter').addEventListener('click', () => {
+      // Désactiver les boutons de période rapide
+      document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
+      updateChart();
+    });
+    
+    document.querySelectorAll('.period-btn').forEach(button => {
+      button.addEventListener('click', function() {
+        document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
+        this.classList.add('active');
+        // Vider les champs de date
+        document.getElementById('start-date').value = '';
+        document.getElementById('end-date').value = '';
+        updateChart();
+      });
+    });
+
+    // Premier rendu du graphique
+    renderChart(initialChartData);
   });
 
   function openUpcomingModal() {
@@ -249,4 +428,5 @@
     document.getElementById('upcomingModal').style.display = 'none';
   }
 </script>
+</body>
 </html> 

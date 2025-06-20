@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Profils des Commerciaux</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'front/css/profils_commerciaux.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+    <div class="main-container">
+        <header>
+            <h1>Profils des Commerciaux</h1>
+        </header>
+
+        <div class="commerciaux-grid">
+            {% for commercial in commerciaux %}
+            <a href="{% url 'profil_commercial' commercial.id %}" class="commercial-card">
+                <div class="commercial-avatar">
+                    {{ commercial.prenom|slice:":1"|upper }}{{ commercial.nom|slice:":1"|upper }}
+                </div>
+                <div class="commercial-name">{{ commercial.prenom }} {{ commercial.nom }}</div>
+                <div class="commercial-email">{{ commercial.email }}</div>
+            </a>
+            {% empty %}
+            <p>Aucun commercial à afficher.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <footer>
+        <a href="{% url 'dashboard_responsable' %}" class="back-link"><i class="fa fa-arrow-left"></i> Retour</a>
+    </footer>
+</body>
+</html> 

@@ -100,9 +100,12 @@ body.dashboard-resp-bg {
     transition: background 0.18s, box-shadow 0.18s, transform 0.18s, border 0.18s, color 0.18s;
 }
 .dashboard-resp-main {
-  display: flex;
-  gap: 40px;
-  margin-top: 18px;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+    align-items: flex-start;
+    padding: 0 50px;
+    margin-bottom: 80px;
 }
 .dashboard-resp-commerciaux {
   flex: 2;
@@ -552,4 +555,97 @@ body.dashboard-resp-bg {
   background: rgba(255,255,255,0.32);
   transform: scale(1.18);
   transition: color 0.18s, background 0.18s, transform 0.18s;
+}
+
+.commercial-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 25px;
+    margin-bottom: 80px;
+}
+
+.chart-section {
+    width: 100%;
+    max-width: 700px;
+    margin-left: 50px;
+    margin-right: auto;
+    margin-bottom: 50px;
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    margin-left: 75px;
+}
+
+.chart-title {
+    color: #ffffff;
+    text-align: center;
+    font-size: 1.5rem;
+    margin-top: 0;
+    margin-bottom: 25px;
+}
+
+.filters-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+    color: rgb(255, 255, 255);
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.filter-group label {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.filter-group select, .filter-group input, .filter-group button {
+    background: rgba(40, 40, 40, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.filter-group select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px 12px;
+}
+
+.date-filters {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.date-filters input[type="date"] {
+    flex-grow: 1;
+}
+
+.period-btn, #apply-date-filter {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.period-btn.active, .period-btn:hover, #apply-date-filter:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.chart-container {
+    height: 300px;
+}
+
+.no-data-message {
+    color: #fff;
+    font-size: 1.2rem;
+    text-align: center;
 } 

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Fiche Commercial - {{ commercial.prenom }} {{ commercial.nom }}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'front/css/fiche_commercial.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+    <div class="main-container">
+        <header>
+            <div class="page-title">Fiche commercial - vue responsable</div>
+            <div class="commercial-header">
+                <div class="commercial-id">
+                    <div class="avatar">{{ commercial.prenom|slice:":1"|upper }}{{ commercial.nom|slice:":1"|upper }}</div>
+                    <div class="title-container">
+                        <span class="page-subtitle">Fiche commercial</span>
+                        <h1>{{ commercial.prenom }} {{ commercial.nom }}</h1>
+                    </div>
+                </div>
+                <div class="stats-container">
+                    <div class="stat-card realise">
+                        <div class="stat-label">Réalisé</div>
+                        <div class="stat-value">{{ total_realise }}</div>
+                    </div>
+                    <div class="stat-card a-venir">
+                        <div class="stat-label">A venir</div>
+                        <div class="stat-value">{{ total_avenir }}</div>
+                    </div>
+                    <div class="stat-card annule">
+                        <div class="stat-label">Annulé</div>
+                        <div class="stat-value">{{ total_annule }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="filters-container">
+                <button id="openFilterPanelBtn" class="filter-main-btn">
+                    <i class="fa fa-filter"></i> Filtres
+                </button>
+            </div>
+        </header>
+
+        <main class="content-grid">
+            <section class="column">
+                <h2>Visites récentes</h2>
+                <div class="card-list">
+                    {% for rdv in visites_recentes %}
+                    <div class="rdv-card" data-date="{{ rdv.date_rdv|date:"Y-m-d" }}" data-status="realise">
+                        <div class="rdv-title">{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom }}</div>
+                        <div class="rdv-status-recent">
+                            <i class="fa fa-check-square"></i> Validée
+                        </div>
+                        <div class="rdv-details">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</div>
+                    </div>
+                    {% endfor %}
+                    <p class="no-rdv" {% if visites_recentes %}style="display: none;"{% endif %}>Aucune visite récente.</p>
+                </div>
+            </section>
+            <section class="column">
+                <h2>Visites à venir</h2>
+                <div class="card-list">
+                    {% for rdv in visites_a_venir %}
+                    <div class="rdv-card" data-date="{{ rdv.date_rdv|date:"Y-m-d" }}" data-status="a-venir">
+                        <div class="rdv-title">{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom }}</div>
+                        <div class="rdv-objet" style="font-size:1.01rem;color:#fff;margin-bottom:4px;">{{ rdv.objet }}</div>
+                        <div class="rdv-status-upcoming">
+                            <i class="fa fa-calendar-alt"></i> RDV le {{ rdv.date_rdv|date:"d/m/Y" }}
+                        </div>
+                        <div class="rdv-details"></div>
+                    </div>
+                    {% endfor %}
+                    <p class="no-rdv" {% if visites_a_venir %}style="display: none;"{% endif %}>Aucune visite à venir.</p>
+                </div>
+            </section>
+            <section class="column">
+                <h2>A Rappeler</h2>
+                <div class="card-list">
+                    {% for rdv in a_rappeler %}
+                    <div class="rdv-card" data-date="{{ rdv.date_rdv|date:"Y-m-d" }}" data-status="annule">
+                        <div class="rdv-title">{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom }}</div>
+                        <div class="rdv-details" style="margin-bottom: 5px;"><i class="fa fa-phone" style="margin-right: 8px;"></i>{{ rdv.client.telephone|default:"N/A" }}</div>
+                        <div class="rdv-status-cancelled">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Annulé
+                        </div>
+                        <div class="rdv-details">Dernière visite le {{ rdv.date_rdv|date:"d/m/Y" }}</div>
+                        <div class="rdv-details-icon"></div>
+                    </div>
+                    {% endfor %}
+                    <p class="no-rdv" {% if a_rappeler %}style="display: none;"{% endif %}>Aucun rappel.</p>
+                </div>
+            </section>
+        </main>
+        
+        <footer>
+            <a href="{% url 'dashboard_responsable' %}" class="back-link"><i class="fa fa-arrow-left"></i> Retour au tableau de bord</a>
+        </footer>
+    </div>
+
+    <div id="filterPanelOverlay" class="filter-panel-overlay" style="display: none;">
+        <div class="filter-panel">
+            <div class="filter-panel-header">
+                <h3>Filtrer par :</h3>
+                <button id="closeFilterPanelBtn" class="close-btn">&times;</button>
+            </div>
+            <div class="filter-group">
+                <label for="statusFilter">Statut du rendez-vous :</label>
+                <select id="statusFilter" class="filter-select-panel">
+                    <option value="all">Tous les statuts</option>
+                    <option value="realise">Réalisé</option>
+                    <option value="a-venir">À venir</option>
+                    <option value="annule">Annulé</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <div class="date-filter-buttons">
+                    <button class="filter-btn" data-period="today">Jour</button>
+                    <button class="filter-btn" data-period="week">Semaine</button>
+                    <button class="filter-btn" data-period="month">Mois</button>
+                    <button class="filter-btn" data-period="year">Année</button>
+                </div>
+                <div class="date-range-picker">
+                    <div class="date-input-group">
+                        <label for="startDate">Du</label>
+                        <input type="date" id="startDate" class="date-input">
+                    </div>
+                    <div class="date-input-group">
+                        <label for="endDate">Au</label>
+                        <input type="date" id="endDate" class="date-input">
+                    </div>
+                </div>
+            </div>
+            <div class="filter-panel-footer">
+                <button id="applyFiltersBtn" class="apply-btn">Appliquer</button>
+                <button id="resetFiltersBtn" class="reset-link">Réinitialiser</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Panel Elements
+        const filterPanelOverlay = document.getElementById('filterPanelOverlay');
+        const openBtn = document.getElementById('openFilterPanelBtn');
+        const closeBtn = document.getElementById('closeFilterPanelBtn');
+        const applyBtn = document.getElementById('applyFiltersBtn');
+        const resetBtn = document.getElementById('resetFiltersBtn');
+    
+        // Filter Inputs
+        const statusFilter = document.getElementById('statusFilter');
+        const dateButtons = document.querySelectorAll('.date-filter-buttons .filter-btn');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        
+        // Content
+        const columns = document.querySelectorAll('.column');
+    
+        // Show/Hide Panel
+        function togglePanel(show) {
+            filterPanelOverlay.style.display = show ? 'flex' : 'none';
+        }
+    
+        openBtn.addEventListener('click', () => togglePanel(true));
+        closeBtn.addEventListener('click', () => togglePanel(false));
+        filterPanelOverlay.addEventListener('click', function(e) {
+            if (e.target === filterPanelOverlay) {
+                togglePanel(false);
+            }
+        });
+    
+        // --- Date Filter Logic ---
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        dateButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                dateButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+
+                const period = this.dataset.period;
+                const now = new Date();
+                let startDate, endDate;
+
+                switch (period) {
+                    case 'today':
+                        startDate = new Date(now);
+                        endDate = new Date(now);
+                        break;
+                    case 'week':
+                        startDate = new Date(now);
+                        const dayOfWeek = startDate.getDay();
+                        const diff = startDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+                        startDate.setDate(diff);
+                        endDate = new Date(startDate);
+                        endDate.setDate(startDate.getDate() + 6);
+                        break;
+                    case 'month':
+                        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                        break;
+                    case 'year':
+                        startDate = new Date(now.getFullYear(), 0, 1);
+                        endDate = new Date(now.getFullYear(), 11, 31);
+                        break;
+                }
+                startDateInput.value = formatDate(startDate);
+                endDateInput.value = formatDate(endDate);
+            });
+        });
+    
+        // Apply & Reset
+        applyBtn.addEventListener('click', function() {
+            applyFilters();
+            togglePanel(false);
+        });
+    
+        resetBtn.addEventListener('click', function() {
+            statusFilter.value = 'all';
+            dateButtons.forEach(btn => btn.classList.remove('active'));
+            startDateInput.value = '';
+            endDateInput.value = '';
+            applyFilters();
+        });
+    
+        function applyFilters() {
+            const statusValue = statusFilter.value;
+            const startDateValue = startDateInput.value;
+            const endDateValue = endDateInput.value;
+    
+            let startDate = startDateValue ? new Date(startDateValue) : null;
+            let endDate = endDateValue ? new Date(endDateValue) : null;
+    
+            if (startDate) startDate.setHours(0, 0, 0, 0);
+            if (endDate) endDate.setHours(23, 59, 59, 999);
+    
+            columns.forEach(column => {
+                const cardsInColumn = column.querySelectorAll('.rdv-card');
+                let visibleCardCount = 0;
+    
+                cardsInColumn.forEach(card => {
+                    const cardStatus = card.dataset.status;
+                    const cardDateStr = card.dataset.date;
+                    let statusMatch = (statusValue === 'all') || (cardStatus === statusValue);
+                    let dateMatch = true;
+    
+                    if (startDate && endDate && cardDateStr) {
+                        const cardDate = new Date(cardDateStr);
+                        dateMatch = (cardDate >= startDate && cardDate <= endDate);
+                    } else if ((startDate || endDate) && !cardDateStr){
+                         dateMatch = false;
+                    }
+    
+                    if (statusMatch && dateMatch) {
+                        card.style.display = '';
+                        visibleCardCount++;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+    
+                const noRdvMessage = column.querySelector('.no-rdv');
+                if (noRdvMessage) {
+                    noRdvMessage.style.display = visibleCardCount === 0 ? 'block' : 'none';
+                }
+            });
+        }
+    });
+    </script>
+</body>
+</html> 

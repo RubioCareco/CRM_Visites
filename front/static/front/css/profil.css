@@ -6,51 +6,81 @@ body, html {
     height: 100%;
     background: url('../img/background3.png') no-repeat center center fixed;
     background-size: cover;
-  }
-  
-  .profile-modal {
+}
+
+/* Animation d'entrée pour la carte de profil */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Animation de flottement pour la carte */
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+.profile-modal {
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
-  }
-  
-  .profile-box {
+}
+
+.profile-box {
     background-color: rgba(250, 250, 250, 0.119);
-    padding: 30px;
-    border-radius: 12px;
-    width: 360px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    padding: 40px;
+    border-radius: 16px;
+    width: 450px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     position: relative;
     text-align: center;
-  }
-  
-  .close-button {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 32px;
-  height: 32px;
-  border: 2px solid #e53935;
-  border-radius: 50%;
-  background: transparent;
-  color: #e53935;
-  font-size: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  box-sizing: border-box;
-  padding: 0;
-    }
-  
-  .close-button:hover {
+    animation: slideInUp 0.6s ease-out;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: box-shadow 0.3s ease-out;
+}
+
+.profile-box:hover {
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.close-button {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border: 2px solid #e53935;
+    border-radius: 50%;
+    background: transparent;
+    color: #e53935;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+    padding: 0;
+}
+
+.close-button:hover {
     background-color: #e53935;
     color: white;
-  }
+}
 
-  .profile-avatar {
+.profile-avatar {
     background-color: rgba(255, 255, 255, 0.1);
     border-radius: 50%;
     width: 80px;
@@ -62,80 +92,129 @@ body, html {
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-  
-  h2 {
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.profile-avatar:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(229, 57, 53, 0.6);
+}
+
+.profile-avatar::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #e53935, #ff6b6b);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: -1;
+}
+
+.profile-avatar:hover::before {
+    opacity: 0.3;
+}
+
+h2 {
     color: white;
     margin-bottom: 30px;
-  }
-  
-  .profile-field {
-    position: relative;
+}
+
+.profile-box form {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    margin-bottom: 15px;
-  }
-  
-  .profile-field {
+}
+
+.profile-field {
     position: relative;
-    width: 300px;
-    margin: 0 auto 15px; /* centré avec espacement */
-  }
-  
-  .profile-field i {
+    width: 380px;
+    margin-bottom: 20px;
+}
+
+.profile-field i {
     position: absolute;
     top: 50%;
-    left: 14px;
+    left: 16px;
     transform: translateY(-50%);
     color: rgba(255, 255, 255, 0.8);
-    font-size: 16px;
-  }
-  
-  .profile-field input {
-    width: 300px;
-    padding: 10px 12px 10px 38px;
-    border-radius: 6px;
-    background-color: rgba(255, 255, 255, 0.2); /* couleur constante */
+    font-size: 18px;
+    transition: color 0.3s ease;
+}
+
+.profile-field input {
+    width: 100%;
+    padding: 14px 16px 14px 45px;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.2);
     color: white;
     transition: all 0.3s ease;
-  }
-  
-  .profile-field input:disabled {
-    opacity: 0.8; /* pour éviter un effet de transparence */
-    background-color: rgba(255, 255, 255, 0.2); /* même couleur que actif */
-    cursor: default;
-  }
+    border: 2px solid transparent;
+    font-size: 16px;
+    box-sizing: border-box;
+}
 
-  .profile-field input:focus {
+.profile-field input:disabled {
+    opacity: 0.8;
+    background-color: rgba(255, 255, 255, 0.2);
+    cursor: default;
+}
+
+.profile-field input:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
-  }
-    
-  
-  .edit-button {
-    width: 300px; /* même largeur que les inputs */
-    padding: 12px;
-    margin: 20px auto 0;
+    box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.8);
+    background-color: rgba(255, 255, 255, 0.096);
+    border-color: rgba(229, 57, 53, 0.5);
+    transform: scale(1.02);
+}
+
+.profile-field input:focus + i {
+    color: #e53935;
+}
+
+/* Animation de pulsation pour le bouton */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.02);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.edit-button {
+    width: 380px;
+    padding: 16px;
+    margin-top: 25px;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     background-color: #e53935;
     color: white;
-    font-size: 14px;
+    font-size: 16px;
     cursor: pointer;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  }
-
-  .edit-button:hover {
-    background-color: #cc2e2e;
+    gap: 10px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    font-weight: 600;
 }
 
-  .profile-field input:focus {
-    outline: none;
-    box-shadow: 0 0 5px rgba(229, 57, 53, 0.8);
-    background-color: rgba(255, 255, 255, 0.096);
-  }
+.edit-button:hover {
+    background-color: #cc2e2e;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.edit-button:active {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}

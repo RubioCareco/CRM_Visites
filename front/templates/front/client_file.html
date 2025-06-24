@@ -272,7 +272,7 @@
     </div>
   </div>
 
-  <a href="{% if role == 'responsable' or role == 'admin' %}{% url 'dashboard_responsable' %}{% else %}{% url 'dashboard' %}{% endif %}" class="back-login" id="backDashboardBtn" style="position:fixed;left:32px;bottom:24px;z-index:10001;">&larr; Retour au tableau de bord</a>
+  <a href="{% if role == 'responsable' or role == 'admin' %}{% url 'dashboard_responsable' %}{% else %}{% url 'dashboard' %}{% endif %}" class="back-login" id="backDashboardBtn" style="position:fixed;left:24px;bottom:20px;z-index:9999;display:flex;align-items:center;gap:8px;color:#fff;font-size:1.15rem;padding:8px 22px;border-radius:12px;box-shadow:0 2px 8px rgba(255, 255, 255, 0.1);backdrop-filter:blur(6px);border:none;text-decoration:none;"><i class="fa fa-arrow-left"></i> Retour</a>
 
 </body>
 <script>

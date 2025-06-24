@@ -7,29 +7,116 @@
   <link rel="stylesheet" href="{% static 'front/css/dashboard_responsable.css' %}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .bottom-layout-container {
+      display: grid;
+      grid-template-columns: 3fr 2fr; /* 3 parts pour le graphique, 2 pour le journal */
+      gap: 30px; /* Espace entre les deux blocs */
+      padding: 0 40px 0 0; /* Marge: haut, droite, bas, gauche -> 0 à gauche */
+      align-items: start; /* Aligne les éléments en haut */
+    }
+
+    /* Style de la carte du journal */
+    .activity-log-card {
+        background-color: rgba(250, 250, 250, 0.18);
+        border-radius: 15px;
+        padding: 25px;
+        color: #ffffff;
+        height: 500px; /* S'assure qu'elle prend toute la hauteur disponible */
+        transition: transform 0.25s cubic-bezier(.4,2,.6,1);
+    }
+    .activity-log-card:hover {
+        transform: scale(1.03);
+        box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+        z-index: 2;
+    }
+    .activity-log-card h3 {
+        margin-top: 0;
+        font-size: 1.3rem;
+        color: #ffffff;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 15px;
+        margin-bottom: 15px;
+    }
+    .activity-log-card ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .activity-log-card li {
+        padding: 10px 5px;
+        font-size: 0.9rem;
+        color: #ffffff;
+        border-bottom: 1px solid #f9f9f9;
+        line-height: 1.5;
+    }
+    .activity-log-card li:last-child {
+        border-bottom: none;
+    }
+    .activity-timestamp {
+        color: #999;
+        font-size: 0.8rem;
+        display: block;
+    }
+    .activity-commercial {
+        color: #c83e3a; /* Rouge du thème */
+        font-weight: bold;
+    }
+    .dashboard-header-flex {
+      display: flex;
+      align-items: baseline;
+      gap: 30px;
+      margin-bottom: 0;
+    }
+    .dashboard-resp-title {
+      margin-top: 10px;
+    
+      margin-bottom: 0;
+    }
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      grid-template-rows: auto auto auto;
+      grid-template-areas:
+        "header header"
+        "commerciaux stats"
+        "chart activity";
+      gap: 30px;
+      padding: 0 40px 0 0;
+    }
+    .dashboard-header-flex { grid-area: header; }
+    .dashboard-resp-commerciaux { grid-area: commerciaux; }
+    .dashboard-resp-stats { grid-area: stats; }
+    #chart-section {
+      grid-area: chart;
+      margin-left: 158px;
+    }
+    .activity-log-card { grid-area: activity; }
+    .user-container {
+      margin-top: -50px;
+    }
+  </style>
 </head>
 <body class="dashboard-resp-bg">
-  <h1 class="dashboard-resp-title">Tableau de bord</h1>
-  <div class="dashboard-resp-search" style="margin-bottom: 60px;">
-    <i class="fa fa-search search-icon"></i>
-    <input type="text" placeholder="Rechercher par clients, entreprises ..." class="dashboard-resp-search-input">
-  </div>
-  <div class="user-container">
-    <div class="user-profile" onclick="toggleUserMenu()">
-      <i class="fa fa-user"></i>
-      <span>Responsable</span>
+  <div class="dashboard-grid">
+    <div class="dashboard-header-flex">
+      <h1 class="dashboard-resp-title">Tableau de bord</h1>
+      <div class="user-container">
+        <div class="user-profile" onclick="toggleUserMenu()">
+          <i class="fa fa-user"></i>
+          <span>Responsable</span>
+        </div>
+        <div class="user-menu" id="userMenu">
+          <ul>
+            <li><a href="{% url 'profil' %}" class="menu-link">Profil</a></li>
+            <li><a href="{% url 'profils_commerciaux' %}" class="menu-link">Profil Commercial</a></li>
+            <li><a href="{% url 'client_file' %}" class="menu-link">Fichier Clients</a></li>
+            <li><a href="{% url 'historique_rdv_resp' %}" class="menu-link">Historique RDV</a></li>
+            <li><a href="{% url 'logout' %}" class="logout-btn">Se déconnecter</a></li>
+          </ul>
+        </div>
+      </div>
     </div>
-    <div class="user-menu" id="userMenu">
-      <ul>
-        <li><a href="{% url 'profil' %}" class="menu-link">Profil</a></li>
-        <li><a href="{% url 'profils_commerciaux' %}" class="menu-link">Profil Commercial</a></li>
-        <li><a href="{% url 'client_file' %}" class="menu-link">Fichier Clients</a></li>
-        <li><a href="{% url 'historique_rdv_resp' %}" class="menu-link">Historique RDV</a></li>
-        <li><a href="{% url 'logout' %}" class="logout-btn">Se déconnecter</a></li>
-      </ul>
-    </div>
-  </div>
-  <div class="dashboard-resp-main">
     <div class="dashboard-resp-commerciaux">
       <h2 class="dashboard-resp-section-title">Commerciaux :</h2>
       <div class="dashboard-resp-commerciaux-list">
@@ -92,41 +179,53 @@
         </div>
       </div>
     </div>
+    <div id="chart-section" class="chart-section">
+      <h3 class="chart-title">Moyenne des notes de satisfaction</h3>
+      <div class="filters-container">
+        <div class="filter-group">
+          <label for="commercial-filter">Commercial</label>
+          <select id="commercial-filter">
+            <option value="all">Tous les commerciaux</option>
+            {% for commercial in commerciaux %}
+              <option value="{{ commercial.id }}">{{ commercial.prenom }} {{ commercial.nom }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="period-filter">Période</label>
+          <div class="date-filters">
+            <input type="date" id="start-date">
+            <input type="date" id="end-date">
+            <button id="apply-date-filter">Appliquer</button>
+          </div>
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas id="satisfactionChart"></canvas>
+      </div>
+    </div>
+    <div class="activity-log-card">
+        <h3><i class="fas fa-history"></i> Journal d'activité récent</h3>
+        <ul>
+            {% for activity in latest_activities %}
+                <li>
+                    <strong class="activity-commercial">{{ activity.commercial.nom|default:"Système" }}</strong> :
+                    <span class="activity-description">{{ activity.description }}</span>
+                    <br>
+                    <span class="activity-timestamp">{{ activity.timestamp|date:"d/m/Y H:i" }}</span>
+                </li>
+            {% empty %}
+                <li>Aucune activité récente.</li>
+            {% endfor %}
+        </ul>
+    </div>
   </div>
+
   <div id="upcomingModal" class="modal-bg" style="display:none;">
     <div class="modal-content">
       <span class="close-modal" onclick="closeUpcomingModal()"><i class="fa-solid fa-xmark"></i></span>
       <h2>Rendez-vous à venir</h2>
       <div id="accordionCommerciaux"></div>
-    </div>
-  </div>
-
-  <div id="chart-section" class="chart-section">
-    <h3 class="chart-title">Moyenne des notes de satisfaction</h3>
-    <div class="filters-container">
-      <div class="filter-group">
-        <label for="commercial-filter">Commercial</label>
-        <select id="commercial-filter">
-          <option value="all">Tous les commerciaux</option>
-          {% for commercial in commerciaux %}
-            <option value="{{ commercial.id }}">{{ commercial.prenom }} {{ commercial.nom }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="filter-group">
-        <label for="period-filter">Période</label>
-        <div class="date-filters">
-          <button class="period-btn active" data-period="all_time">Totale</button>
-          <button class="period-btn" data-period="last_30_days">30 jours</button>
-          <input type="date" id="start-date">
-          <input type="date" id="end-date">
-          <button id="apply-date-filter">Appliquer</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="chart-container">
-      <canvas id="satisfactionChart"></canvas>
     </div>
   </div>
 

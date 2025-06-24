@@ -293,3 +293,24 @@
     width: auto;
     transition: inherit;
   }
+  .back-login {
+    display: block;
+    font-size: 1.15rem;
+    color: #fff;
+    text-decoration: none;
+    background: rgba(255,255,255,0.18);
+    transition: box-shadow 0.18s, transform 0.18s;
+    box-shadow: 0 2px 8px rgba(255,255,255,0.10);
+    border-radius: 12px;
+    padding: 8px 22px;
+  }
+  .back-login:visited {
+    color: #fff;
+  }
+  .back-login:hover {
+    box-shadow: 0 8px 24px rgba(229,57,53,0.10), 0 2px 12px rgba(0,0,0,0.13);
+    transform: translateY(-4px) scale(1.04);
+    background: rgba(255,255,255,0.18);
+    color: #fff;
+    text-decoration: underline;
+  }

@@ -103,7 +103,7 @@
               <p><strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong></p>
               <p class="status validée"><i class="fa fa-check-square"></i> Validée</p>
               <div style="display: flex; align-items: center; justify-content: space-between;">
-                <p class="visit-date" style="margin:0;">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
+                <p class="visit-date" style="margin:0;">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}{% if rdv.heure_rdv %} à {{ rdv.heure_rdv|time:"H:i" }}{% endif %}</p>
                 {% with satisfaction=rdv.satisfactionb2b_set.first %}
                   {% if satisfaction %}
                     <a href="/download-satisfaction/{{ rdv.uuid }}/" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction" style="margin-left:10px;">
@@ -126,7 +126,7 @@
             <div style="flex:1;min-width:0;">
               <p><strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong></p>
               <p class="status-à-venir"><i class="fa-solid fa-calendar-days"></i> à venir</p>
-              <p class="visit-date-futur">Rendez-vous le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
+              <p class="visit-date-futur">Rendez-vous le : {{ rdv.date_rdv|date:"d/m/Y" }}{% if rdv.heure_rdv %} à {{ rdv.heure_rdv|time:"H:i" }}{% endif %}</p>
             </div>
           </div>
         {% empty %}
@@ -141,7 +141,7 @@
             <div style="flex:1;min-width:0;">
               <p><strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong></p>
               <p class="status-à-rappeler"><i class="fa-solid fa-triangle-exclamation"></i> A rappeler</p>
-              <p class="visit-date-passed">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
+              <p class="visit-date-passed">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}{% if rdv.heure_rdv %} à {{ rdv.heure_rdv|time:"H:i" }}{% endif %}</p>
             </div>
           </div>
         {% empty %}
@@ -442,8 +442,14 @@
         if (validerBtn) {
           validerBtn.style.display = '';
           validerBtn.textContent = 'Ajouter un nouveau rendez-vous';
+          // Récupérer le client_id depuis la carte courante (modale ouverte depuis une carte 'a rappeler')
+          const clientId = document.querySelector(`.reminder-entry[data-id='${rdvId}']`)?.getAttribute('data-client-id');
           validerBtn.onclick = function() {
-            window.location.href = '/add-rdv/?next=/dashboard';
+            let url = '/add-rdv/?next=/dashboard';
+            if (clientId) {
+              url += `&client_id=${clientId}`;
+            }
+            window.location.href = url;
           };
         }
         if (annulerBtn) {
@@ -550,7 +556,7 @@
               <p><strong>${civilite ? civilite + ' ' : ''}${rs_nom || nom || '(sans raison sociale)'}</strong></p>
               ${statusHtml}
               <div style="display: flex; align-items: center; justify-content: space-between;">
-                <p class="visit-date" style="margin:0;">Dernières visites le : ${date}</p>
+                <p class="visit-date" style="margin:0;">Dernières visites le : ${date}{% if heure %} à ${heure}{% endif %}</p>
                 <div id="pdfDownloadContainer">
                   <span class="pdf-placeholder"></span>
                 </div>

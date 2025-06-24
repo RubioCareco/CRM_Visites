@@ -115,7 +115,11 @@ body.dashboard-resp-bg {
   font-size: 1.25rem;
   font-weight: 500;
   margin-bottom: 28px;
-  margin-left: 24px;
+  margin-left: 0;
+  margin-top: 50px;
+}
+.dashboard-resp-commerciaux > .dashboard-resp-section-title {
+  margin-left: 158px;
 }
 .dashboard-resp-commerciaux-list {
   display: grid;
@@ -126,7 +130,7 @@ body.dashboard-resp-bg {
   max-width: 720px;
   margin: 0;
   width: 100%;
-  margin-left: 24px;
+  margin-left: 158px;
   margin-top: 0;
 }
 .jean-dupont    { grid-column: 1; grid-row: 1; }
@@ -231,7 +235,7 @@ body.dashboard-resp-bg {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  margin-left: 32px;
+  margin-left: 158px;
 }
 .dashboard-resp-stats-grid {
   display: grid;
@@ -565,16 +569,21 @@ body.dashboard-resp-bg {
 }
 
 .chart-section {
-    width: 100%;
-    max-width: 700px;
-    margin-left: 50px;
-    margin-right: auto;
-    margin-bottom: 50px;
-    background: rgba(255, 255, 255, 0.18);
-    border-radius: 15px;
-    padding: 20px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-    margin-left: 75px;
+  grid-column-start: 4;
+  margin-left: 158px;
+  width: 745px;
+  margin-bottom: 40px;
+  padding: 18px;
+  min-height: 350px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.chart-section:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 0 25px rgba(255, 255, 255, 0.2);
 }
 
 .chart-title {
@@ -648,4 +657,48 @@ body.dashboard-resp-bg {
     color: #fff;
     font-size: 1.2rem;
     text-align: center;
+}
+
+.swiper-container {
+  max-width: 650px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-top: 30px;
+  padding-bottom: 30px;
+  box-sizing: border-box;
+  display: block;
+}
+.swiper-wrapper {
+  gap: 0 !important;
+}
+.swiper-slide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  max-width: 700px;
+  width: 100%;
+  height: 420px;
+  margin: 0 auto;
+}
+
+.dashboard-vertical-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 40px;
+  margin-top: 30px;
+  justify-content: center;
+}
+
+.activity-log-card {
+  max-width: 650px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.dashboard-resp-stats > .dashboard-resp-section-title {
+  margin-left: 15px;
 } 

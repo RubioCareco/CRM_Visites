@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Commercial, Client, Rendezvous, CommentaireRdv, ImportClientCorrected, SatisfactionB2B, FrontClient
+from .models import Commercial, Client, Rendezvous, CommentaireRdv, ImportClientCorrected, SatisfactionB2B, FrontClient, ActivityLog
 from django.contrib.auth.hashers import check_password, make_password
 from functools import wraps
 from django.http import JsonResponse, HttpResponse, Http404
@@ -21,7 +21,7 @@ from django.core.exceptions import PermissionDenied
 from django.views.decorators.http import require_GET
 import pandas as pd
 from django.db.models import Avg, Count
-from django.db.models.functions import Coalesce
+from django.db.models.functions import Coalesce, TruncDay, TruncWeek, TruncMonth, TruncYear
 
 # 🔐 Décorateur de protection
 def login_required(view_func):
@@ -259,6 +259,14 @@ def add_rdv(request):
                 notes=request.POST.get('notes'),
                 statut_rdv='a_venir'  # Par défaut, à venir
             )
+
+            # Enregistrer l'activité dans le journal
+            ActivityLog.objects.create(
+                commercial=commercial,
+                action_type='RDV_AJOUTE',
+                description=f'Nouveau RDV ajouté pour {client.rs_nom}'
+            )
+
             if role in ['responsable', 'admin']:
                 return redirect('dashboard_responsable')
             next_url = request.POST.get('next') or request.GET.get('next')
@@ -266,15 +274,19 @@ def add_rdv(request):
                 return redirect(next_url)
             return redirect('dashboard')
 
+        except ImportClientCorrected.DoesNotExist:
+            error_message = "Le client sélectionné est introuvable."
         except Exception as e:
-            print("❌ Erreur :", e)
-            error_message = str(e)
+            error_message = f"Une erreur est survenue : {e}"
 
     # Si responsable/admin, on affiche tous les clients, sinon seulement ceux du commercial
     if role in ['responsable', 'admin']:
         clients = ImportClientCorrected.objects.all()
     else:
-        clients = ImportClientCorrected.objects.filter(commercial__iexact=commercial.commercial)
+        nom_normalise = commercial.commercial.replace(' ', '').upper()
+        clients = ImportClientCorrected.objects.extra(
+            where=["REPLACE(UPPER(commercial), ' ', '') = %s"], params=[nom_normalise]
+        )
     client_temp = request.session.get('client_temp') if from_new_client else None
     next_url = request.GET.get('next', '/dashboard')
 
@@ -341,7 +353,7 @@ def profil(request, commercial_id=None):
                 return redirect('dashboard_responsable')
             else:
                 return redirect('dashboard')
-    
+
     # On passe une variable pour savoir si on peut éditer (le user peut éditer son profil, ou un responsable peut éditer un commercial)
     can_edit = (not commercial_id) or (request.session.get('role') in ['responsable', 'admin'])
 
@@ -418,6 +430,22 @@ def update_statut(request, uuid, statut):
             return JsonResponse({'status': 'ok'})
 
         rdv.save()
+
+        # Enregistrer l'activité dans le journal
+        action_type = ''
+        if statut in ['valide', 'valider']:
+            action_type = 'RDV_VALIDE'
+            description = f"RDV avec {rdv.client.rs_nom} validé"
+        elif statut in ['annule', 'annuler']:
+            action_type = 'RDV_ANNULE'
+            description = f"RDV avec {rdv.client.rs_nom} annulé"
+        
+        if action_type:
+            ActivityLog.objects.create(
+                commercial=rdv.commercial,
+                action_type=action_type,
+                description=description
+            )
 
         client = rdv.client
         # On récupère tous les champs utiles pour la carte
@@ -507,9 +535,10 @@ def client_file(request):
     else: # Pour un commercial normal, on filtre sur son propre nom
         commercial_nom = request.session.get('commercial_nom')
         if commercial_nom:
-            clients_qs = clients_qs.filter(commercial__iexact=commercial_nom)
-        else:
-            clients_qs = ImportClientCorrected.objects.none()
+            # Normalisation : suppression des espaces et mise en majuscules
+            nom_normalise = commercial_nom.replace(' ', '').upper()
+            # On filtre tous les clients dont le champ commercial (après normalisation) correspond
+            clients_qs = clients_qs.extra(where=["REPLACE(UPPER(commercial), ' ', '') = %s"], params=[nom_normalise])
 
     paginator = Paginator(clients_qs.order_by('rs_nom'), per_page)
     page_obj = paginator.get_page(page_number)
@@ -565,6 +594,9 @@ def historique_rdv_resp(request):
         elif rdv.statut_rdv == 'annule':
             a_rappeler.append(rdv)
             historique_general.append(rdv)
+    # Tri du plus récent au plus ancien
+    visites_recentes = sorted(visites_recentes, key=lambda r: (r.date_rdv, r.heure_rdv), reverse=True)
+    a_rappeler = sorted(a_rappeler, key=lambda r: (r.date_rdv, r.heure_rdv), reverse=True)
     return render(request, 'front/historique_rdv_resp.html', {
         'visites_recentes': visites_recentes,
         'a_rappeler': a_rappeler,
@@ -731,6 +763,9 @@ def dashboard_responsable(request):
         else:
             commercial.dernier_rdv_pdf = None
 
+    # Récupérer les dernières activités
+    latest_activities = ActivityLog.objects.all()[:5]
+
     # Pour le chargement initial, on prend toutes les données pour le graphique
     stats_satisfaction = SatisfactionB2B.objects.aggregate(
         moyenne_qualite_pieces=Avg('note_qualite_pieces'),
@@ -752,15 +787,21 @@ def dashboard_responsable(request):
     context = {
         'commerciaux': commerciaux,
         'stats_satisfaction_chart': json.dumps(chart_data),
+        'latest_activities': latest_activities,
+        'conversion_labels': json.dumps([f"{c.prenom} {c.nom}" for c in commerciaux]),
+        'conversion_data': json.dumps([
+            round((Rendezvous.objects.filter(commercial=c, statut_rdv='valide').count() / max(1, Rendezvous.objects.filter(commercial=c, statut_rdv='a-venir').count())) * 100, 2)
+            for c in commerciaux
+        ]),
     }
     return render(request, 'front/dashboard_responsable.html', context)
 
 @login_required
 def api_satisfaction_stats(request):
     commercial_id = request.GET.get('commercial_id')
-    period = request.GET.get('period')
     start_date_str = request.GET.get('start_date')
     end_date_str = request.GET.get('end_date')
+    granularity = request.GET.get('granularity', 'mois')
 
     queryset = SatisfactionB2B.objects.all()
 
@@ -769,32 +810,60 @@ def api_satisfaction_stats(request):
         queryset = queryset.filter(commercial_id=commercial_id)
 
     # Filtre par période
-    if period == 'last_30_days':
-        start_date = timezone.now() - timedelta(days=30)
-        queryset = queryset.filter(date_soumission__gte=start_date)
-    elif start_date_str and end_date_str:
+    if start_date_str and end_date_str:
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
         end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
         queryset = queryset.filter(date_soumission__date__range=[start_date, end_date])
-    
-    # Calcul des statistiques
-    stats = queryset.aggregate(
+
+    # Groupement dynamique
+    if granularity == 'jour':
+        trunc = TruncDay('date_soumission')
+        date_format = '%d/%m/%Y'
+    elif granularity == 'semaine':
+        trunc = TruncWeek('date_soumission')
+        date_format = 'Semaine %W %Y'
+    elif granularity == 'annee':
+        trunc = TruncYear('date_soumission')
+        date_format = '%Y'
+    else:  # mois par défaut
+        trunc = TruncMonth('date_soumission')
+        date_format = '%m/%Y'
+
+    grouped = queryset.annotate(period=trunc).values('period').order_by('period').annotate(
         moyenne_qualite_pieces=Avg('note_qualite_pieces'),
         moyenne_sav=Avg('note_sav'),
         moyenne_accueil=Avg('note_accueil'),
         moyenne_recommandation=Avg('note_recommandation')
     )
 
+    labels = []
+    qualite = []
+    sav = []
+    accueil = []
+    recommandation = []
+    for entry in grouped:
+        period = entry['period']
+        if granularity == 'semaine':
+            # Affichage semaine : Semaine XX YYYY
+            week = period.isocalendar()[1]
+            year = period.year
+            labels.append(f"Semaine {week} {year}")
+        else:
+            labels.append(period.strftime(date_format))
+        qualite.append(round(entry['moyenne_qualite_pieces'] or 0, 2))
+        sav.append(round(entry['moyenne_sav'] or 0, 2))
+        accueil.append(round(entry['moyenne_accueil'] or 0, 2))
+        recommandation.append(round(entry['moyenne_recommandation'] or 0, 2))
+
     chart_data = {
-        "labels": ["Qualité pièces", "SAV", "Accueil", "Recommandation"],
-        "data": [
-            round(stats.get('moyenne_qualite_pieces') or 0, 2),
-            round(stats.get('moyenne_sav') or 0, 2),
-            round(stats.get('moyenne_accueil') or 0, 2),
-            round(stats.get('moyenne_recommandation') or 0, 2),
-        ],
+        "labels": labels,
+        "datasets": [
+            {"label": "Qualité pièces", "data": qualite, "backgroundColor": "rgba(229, 57, 53, 0.6)"},
+            {"label": "SAV", "data": sav, "backgroundColor": "rgba(255, 138, 101, 0.6)"},
+            {"label": "Accueil", "data": accueil, "backgroundColor": "rgba(255, 209, 128, 0.6)"},
+            {"label": "Recommandation", "data": recommandation, "backgroundColor": "rgba(120, 144, 156, 0.6)"},
+        ]
     }
-    
     return JsonResponse(chart_data)
 
 @login_required
@@ -864,13 +933,10 @@ def api_clients_by_commercial(request):
         return JsonResponse({'clients': []})
     try:
         commercial = Commercial.objects.get(id=commercial_id)
-        
         # On prend le nom de code (ex: "Commercial 1") et on supprime les espaces
         commercial_name = commercial.commercial.replace(' ', '').strip()
-
         # On cherche les clients avec ce nom de code (insensible à la casse)
         clients = ImportClientCorrected.objects.filter(commercial__iexact=commercial_name)
-
         data = [
             {
                 'id': client.id,

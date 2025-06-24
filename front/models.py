@@ -119,6 +119,25 @@ class SatisfactionB2B(models.Model):
     def __str__(self):
         return f"Satisfaction B2B #{self.id} - {self.rs_nom} - {self.date_soumission.strftime('%d/%m/%Y')}"
 
+class ActivityLog(models.Model):
+    ACTION_TYPES = [
+        ('RDV_AJOUTE', 'RDV Ajouté'),
+        ('RDV_VALIDE', 'RDV Validé'),
+        ('RDV_ANNULE', 'RDV Annulé'),
+        ('CLIENT_AJOUTE', 'Client Ajouté'),
+    ]
+
+    commercial = models.ForeignKey(Commercial, on_delete=models.SET_NULL, null=True, blank=True)
+    action_type = models.CharField(max_length=20, choices=ACTION_TYPES)
+    description = models.CharField(max_length=255)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.commercial} - {self.action_type} at {self.timestamp}'
+
+    class Meta:
+        ordering = ['-timestamp']
+
 class FrontClient(models.Model):
     nom = models.CharField(max_length=100)
     prenom = models.CharField(max_length=100)

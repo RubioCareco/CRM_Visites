@@ -45,7 +45,7 @@
         </div>
     </div>
     <div class="cards" style="margin-top:10px;justify-content:center;align-items:flex-start;">
-      <div class="card" style="width:100%;max-width:1400px;margin:auto;min-height:650px;padding-top:0;padding-left:0;padding-right:0;border-radius:12px;overflow:hidden;">
+      <div class="card" style="width:100%;max-width:1400px;margin:auto;min-height:750px;padding-top:0;padding-left:0;padding-right:0;border-radius:12px;overflow:hidden;">
         <div class="tabs-container">
           <button class="tab-btn active" onclick="showTab('general')">Historique général</button>
           <button class="tab-btn" onclick="showTab('recent')">Rendez-vous validés</button>
@@ -170,7 +170,7 @@
       </div>
     </div>
   </div>
-  <a href="{% url 'dashboard_responsable' %}" class="back-login" id="backDashboardBtn" style="position:fixed; left:24px; bottom:20px; z-index:9999; color:#f55; text-shadow: 1px 1px 6px #000, 0 0 2px #fff2; font-size: 12px;">&larr; Retour au tableau de bord</a>
+  <a href="{% url 'dashboard_responsable' %}" class="back-login" id="backDashboardBtn" style="position:fixed;left:24px;bottom:20px;z-index:9999;display:flex;align-items:center;gap:8px;color:#fff;font-size:1.15rem;padding:8px 22px;border-radius:12px;box-shadow:0 2px 8px rgba(255,255,255,0.10);backdrop-filter:blur(6px);border:none;text-decoration:none;background:rgba(255,255,255,0.18);"><i class="fa fa-arrow-left"></i> Retour</a>
   <script>
     function showTab(tab) {
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));

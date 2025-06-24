@@ -369,28 +369,42 @@
       if (satisfactionChart) {
         satisfactionChart.destroy();
       }
+      
+      // Gérer les deux formats de données
+      let labels, datasets;
+      
+      if (chartData.datasets && Array.isArray(chartData.datasets)) {
+        // Format API (avec datasets)
+        labels = chartData.labels;
+        datasets = chartData.datasets;
+      } else {
+        // Format initial (avec data)
+        labels = chartData.labels;
+        datasets = [{
+          label: 'Moyenne des notes (sur 10)',
+          data: chartData.data,
+          backgroundColor: [
+            'rgba(229, 57, 53, 0.6)', // Rouge principal
+            'rgba(255, 138, 101, 0.6)', // Corail
+            'rgba(255, 209, 128, 0.6)', // Or
+            'rgba(120, 144, 156, 0.6)' // Gris froid
+          ],
+          borderColor: [
+            'rgba(229, 57, 53, 1)',
+            'rgba(255, 138, 101, 1)',
+            'rgba(255, 209, 128, 1)',
+            'rgba(120, 144, 156, 1)'
+          ],
+          borderWidth: 1,
+          borderRadius: 5,
+        }];
+      }
+      
       satisfactionChart = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: chartData.labels,
-          datasets: [{
-            label: 'Moyenne des notes (sur 5)',
-            data: chartData.data,
-            backgroundColor: [
-              'rgba(229, 57, 53, 0.6)', // Rouge principal
-              'rgba(255, 138, 101, 0.6)', // Corail
-              'rgba(255, 209, 128, 0.6)', // Or
-              'rgba(120, 144, 156, 0.6)' // Gris froid
-            ],
-            borderColor: [
-              'rgba(229, 57, 53, 1)',
-              'rgba(255, 138, 101, 1)',
-              'rgba(255, 209, 128, 1)',
-              'rgba(120, 144, 156, 1)'
-            ],
-            borderWidth: 1,
-            borderRadius: 5,
-          }]
+          labels: labels,
+          datasets: datasets
         },
         options: {
           responsive: true,
@@ -398,7 +412,7 @@
           scales: {
             y: {
               beginAtZero: true,
-              max: 5,
+              max: 10,
               ticks: {
                 color: '#fff',
                 font: {

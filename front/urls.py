@@ -35,4 +35,5 @@ urlpatterns = [
     path('api/commerciaux/', views.api_commerciaux, name='api_commerciaux'),
     path('fiche-commercial/<int:commercial_id>/', views.fiche_commercial_view, name='fiche_commercial'),
     path('api/satisfaction-stats/', views.api_satisfaction_stats, name='api_satisfaction_stats'),
+    path('export-satisfactions-excel/', views.export_satisfactions_excel, name='export_satisfactions_excel'),
 ]

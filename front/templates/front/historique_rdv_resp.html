@@ -15,33 +15,10 @@
         <i class="fa fa-search search-icon"></i>
         <input type="text" id="historiqueSearch" placeholder="Rechercher par clients, entreprises ..." autocomplete="off">
         <ul id="historiqueSearchSuggestions" class="autocomplete-results" style="position:absolute;left:0;right:0;top:38px;z-index:10;background:rgba(30,30,30,0.95);color:#fff;border-radius:0 0 8px 8px;max-height:180px;overflow-y:auto;display:none;"></ul>
-        <button id="filterBtnHistorique" class="filter-button" style="margin-left:10px;height:38px;display:flex;align-items:center;gap:7px;">
-          <i class="fa-solid fa-sliders"></i> Filtres
+        <div class="filters-container">
+            <button id="openFilterPanelBtn" class="back-login" style="display:flex;align-items:center;gap:8px;font-size:1.15rem;padding:8px 22px;border-radius:12px;box-shadow:0 2px 8px rgba(255,255,255,0.10);backdrop-filter:blur(6px);border:none;text-decoration:none;background:#e53935;color:#fff;">
+                <i class="fa fa-filter"></i> Filtres
         </button>
-        <div id="filterPopoverHistorique" style="display:none;position:absolute;top:48px;right:0;z-index:1001;background:rgba(40,40,40,0.98);color:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.25);padding:24px 28px 18px 28px;min-width:260px;">
-          <div style="font-size:1.15rem;font-weight:bold;margin-bottom:14px;color:#fff;">Filtrer par&nbsp;:</div>
-          <div style="margin-bottom:18px;">
-            <label for="statutFilter" style="font-weight:500;margin-bottom:4px;display:block;color:#fff;">Statut du rendez-vous :</label>
-            <select id="statutFilter" style="width:100%;padding:8px;background:#555;border:1px solid #777;border-radius:6px;color:#fff;">
-              <option value="">Tous les statuts</option>
-              <option value="valide">Validé</option>
-              <option value="annule">Annulé</option>
-            </select>
-          </div>
-          <div style="display:flex;gap:10px;margin-bottom:18px;">
-            <button type="button" class="filter-type-btn" data-type="jour" style="padding:6px 14px;border-radius:8px;border:none;background:#333;color:#fff;cursor:pointer;">Jour</button>
-            <button type="button" class="filter-type-btn" data-type="semaine" style="padding:6px 14px;border-radius:8px;border:none;background:#333;color:#fff;cursor:pointer;">Semaine</button>
-            <button type="button" class="filter-type-btn" data-type="mois" style="padding:6px 14px;border-radius:8px;border:none;background:#333;color:#fff;cursor:pointer;">Mois</button>
-            <button type="button" class="filter-type-btn" data-type="annee" style="padding:6px 14px;border-radius:8px;border:none;background:#333;color:#fff;cursor:pointer;">Année</button>
-          </div>
-          <div id="filterInputsHistorique">
-            <!-- Ici viendront les inputs selon le type de filtre -->
-          </div>
-          <div style="display:flex;gap:12px;margin-top:18px;justify-content:flex-end;">
-            <button type="button" id="applyFilterHistorique" style="background:#4caf50;color:#fff;padding:7px 18px;border-radius:8px;border:none;">Appliquer</button>
-            <button type="button" id="resetFilterHistorique" style="background:#e53935;color:#fff;padding:7px 18px;border-radius:8px;border:none;">Réinitialiser</button>
-          </div>
-          <button type="button" id="closeFilterPopoverHistorique" style="position:absolute;top:10px;right:14px;background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer;">&times;</button>
         </div>
     </div>
     <div class="cards" style="margin-top:10px;justify-content:center;align-items:flex-start;">
@@ -171,6 +148,47 @@
     </div>
   </div>
   <a href="{% url 'dashboard_responsable' %}" class="back-login" id="backDashboardBtn" style="position:fixed;left:24px;bottom:20px;z-index:9999;display:flex;align-items:center;gap:8px;color:#fff;font-size:1.15rem;padding:8px 22px;border-radius:12px;box-shadow:0 2px 8px rgba(255,255,255,0.10);backdrop-filter:blur(6px);border:none;text-decoration:none;background:rgba(255,255,255,0.18);"><i class="fa fa-arrow-left"></i> Retour</a>
+  <a href="{% url 'export_satisfactions_excel' %}" class="export-excel-btn">
+    <i class="fa fa-file-excel"></i> Extraire les données satisfaction (Excel)
+  </a>
+  <div id="filterPanelOverlay" class="filter-panel-overlay" style="display: none;">
+    <form class="filter-panel" method="get" action="">
+        <div class="filter-panel-header">
+            <h3>Filtrer par :</h3>
+            <button id="closeFilterPanelBtn" class="close-btn" type="button">&times;</button>
+        </div>
+        <div class="filter-group">
+            <label for="statusFilter">Statut du rendez-vous :</label>
+            <select id="statusFilter" name="statut" class="filter-select-panel">
+                <option value="all" {% if not request.GET.statut or request.GET.statut == 'all' %}selected{% endif %}>Tous les statuts</option>
+                <option value="valide" {% if request.GET.statut == 'valide' %}selected{% endif %}>Validé</option>
+                <option value="annule" {% if request.GET.statut == 'annule' %}selected{% endif %}>Annulé</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <div class="date-filter-buttons">
+                <button class="filter-btn" type="button" data-period="today">Jour</button>
+                <button class="filter-btn" type="button" data-period="week">Semaine</button>
+                <button class="filter-btn" type="button" data-period="month">Mois</button>
+                <button class="filter-btn" type="button" data-period="year">Année</button>
+            </div>
+            <div class="date-range-picker">
+                <div class="date-input-group">
+                    <label for="startDate">Du</label>
+                    <input type="date" id="startDate" name="date_debut" class="date-input" value="{{ request.GET.date_debut|default:'' }}">
+                </div>
+                <div class="date-input-group">
+                    <label for="endDate">Au</label>
+                    <input type="date" id="endDate" name="date_fin" class="date-input" value="{{ request.GET.date_fin|default:'' }}">
+                </div>
+            </div>
+        </div>
+        <div class="filter-panel-footer">
+            <button id="applyFiltersBtn" class="apply-btn" type="submit">Appliquer</button>
+            <button id="resetFiltersBtn" class="reset-link" type="button">Réinitialiser</button>
+        </div>
+    </form>
+  </div>
   <script>
     function showTab(tab) {
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -212,20 +230,20 @@
       searchInput.addEventListener('input', filterEntries);
 
       // --- Logique des filtres ---
-      const filterBtn = document.getElementById('filterBtnHistorique');
-      const filterPopover = document.getElementById('filterPopoverHistorique');
-      const closeFilterPopover = document.getElementById('closeFilterPopoverHistorique');
-      const filterTypeBtns = document.querySelectorAll('.filter-type-btn');
+      const filterBtn = document.getElementById('openFilterPanelBtn');
+      const filterPanel = document.getElementById('filterPanelOverlay');
+      const closeFilterPanel = document.getElementById('closeFilterPanelBtn');
+      const filterTypeBtns = document.querySelectorAll('.filter-btn');
       const filterInputsContainer = document.getElementById('filterInputsHistorique');
-      const applyFilterBtn = document.getElementById('applyFilterHistorique');
-      const resetFilterBtn = document.getElementById('resetFilterHistorique');
+      const applyFilterBtn = document.getElementById('applyFiltersBtn');
+      const resetFilterBtn = document.getElementById('resetFiltersBtn');
 
       filterBtn.addEventListener('click', () => {
-        filterPopover.style.display = 'block';
+        filterPanel.style.display = 'block';
       });
 
-      closeFilterPopover.addEventListener('click', () => {
-        filterPopover.style.display = 'none';
+      closeFilterPanel.addEventListener('click', () => {
+        filterPanel.style.display = 'none';
       });
 
       let currentFilterType = null;
@@ -236,7 +254,7 @@
           filterTypeBtns.forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           
-          currentFilterType = btn.dataset.type;
+          currentFilterType = btn.dataset.period;
           generateFilterInputs(currentFilterType);
         });
       });
@@ -247,16 +265,16 @@
         const baseStyle = "width: 100%; padding: 8px; background: #555; border: 1px solid #777; border-radius: 6px; color: #fff;";
 
         switch (type) {
-          case 'jour':
+          case 'today':
             input = `<input type=\"date\" id=\"dateFilter\" style=\"${baseStyle}\">`;
             break;
-          case 'semaine':
+          case 'week':
             input = `<input type=\"week\" id=\"weekFilter\" style=\"${baseStyle}\">`;
             break;
-          case 'mois':
+          case 'month':
             input = `<input type=\"month\" id=\"monthFilter\" style=\"${baseStyle}\">`;
             break;
-          case 'annee':
+          case 'year':
             input = `<input type=\"number\" id=\"yearFilter\" placeholder=\"YYYY\" style=\"${baseStyle}\">`;
             break;
           default:
@@ -267,14 +285,14 @@
 
       applyFilterBtn.addEventListener('click', () => {
         applyFilters();
-        filterPopover.style.display = 'none';
+        filterPanel.style.display = 'none';
       });
 
       resetFilterBtn.addEventListener('click', () => {
         // Réinitialiser les champs et le type
         searchInput.value = ''; // Vider la barre de recherche
-        if (document.getElementById('statutFilter')) {
-          document.getElementById('statutFilter').value = ''; // Réinitialiser le statut
+        if (document.getElementById('statusFilter')) {
+          document.getElementById('statusFilter').value = ''; // Réinitialiser le statut
         }
         filterInputsContainer.innerHTML = '';
         currentFilterType = null;
@@ -282,12 +300,12 @@
         
         // Appliquer les filtres (sans filtre de date)
         applyFilters();
-        filterPopover.style.display = 'none';
+        filterPanel.style.display = 'none';
       });
 
       function applyFilters() {
         const searchQuery = searchInput.value.toLowerCase().trim();
-        const statutValue = document.getElementById('statutFilter') ? document.getElementById('statutFilter').value : '';
+        const statutValue = document.getElementById('statusFilter') ? document.getElementById('statusFilter').value : '';
 
         allEntries.forEach(entry => {
           // 1. Vérification du filtre de recherche
@@ -329,19 +347,19 @@
         const entryDate = new Date(parts[2], parts[1] - 1, parts[0]);
 
         switch (currentFilterType) {
-            case 'jour':
+            case 'today':
                 const selectedDate = new Date(document.getElementById('dateFilter').value);
                 // On compare en ignorant l'heure
                 return entryDate.toDateString() === selectedDate.toDateString();
-            case 'semaine':
+            case 'week':
                 const weekValue = document.getElementById('weekFilter').value;
                 const [yearW, weekW] = weekValue.split('-W');
                 return getWeek(entryDate) === parseInt(weekW) && entryDate.getFullYear() === parseInt(yearW);
-            case 'mois':
+            case 'month':
                 const monthValue = document.getElementById('monthFilter').value;
                 const [yearM, monthM] = monthValue.split('-');
                 return entryDate.getMonth() + 1 === parseInt(monthM) && entryDate.getFullYear() === parseInt(yearM);
-            case 'annee':
+            case 'year':
                 const yearValue = document.getElementById('yearFilter').value;
                 return entryDate.getFullYear() === parseInt(yearValue);
             default:
@@ -359,6 +377,115 @@
       // Remplacer l'ancien event listener
       searchInput.removeEventListener('input', filterEntries);
       searchInput.addEventListener('input', applyFilters);
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const exportBtn = document.querySelector('.export-excel-btn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                // Récupère les valeurs des filtres (adapte les IDs si besoin)
+                const dateDebut = document.querySelector('#start-date')?.value;
+                const dateFin = document.querySelector('#end-date')?.value;
+                const commercialId = document.querySelector('#commercial-filter')?.value;
+
+                // Construit l'URL avec les paramètres
+                let url = exportBtn.getAttribute('href');
+                let params = [];
+                if (dateDebut) params.push('date_debut=' + encodeURIComponent(dateDebut));
+                if (dateFin) params.push('date_fin=' + encodeURIComponent(dateFin));
+                if (commercialId && commercialId !== 'all') params.push('commercial_id=' + encodeURIComponent(commercialId));
+                if (params.length > 0) url += '?' + params.join('&');
+
+                // Redirige vers la nouvelle URL (déclenche le téléchargement)
+                window.location.href = url;
+            });
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Panel Elements
+        const filterPanelOverlay = document.getElementById('filterPanelOverlay');
+        const openBtn = document.getElementById('openFilterPanelBtn');
+        const closeBtn = document.getElementById('closeFilterPanelBtn');
+        const applyBtn = document.getElementById('applyFiltersBtn');
+        const resetBtn = document.getElementById('resetFiltersBtn');
+
+        // Filter Inputs
+        const statusFilter = document.getElementById('statusFilter');
+        const dateButtons = document.querySelectorAll('.date-filter-buttons .filter-btn');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+
+        // Show/Hide Panel
+        function togglePanel(show) {
+            filterPanelOverlay.style.display = show ? 'flex' : 'none';
+        }
+        if(openBtn) openBtn.addEventListener('click', () => togglePanel(true));
+        if(closeBtn) closeBtn.addEventListener('click', () => togglePanel(false));
+        if(filterPanelOverlay) filterPanelOverlay.addEventListener('click', function(e) {
+            if (e.target === filterPanelOverlay) {
+                togglePanel(false);
+            }
+        });
+
+        // --- Date Filter Logic ---
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
+        }
+        dateButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                dateButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                const period = this.dataset.period;
+                const now = new Date();
+                let startDate, endDate;
+                switch (period) {
+                    case 'today':
+                        startDate = new Date(now);
+                        endDate = new Date(now);
+                        break;
+                    case 'week':
+                        startDate = new Date(now);
+                        const dayOfWeek = startDate.getDay();
+                        const diff = startDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+                        startDate.setDate(diff);
+                        endDate = new Date(startDate);
+                        endDate.setDate(startDate.getDate() + 6);
+                        break;
+                    case 'month':
+                        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                        break;
+                    case 'year':
+                        startDate = new Date(now.getFullYear(), 0, 1);
+                        endDate = new Date(now.getFullYear(), 11, 31);
+                        break;
+                    default:
+                        startDate = null;
+                        endDate = null;
+                }
+                if (startDate && endDate) {
+                    startDateInput.value = formatDate(startDate);
+                    endDateInput.value = formatDate(endDate);
+                }
+            });
+        });
+
+        // Appliquer les filtres (à adapter selon ta logique d'affichage)
+        if(applyBtn) applyBtn.addEventListener('click', function() {
+            // Ici tu peux déclencher le filtrage JS ou soumettre un formulaire si besoin
+            togglePanel(false);
+        });
+        if(resetBtn) resetBtn.addEventListener('click', function() {
+            // Vide les champs et soumet le formulaire sans paramètres
+            const form = resetBtn.closest('form');
+            if(form) {
+                form.querySelectorAll('input, select').forEach(el => el.value = '');
+                window.location.href = window.location.pathname;
+            }
+        });
     });
   </script>
 </body>

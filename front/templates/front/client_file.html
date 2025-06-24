@@ -165,33 +165,36 @@
         </form>
         {% endif %}
 
-        <button class="filter-button" id="filterBtnClient" type="button">
-          <i class="fa-solid fa-sliders"></i>Filtres
+        <button class="back-login" id="filterBtnClient" type="button" style="display:flex;align-items:center;gap:8px;font-size:1.15rem;padding:8px 22px;border-radius:12px;backdrop-filter:blur(6px);border:none;text-decoration:none;background:#e53935;color:#fff;">
+          <i class="fa fa-filter"></i> Filtres
         </button>
       </div>
-      <div id="filterPanelClient" class="filter-panel-client" style="display:none;position:fixed;left:50%;top:60px;transform:translateX(-50%);background:rgba(250,250,250,0.19);border-radius:28px;box-shadow:0 8px 32px rgba(0,0,0,0.25);padding:32px 32px 24px 32px;z-index:2000;min-width:340px;max-width:95vw;">
-        <div style="font-size:2rem;font-weight:bold;margin-bottom:18px;color:#fff;">Filtres</div>
-        <form id="clientFilterForm">
-          <div style="margin-bottom:18px;">
-            <div style="font-size:1.1rem;font-weight:500;margin-bottom:8px;">Raison sociale</div>
-            <input type="text" id="filterRaison" name="filterRaison" placeholder="Raison sociale...">
+      <div id="filterPanelClient" class="filter-panel-overlay">
+        <form class="filter-panel" id="clientFilterForm">
+          <div class="filter-panel-header">
+            <h3>Filtrer par :</h3>
+            <button id="closeFilterPanelClient" class="close-btn" type="button">&times;</button>
           </div>
-          <div style="margin-bottom:18px;">
-            <div style="font-size:1.1rem;font-weight:500;margin-bottom:8px;">Adresse</div>
-            <input type="text" id="filterAdresse" name="filterAdresse" placeholder="Adresse...">
+          <div class="filter-group">
+            <label for="filterRaison">Raison sociale</label>
+            <input type="text" id="filterRaison" name="filterRaison" class="date-input" placeholder="Raison sociale...">
           </div>
-          <div style="margin-bottom:18px;">
-            <div style="font-size:1.1rem;font-weight:500;margin-bottom:8px;">Code postal</div>
-            <input type="text" id="filterCP" name="filterCP" placeholder="Code postal...">
+          <div class="filter-group">
+            <label for="filterAdresse">Adresse</label>
+            <input type="text" id="filterAdresse" name="filterAdresse" class="date-input" placeholder="Adresse...">
           </div>
-          <div style="margin-bottom:18px;">
-            <div style="font-size:1.1rem;font-weight:500;margin-bottom:8px;">Ville</div>
-            <input type="text" id="filterVille" name="filterVille" placeholder="Ville...">
+          <div class="filter-group">
+            <label for="filterCP">Code postal</label>
+            <input type="text" id="filterCP" name="filterCP" class="date-input" placeholder="Code postal...">
           </div>
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
-            <a href="#" id="resetClientFilters" style="margin-left:auto;color:#ff3030;font-size:1rem;text-decoration:none;"><i class="fa fa-rotate-left"></i> Réinitialiser filtres</a>
+          <div class="filter-group">
+            <label for="filterVille">Ville</label>
+            <input type="text" id="filterVille" name="filterVille" class="date-input" placeholder="Ville...">
           </div>
-          <button id="closeFilterPanelClient" type="button" style="position:absolute;top:18px;right:18px;background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;">&times;</button>
+          <div class="filter-panel-footer">
+            <button id="applyClientFiltersBtn" class="apply-btn" type="submit">Appliquer</button>
+            <button id="resetClientFilters" class="reset-link" type="button">Réinitialiser</button>
+          </div>
         </form>
       </div>
       <div class="table-container" style="max-height: 650px; overflow-y: auto; padding-right: 8px; margin-top: 16px;">
@@ -356,10 +359,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const villeInput = document.getElementById('filterVille');
 
   filterBtn.addEventListener('click', function() {
-    filterPanel.style.display = 'block';
+    filterPanel.classList.add('active');
   });
   closeFilterPanel.addEventListener('click', function() {
-    filterPanel.style.display = 'none';
+    filterPanel.classList.remove('active');
   });
   resetFilters.addEventListener('click', function(e) {
     e.preventDefault();

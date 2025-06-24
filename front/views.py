@@ -581,12 +581,95 @@ def historique_rdv(request):
 def historique_rdv_resp(request):
     # Filtrer selon le statut si besoin (ex: ?statut=valide)
     statut = request.GET.get('statut')
+    date_debut = request.GET.get('date_debut')
+    date_fin = request.GET.get('date_fin')
+    
     rdvs_archives = Rendezvous.objects.all().order_by('-date_rdv', '-heure_rdv')
+    
+    # Logique de filtrage par date selon le statut
+    if date_debut or date_fin:
+        try:
+            from datetime import date, timedelta
+            
+            # Préparer les dates de filtrage
+            date_debut_obj = None
+            date_fin_obj = None
+            
+            if date_debut:
+                date_debut_obj = date.fromisoformat(date_debut)
+            
+            if date_fin:
+                date_fin_obj = date.fromisoformat(date_fin) + timedelta(days=1)
+            
+            # Filtrer selon le statut et la date appropriée
+            if statut == 'valide':
+                # Pour les RDV validés, filtrer sur date_statut (date de validation)
+                if date_debut_obj:
+                    rdvs_archives = rdvs_archives.filter(
+                        statut_rdv='valide',
+                        date_statut__date__gte=date_debut_obj
+                    )
+                if date_fin_obj:
+                    rdvs_archives = rdvs_archives.filter(
+                        statut_rdv='valide',
+                        date_statut__date__lt=date_fin_obj
+                    )
+                
+            elif statut == 'annule':
+                # Pour les RDV annulés, filtrer sur date_statut (date d'annulation)
+                if date_debut_obj:
+                    rdvs_archives = rdvs_archives.filter(
+                        statut_rdv='annule',
+                        date_statut__date__gte=date_debut_obj
+                    )
+                if date_fin_obj:
+                    rdvs_archives = rdvs_archives.filter(
+                        statut_rdv='annule',
+                        date_statut__date__lt=date_fin_obj
+                    )
+                
+            elif statut == 'a_venir':
+                # Pour les RDV à venir, filtrer sur date_rdv (date prévue)
+                if date_debut_obj:
+                    rdvs_archives = rdvs_archives.filter(
+                        statut_rdv='a_venir',
+                        date_rdv__gte=date_debut_obj
+                    )
+                if date_fin_obj:
+                    rdvs_archives = rdvs_archives.filter(
+                        statut_rdv='a_venir',
+                        date_rdv__lt=date_fin_obj
+                    )
+                
+            else:
+                # Pour 'all' ou pas de statut, filtrer sur les deux champs
+                from django.db.models import Q
+                date_filter = Q()
+                
+                if date_debut_obj:
+                    date_filter &= (
+                        Q(statut_rdv__in=['valide', 'annule'], date_statut__date__gte=date_debut_obj) |
+                        Q(statut_rdv='a_venir', date_rdv__gte=date_debut_obj)
+                    )
+                
+                if date_fin_obj:
+                    date_filter &= (
+                        Q(statut_rdv__in=['valide', 'annule'], date_statut__date__lt=date_fin_obj) |
+                        Q(statut_rdv='a_venir', date_rdv__lt=date_fin_obj)
+                    )
+                
+                rdvs_archives = rdvs_archives.filter(date_filter)
+                
+        except ValueError:
+            # En cas d'erreur de conversion de date, on ignore le filtrage
+            pass
+    
     visites_recentes = []
     a_rappeler = []
     historique_general = []
+    
     for rdv in rdvs_archives:
-        if statut and rdv.statut_rdv != statut:
+        if statut and statut != 'all' and rdv.statut_rdv != statut:
             continue
         if rdv.statut_rdv == 'valide':
             visites_recentes.append(rdv)
@@ -594,9 +677,11 @@ def historique_rdv_resp(request):
         elif rdv.statut_rdv == 'annule':
             a_rappeler.append(rdv)
             historique_general.append(rdv)
+    
     # Tri du plus récent au plus ancien
     visites_recentes = sorted(visites_recentes, key=lambda r: (r.date_rdv, r.heure_rdv), reverse=True)
     a_rappeler = sorted(a_rappeler, key=lambda r: (r.date_rdv, r.heure_rdv), reverse=True)
+    
     return render(request, 'front/historique_rdv_resp.html', {
         'visites_recentes': visites_recentes,
         'a_rappeler': a_rappeler,
@@ -766,22 +851,49 @@ def dashboard_responsable(request):
     # Récupérer les dernières activités
     latest_activities = ActivityLog.objects.all()[:5]
 
-    # Pour le chargement initial, on prend toutes les données pour le graphique
-    stats_satisfaction = SatisfactionB2B.objects.aggregate(
-        moyenne_qualite_pieces=Avg('note_qualite_pieces'),
-        moyenne_sav=Avg('note_sav'),
-        moyenne_accueil=Avg('note_accueil'),
-        moyenne_recommandation=Avg('note_recommandation')
-    )
+    # Calculer les moyennes de satisfaction
+    satisfaction_data = SatisfactionB2B.objects.all()
+    if satisfaction_data.exists():
+        moyenne_qualite = satisfaction_data.aggregate(Avg('note_qualite_pieces'))['note_qualite_pieces__avg'] or 0
+        moyenne_sav = satisfaction_data.aggregate(Avg('note_sav'))['note_sav__avg'] or 0
+        moyenne_accueil = satisfaction_data.aggregate(Avg('note_accueil'))['note_accueil__avg'] or 0
+        moyenne_recommandation = satisfaction_data.aggregate(Avg('note_recommandation'))['note_recommandation__avg'] or 0
+        
+        # Normaliser les notes sur 5 vers une échelle de 10
+        moyenne_qualite = round(moyenne_qualite * 2, 2)
+        moyenne_sav = round(moyenne_sav * 2, 2)
+        moyenne_accueil = round(moyenne_accueil * 2, 2)
+        # La recommandation est déjà sur 10, pas besoin de conversion
+    else:
+        moyenne_qualite = moyenne_sav = moyenne_accueil = moyenne_recommandation = 0
 
     chart_data = {
         "labels": ["Qualité pièces", "SAV", "Accueil", "Recommandation"],
-        "data": [
-            round(stats_satisfaction.get('moyenne_qualite_pieces') or 0, 2),
-            round(stats_satisfaction.get('moyenne_sav') or 0, 2),
-            round(stats_satisfaction.get('moyenne_accueil') or 0, 2),
-            round(stats_satisfaction.get('moyenne_recommandation') or 0, 2),
-        ],
+        "datasets": [
+            {
+                "label": "Moyenne des notes",
+                "data": [
+                    moyenne_qualite,
+                    moyenne_sav,
+                    moyenne_accueil,
+                    moyenne_recommandation
+                ],
+                "backgroundColor": [
+                    "rgba(229, 57, 53, 0.6)",
+                    "rgba(255, 138, 101, 0.6)", 
+                    "rgba(255, 209, 128, 0.6)",
+                    "rgba(120, 144, 156, 0.6)"
+                ],
+                "borderColor": [
+                    "rgba(229, 57, 53, 1)",
+                    "rgba(255, 138, 101, 1)",
+                    "rgba(255, 209, 128, 1)", 
+                    "rgba(120, 144, 156, 1)"
+                ],
+                "borderWidth": 1,
+                "borderRadius": 5
+            }
+        ]
     }
 
     context = {
@@ -850,9 +962,12 @@ def api_satisfaction_stats(request):
             labels.append(f"Semaine {week} {year}")
         else:
             labels.append(period.strftime(date_format))
-        qualite.append(round(entry['moyenne_qualite_pieces'] or 0, 2))
-        sav.append(round(entry['moyenne_sav'] or 0, 2))
-        accueil.append(round(entry['moyenne_accueil'] or 0, 2))
+        
+        # Normaliser les notes sur 5 vers une échelle de 10
+        qualite.append(round((entry['moyenne_qualite_pieces'] or 0) * 2, 2))
+        sav.append(round((entry['moyenne_sav'] or 0) * 2, 2))
+        accueil.append(round((entry['moyenne_accueil'] or 0) * 2, 2))
+        # La recommandation est déjà sur 10, pas besoin de conversion
         recommandation.append(round(entry['moyenne_recommandation'] or 0, 2))
 
     chart_data = {
@@ -1014,3 +1129,20 @@ def fiche_commercial_view(request, commercial_id):
         'role': getattr(request.user, 'role', '')
     }
     return render(request, 'front/fiche_commercial.html', context)
+
+@login_required
+def export_satisfactions_excel(request):
+    data = SatisfactionB2B.objects.all().values()
+    import pandas as pd
+    df = pd.DataFrame(list(data))
+    # Supprimer la colonne pdf_base64 si elle existe
+    if 'pdf_base64' in df.columns:
+        df = df.drop(columns=['pdf_base64'])
+    # Rendre toutes les dates timezone-unaware (naive)
+    for col in df.columns:
+        if pd.api.types.is_datetime64_any_dtype(df[col]):
+            df[col] = df[col].apply(lambda x: x.tz_localize(None) if hasattr(x, 'tz_localize') and x is not None else x)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="satisfactions.xlsx"'
+    df.to_excel(response, index=False)
+    return response

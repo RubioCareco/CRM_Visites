@@ -7,6 +7,22 @@
   <link rel="stylesheet" href="{% static 'front/css/dashboard.css' %}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="{% static 'front/css/historique_rdv_resp.css' %}">  
+  <style>
+    .pdf-download-icon img {
+        width: 46px !important;
+        height: 46px !important;
+        display: inline-block !important;
+        position: static !important;
+        z-index: 1000 !important;
+        opacity: 1 !important;
+    }
+    .pdf-download-icon {
+        display: inline-block !important;
+        vertical-align: middle !important;
+        margin-left: 8px !important;
+        z-index: 1000 !important;
+    }
+  </style>
 </head>
 <body>
   <div class="dashboard">
@@ -52,21 +68,36 @@
                         Validé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
                         <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
                         <span style="color:#ccc; margin-left: 12px;">
-                          Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}
-                          {% with satisfaction=rdv.satisfactionb2b_set.first %}
-                            {% if satisfaction %}
-                              <a href="/download-satisfaction/{{ rdv.uuid }}/" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction">
-                                <img src="{% static 'front/img/PDF.svg' %}" alt="PDF">
-                              </a>
-                            {% endif %}
-                          {% endwith %}
+                          Dernières visites le : 
+                          {% if rdv.derniere_visite %}
+                            {{ rdv.derniere_visite|date:"d/m/Y" }}
+                          {% else %}
+                            Aucune visite
+                          {% endif %}
+                          {% if rdv.satisfactionb2b_set.count > 0 %}
+                            <a href="/download-satisfaction/{{ rdv.uuid }}/" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction">
+                              <img src="{% static 'front/img/PDF.svg' %}" alt="PDF">
+                            </a>
+                          {% endif %}
                         </span>
                       </p>
                     {% elif rdv.statut_rdv == 'annule' and rdv.date_statut %}
                       <p class="infos-adresse" style="color:#ff5a5a;">
                         Annulé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
                         <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
-                        <span style="color:#ccc; margin-left: 12px;">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</span>
+                        <span style="color:#ccc; margin-left: 12px;">
+                          Dernières visites le : 
+                          {% if rdv.derniere_visite %}
+                            {{ rdv.derniere_visite|date:"d/m/Y" }}
+                          {% else %}
+                            Aucune visite
+                          {% endif %}
+                          {% if rdv.satisfactionb2b_set.count > 0 %}
+                            <a href="/download-satisfaction/{{ rdv.uuid }}/" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction">
+                              <img src="{% static 'front/img/PDF.svg' %}" alt="PDF">
+                            </a>
+                          {% endif %}
+                        </span>
                       </p>
                     {% else %}
                       <p class="visit-date-passed">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
@@ -97,14 +128,17 @@
                         Validé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
                         <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
                         <span style="color:#ccc; margin-left: 12px;">
-                          Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}
-                          {% with satisfaction=rdv.satisfactionb2b_set.first %}
-                            {% if satisfaction %}
-                              <a href="/download-satisfaction/{{ rdv.uuid }}/" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction">
-                                <img src="{% static 'front/img/PDF.svg' %}" alt="PDF">
-                              </a>
-                            {% endif %}
-                          {% endwith %}
+                          Dernières visites le : 
+                          {% if rdv.derniere_visite %}
+                            {{ rdv.derniere_visite|date:"d/m/Y" }}
+                          {% else %}
+                            Aucune visite
+                          {% endif %}
+                          {% if rdv.satisfactionb2b_set.count > 0 %}
+                            <a href="/download-satisfaction/{{ rdv.uuid }}/" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction">
+                              <img src="{% static 'front/img/PDF.svg' %}" alt="PDF">
+                            </a>
+                          {% endif %}
                         </span>
                       </p>
                     {% endif %}
@@ -125,13 +159,37 @@
                     <p class="infos-adresse" style="color:#6ee77a;">
                       Validé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
                       <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
-                      <span style="color:#ccc; margin-left: 12px;">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</span>
+                      <span style="color:#ccc; margin-left: 12px;">
+                        Dernières visites le : 
+                        {% if rdv.derniere_visite %}
+                          {{ rdv.derniere_visite|date:"d/m/Y" }}
+                        {% else %}
+                          Aucune visite antérieure
+                        {% endif %}
+                        {% if rdv.satisfactionb2b_set.count > 0 %}
+                          <a href="/download-satisfaction/{{ rdv.uuid }}/" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction">
+                            <img src="{% static 'front/img/PDF.svg' %}" alt="PDF">
+                          </a>
+                        {% endif %}
+                      </span>
                     </p>
                   {% elif rdv.statut_rdv == 'annule' and rdv.date_statut %}
                     <p class="infos-adresse" style="color:#ff5a5a;">
                       Annulé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
                       <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
-                      <span style="color:#ccc; margin-left: 12px;">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</span>
+                      <span style="color:#ccc; margin-left: 12px;">
+                        Dernières visites le : 
+                        {% if rdv.derniere_visite %}
+                          {{ rdv.derniere_visite|date:"d/m/Y" }}
+                        {% else %}
+                          Aucune visite antérieure
+                        {% endif %}
+                        {% if rdv.satisfactionb2b_set.count > 0 %}
+                          <a href="/download-satisfaction/{{ rdv.uuid }}/" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction">
+                            <img src="{% static 'front/img/PDF.svg' %}" alt="PDF">
+                          </a>
+                        {% endif %}
+                      </span>
                     </p>
                   {% else %}
                     <p class="visit-date-passed">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>

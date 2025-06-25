@@ -6,7 +6,7 @@ from django.http import JsonResponse, HttpResponse, Http404
 from datetime import datetime, timedelta
 from django.utils import timezone
 import json
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMultiAlternatives
 from django.utils.crypto import get_random_string
 from django.urls import reverse
 from django.contrib.auth.models import User
@@ -71,23 +71,23 @@ def reset_password(request):
             token = get_random_string(48)
             reset_tokens[token] = ('user', user.id)
             reset_link = request.build_absolute_uri(reverse('new_password')) + f'?token={token}'
-            send_mail(
-                'Réinitialisation de mot de passe',
-                f'Cliquez sur ce lien pour réinitialiser votre mot de passe : {reset_link}',
-                'no-reply@crm.local',
-                [email],
-            )
+            subject = 'Réinitialisation de mot de passe'
+            text_content = f'''Bonjour,\n\nVous avez demandé la réinitialisation de votre mot de passe.\n\nCliquez sur le lien ci-dessous pour choisir un nouveau mot de passe :\n{reset_link}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.\n\n— L'équipe CRM'''
+            html_content = f'''<p>Bonjour,</p><p>Vous avez demandé la réinitialisation de votre mot de passe.</p><p>Cliquez sur le lien ci-dessous pour choisir un nouveau mot de passe :<br><a href="{reset_link}">Réinitialiser mon mot de passe</a></p><p>Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.</p><p>— L'équipe CRM</p>'''
+            msg = EmailMultiAlternatives(subject, text_content, 'bznjamin.gillens@gmail.com', [email])
+            msg.attach_alternative(html_content, "text/html")
+            msg.send()
             reset_links.append(reset_link)
         for commercial in commercials:
             token = get_random_string(48)
             reset_tokens[token] = ('commercial', commercial.id)
             reset_link = request.build_absolute_uri(reverse('new_password')) + f'?token={token}'
-            send_mail(
-                'Réinitialisation de mot de passe',
-                f'Cliquez sur ce lien pour réinitialiser votre mot de passe : {reset_link}',
-                'no-reply@crm.local',
-                [email],
-            )
+            subject = 'Réinitialisation de mot de passe'
+            text_content = f'''Bonjour,\n\nVous avez demandé la réinitialisation de votre mot de passe.\n\nCliquez sur le lien ci-dessous pour choisir un nouveau mot de passe :\n{reset_link}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.\n\n— L'équipe CRM'''
+            html_content = f'''<p>Bonjour,</p><p>Vous avez demandé la réinitialisation de votre mot de passe.</p><p>Cliquez sur le lien ci-dessous pour choisir un nouveau mot de passe :<br><a href="{reset_link}">Réinitialiser mon mot de passe</a></p><p>Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.</p><p>— L'équipe CRM</p>'''
+            msg = EmailMultiAlternatives(subject, text_content, 'bznjamin.gillens@gmail.com', [email])
+            msg.attach_alternative(html_content, "text/html")
+            msg.send()
             reset_links.append(reset_link)
         # Pour debug local, on affiche le dernier lien généré
         return render(request, 'front/reset_password_done.html', {'email': email, 'reset_link': reset_links[-1]})
@@ -681,7 +681,33 @@ def historique_rdv_resp(request):
     # Tri du plus récent au plus ancien
     visites_recentes = sorted(visites_recentes, key=lambda r: (r.date_rdv, r.heure_rdv), reverse=True)
     a_rappeler = sorted(a_rappeler, key=lambda r: (r.date_rdv, r.heure_rdv), reverse=True)
-    
+
+    # Ajout de la date de dernière visite pour chaque rdv
+    for rdv in historique_general:
+        last_rdv = Rendezvous.objects.filter(
+            client=rdv.client,
+            commercial=rdv.commercial,
+            statut_rdv__in=['valide', 'annule'],
+            date_rdv__lt=rdv.date_rdv
+        ).order_by('-date_rdv', '-heure_rdv').first()
+        rdv.derniere_visite = last_rdv.date_rdv if last_rdv else None
+    for rdv in visites_recentes:
+        last_rdv = Rendezvous.objects.filter(
+            client=rdv.client,
+            commercial=rdv.commercial,
+            statut_rdv__in=['valide', 'annule'],
+            date_rdv__lt=rdv.date_rdv
+        ).order_by('-date_rdv', '-heure_rdv').first()
+        rdv.derniere_visite = last_rdv.date_rdv if last_rdv else None
+    for rdv in a_rappeler:
+        last_rdv = Rendezvous.objects.filter(
+            client=rdv.client,
+            commercial=rdv.commercial,
+            statut_rdv__in=['valide', 'annule'],
+            date_rdv__lt=rdv.date_rdv
+        ).order_by('-date_rdv', '-heure_rdv').first()
+        rdv.derniere_visite = last_rdv.date_rdv if last_rdv else None
+
     return render(request, 'front/historique_rdv_resp.html', {
         'visites_recentes': visites_recentes,
         'a_rappeler': a_rappeler,

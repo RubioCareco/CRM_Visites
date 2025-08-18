@@ -40,10 +40,17 @@
           </div>
           <div class="profile-field">
             <i class="fa fa-building"></i>
-            <input type="text" name="site" value="N/A" placeholder="Site de rattachement" disabled />
+            <input type="text" name="site" value="{{ commercial.site_rattachement|default:'N/A' }}" placeholder="Site de rattachement" disabled />
           </div>
 
           {% if can_edit %}
+          <div class="switch-absent">
+            <label for="is_absent">Commercial absent</label>
+                         <label class="switch-toggle">
+               <input type="checkbox" id="is_absent" name="is_absent" value="1" {% if commercial.is_absent %}checked{% endif %} />
+               <span class="switch-slider"></span>
+             </label>
+          </div>
           <button type="submit" class="edit-button" id="editProfileBtn">
             <i class="fa fa-pen"></i> Modifier le profil
           </button>
@@ -53,10 +60,14 @@
     </div>
   </div>
 
+  <script id="isProfilCommercial" type="application/json">{{ is_profil_commercial|yesno:'true,false'|lower }}</script>
   <script>
     document.querySelector('.close-button').addEventListener('click', () => {
       const role = "{{ role|default:'' }}";
-      if (role === "responsable" || role === "admin") {
+      const isProfilCommercial = JSON.parse(document.getElementById('isProfilCommercial').textContent);
+      if (isProfilCommercial) {
+        window.location.href = "/profils-commerciaux/";
+      } else if (role === "responsable" || role === "admin") {
         window.location.href = "/dashboard-responsable/";
       } else {
         window.location.href = "/dashboard";

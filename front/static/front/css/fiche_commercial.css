@@ -10,7 +10,7 @@ body {
 .main-container {
     max-width: 1600px;
     margin: auto;
-    background: rgba(30, 30, 30, 0.55);
+    background: rgba(255 255 255 / 7%);
     backdrop-filter: blur(10px);
     border-radius: 20px;
     padding: 30px;
@@ -49,6 +49,23 @@ header .page-title {
     font-weight: bold;
     color: #fff;
     margin-right: 10px;
+}
+
+.avatar-link {
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.2s ease-in-out;
+    display: block;
+}
+
+.avatar-link:hover {
+    transform: scale(1.05);
+    text-decoration: none;
+}
+
+.avatar-link:hover .avatar {
+    background: #666;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
 .title-container {
@@ -144,12 +161,139 @@ header .page-title {
     cursor: pointer;
     transition: background-color 0.2s;
     font-weight: 500;
+    margin-bottom: -180px;
 }
 .filter-main-btn:hover {
     background: rgba(255, 255, 255, 0.2);
 }
 .filter-main-btn i {
     margin-right: 8px;
+}
+
+/* Section Satisfaction Client */
+.satisfaction-section {
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+
+.satisfaction-card {
+    background: rgba(255, 255, 255, 0.13);
+    border-radius: 14px;
+    padding: 20px 25px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    max-width: 400px;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    margin-top: -50px;
+}
+
+.satisfaction-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.satisfaction-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    color: #fff;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.satisfaction-header i {
+    color: #ff6b6b;
+    font-size: 1.2rem;
+}
+
+.satisfaction-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.satisfaction-percentage {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #fff;
+    min-width: 80px;
+}
+
+.satisfaction-trend {
+    font-size: 1.8rem;
+    margin-right: 10px;
+}
+
+.trend-up {
+    color: #1ecb6b;
+}
+
+.trend-down {
+    color: #e53935;
+}
+
+.trend-neutral {
+    color: #ffb347;
+}
+
+.satisfaction-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.satisfaction-avg {
+    font-size: 1rem;
+    color: #fff;
+    font-weight: 500;
+}
+
+.satisfaction-count {
+    font-size: 0.9rem;
+    color: #aaa;
+}
+
+/* Comparaisons de satisfaction */
+.satisfaction-comparisons {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.comparison-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.comparison-item:last-child {
+    margin-bottom: 0;
+}
+
+.comparison-label {
+    color: #ccc;
+    font-weight: 500;
+}
+
+.comparison-value {
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.comparison-value.positive {
+    color: #1ecb6b;
+    background: rgba(30, 203, 107, 0.1);
+}
+
+.comparison-value.negative {
+    color: #e53935;
+    background: rgba(229, 57, 53, 0.1);
 }
 
 .filter-panel-overlay {
@@ -431,4 +575,55 @@ footer {
 }
 .back-link:hover {
     background: rgba(255, 255, 255, 0.22);
+} 
+
+/* Style pour la bulle de compteur de RDV (identique dashboard) */
+.rdv-counter-bubble {
+  position: absolute !important;
+  top: 8px !important;
+  right: 21px !important;
+  background: rgba(77, 208, 225, 0.2) !important;
+  border: 1px solid rgba(77, 208, 225, 0.4) !important;
+  border-radius: 50% !important;
+  width: 28px !important;
+  height: 28px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 12px !important;
+  font-weight: bold !important;
+  color: #4dd0e1 !important;
+  z-index: 10 !important;
+  backdrop-filter: blur(4px) !important;
+  transition: all 0.3s ease !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+.rdv-counter-bubble:hover {
+  background: rgba(77, 208, 225, 0.3) !important;
+  border-color: rgba(77, 208, 225, 0.6) !important;
+  transform: scale(1.1) !important;
+} 
+
+/* Footer overrides specific to fiche_commercial */
+.site-footer {
+  /* Supprime l'espace au-dessus et aligne bord à bord malgré le padding body:20px */
+  margin-top: 0 !important;
+  margin-left: -20px;
+  margin-right: -20px;
+  border-radius: 0;
+  /* Force la largeur complète et supprime l'espace en bas */
+  width: calc(100% + 40px) !important;
+  margin-bottom: -20px !important;
+  padding-bottom: 20px !important;
+}
+
+@media (max-width: 700px) {
+  .site-footer {
+    /* Conserve l'alignement plein écran sur mobile aussi */
+    margin-left: -20px;
+    margin-right: -20px;
+    width: calc(100% + 40px) !important;
+    margin-bottom: -20px !important;
+  }
 } 

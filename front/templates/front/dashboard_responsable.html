@@ -5,6 +5,7 @@
   <title>Tableau de bord - Responsable Commercial</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'front/css/dashboard_responsable.css' %}">
+  <link rel="stylesheet" href="{% static 'front/css/footer.css' %}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -23,6 +24,7 @@
         padding: 25px;
         color: #ffffff;
         height: 500px; /* S'assure qu'elle prend toute la hauteur disponible */
+        width: 500px;
         transition: transform 0.25s cubic-bezier(.4,2,.6,1);
     }
     .activity-log-card:hover {
@@ -59,7 +61,7 @@
         display: block;
     }
     .activity-commercial {
-        color: #c83e3a; /* Rouge du thème */
+        color: #ffffff; /* Rouge du thème */
         font-weight: bold;
     }
     .dashboard-header-flex {
@@ -89,9 +91,12 @@
     .dashboard-resp-stats { grid-area: stats; }
     #chart-section {
       grid-area: chart;
+      margin-left: 150px;
+    }
+    .activity-log-card { 
+      grid-area: activity; 
       margin-left: 158px;
     }
-    .activity-log-card { grid-area: activity; }
     .user-container {
       margin-top: -50px;
     }
@@ -104,7 +109,7 @@
       <div class="user-container">
         <div class="user-profile" onclick="toggleUserMenu()">
           <i class="fa fa-user"></i>
-          <span>Responsable</span>
+          <span>{{ user_commercial.prenom }} {{ user_commercial.nom }}</span>
         </div>
         <div class="user-menu" id="userMenu">
           <ul>
@@ -112,6 +117,7 @@
             <li><a href="{% url 'profils_commerciaux' %}" class="menu-link">Profil Commercial</a></li>
             <li><a href="{% url 'client_file' %}" class="menu-link">Fichier Clients</a></li>
             <li><a href="{% url 'historique_rdv_resp' %}" class="menu-link">Historique RDV</a></li>
+            <li><a href="{% url 'politique_confidentialite' %}" class="menu-link">Politique de confidentialité</a></li>
             <li><a href="{% url 'logout' %}" class="logout-btn">Se déconnecter</a></li>
           </ul>
         </div>
@@ -121,7 +127,10 @@
       <h2 class="dashboard-resp-section-title">Commerciaux :</h2>
       <div class="dashboard-resp-commerciaux-list">
         {% for commercial in commerciaux %}
-          <div class="commercial-card" data-id="{{ commercial.id }}" data-prenom="{{ commercial.prenom }}" data-nom="{{ commercial.nom }}">
+          <div class="commercial-card{% if commercial.is_absent %} absent-commercial{% endif %}" data-id="{{ commercial.id }}" data-prenom="{{ commercial.prenom }}" data-nom="{{ commercial.nom }}" style="position:relative;">
+            {% if commercial.is_absent %}
+            <span class="badge-absent">Absent</span>
+            {% endif %}
             <div class="commercial-avatar">
               {{ commercial.prenom|slice:":1"|upper }}{{ commercial.nom|slice:":1"|upper }}
             </div>
@@ -133,11 +142,7 @@
                     Dernier rendez-vous :
                   {% endif %}
                   {{ commercial.dernier_rdv.client.civilite|default:"" }} {{ commercial.dernier_rdv.client.rs_nom|default:"" }}
-                  {% if commercial.dernier_rdv_pdf %}
-                    <a href="{% url 'download_satisfaction_pdf' commercial.dernier_rdv.uuid %}" target="_blank" class="pdf-link" title="Télécharger le formulaire de satisfaction">
-                      <img src="{% static 'front/img/PDF.svg' %}" alt="PDF" style="height: 44px; width: auto; display: inline-block;vertical-align:middle;">
-                    </a>
-                  {% endif %}<br>
+                  <br>
                   Statut : 
                   {% if commercial.dernier_rdv.statut_rdv == 'valide' %}
                     <span style="color:#1ecb6b;font-weight:bold;">Validé</span>
@@ -152,6 +157,11 @@
                 <div class="commercial-last-rdv" style="color:#aaa;">Aucun RDV</div>
               {% endif %}
             </div>
+            {% if commercial.dernier_rdv_pdf %}
+              <a href="{% url 'download_satisfaction_pdf' commercial.dernier_rdv_pdf.uuid %}" target="_blank" class="pdf-link pdf-corner" title="Télécharger le formulaire de satisfaction">
+                <img src="{% static 'front/img/PDF.svg' %}" alt="PDF" style="height: 44px; width: auto;">
+              </a>
+            {% endif %}
           </div>
         {% empty %}
           <p>Aucun commercial enregistré.</p>
@@ -541,5 +551,36 @@
     document.getElementById('upcomingModal').style.display = 'none';
   }
 </script>
+<!-- Bannière cookies -->
+<div id="cookie-banner" class="cookie-banner-center" style="display:none; position:fixed; bottom:0; left:0; width:100%; background:#222; color:#fff; padding:18px 10px; text-align:center; z-index:9999; box-shadow: 0 -2px 12px rgba(0,0,0,0.18); font-size: 1.1em;">
+  <b>Notre application utilise uniquement des cookies strictement nécessaires à son bon fonctionnement.</b>
+  <ul style="margin: 10px auto 10px auto; text-align:left; max-width:700px; display:inline-block;">
+    <li>d’assurer la connexion sécurisée de chaque utilisateur,</li>
+    <li>de maintenir votre session active pendant l’utilisation de la plateforme,</li>
+    <li>d’améliorer les performances et la stabilité de l’application,</li>
+    <li>d’effectuer certaines mesures d’audience internes à des fins statistiques (fréquence d’utilisation, temps de réponse, etc.).</li>
+  </ul>
+  Aucun cookie à des fins publicitaires ou de suivi commercial n’est utilisé.<br>
+  <span style="display:block;margin:8px 0 8px 0;">Conformément au RGPD, ces cookies ne nécessitent pas de consentement car ils sont indispensables au fonctionnement de l’outil.</span>
+  <a href="/politique-confidentialite" style="color:#1ecb6b; text-decoration:underline;" target="_blank">En savoir plus</a>
+  <button id="accept-cookies-btn" style="margin-left:20px; padding:8px 18px; background:#1ecb6b; color:#fff; border:none; border-radius:5px; cursor:pointer;">J'ai compris</button>
+</div>
+<script>
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    if (!getCookie('cookies_accepted')) {
+      document.getElementById('cookie-banner').style.display = 'block';
+    }
+    document.getElementById('accept-cookies-btn').onclick = function() {
+      document.cookie = "cookies_accepted=true; path=/; max-age=31536000";
+      document.getElementById('cookie-banner').style.display = 'none';
+    };
+  });
+</script>
+{% include 'front/footer.html' %}
 </body>
 </html> 

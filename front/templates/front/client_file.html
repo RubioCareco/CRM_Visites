@@ -96,6 +96,7 @@
       height: 30px !important;
       border-radius: 10px !important;
       flex-grow: 1;
+      color: #201f1f;
     }
 
     #clientModal .input-icon-group {
@@ -137,7 +138,7 @@
       <h2 style="text-align:center;margin-bottom:24px;">
         Liste des clients
       </h2>
-      <div class="pagination-container">
+      <div class="pagination-container" style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
         <form method="get" class="pagination-form" style="margin-right:12px;">
           <label for="per_page">Clients par page :</label>
           <select name="per_page" id="per_page" onchange="this.form.submit()">
@@ -165,9 +166,19 @@
         </form>
         {% endif %}
 
-        <button class="back-login" id="filterBtnClient" type="button" style="display:flex;align-items:center;gap:8px;font-size:1.15rem;padding:8px 22px;border-radius:12px;backdrop-filter:blur(6px);border:none;text-decoration:none;background:#e53935;color:#fff;">
+        <button class="back-login" id="filterBtnClient" type="button" style="display:flex;align-items:center;gap:8px;font-size:1.15rem;padding:8px 22px;border-radius:8px;backdrop-filter:blur(6px);border:none;text-decoration:none;background:#e53935;color:#fff;">
           <i class="fa fa-filter"></i> Filtres
         </button>
+        <div class="active-filters">
+          {% for key, value in request.GET.items %}
+            {% if value and key != 'page' and key != 'per_page' %}
+              <span class="filter-pill">
+                {{ key|capfirst }} : {{ value }}
+                <a href="?{% for k,v in request.GET.items %}{% if k != key and v %}{{k}}={{v|urlencode}}&{% endif %}{% endfor %}" class="remove-filter" title="Retirer ce filtre">×</a>
+              </span>
+            {% endif %}
+          {% endfor %}
+        </div>
       </div>
       <div id="filterPanelClient" class="filter-panel-overlay">
         <form class="filter-panel" id="clientFilterForm">
@@ -210,14 +221,31 @@
             </tr>
           </thead>
           <tbody>
-            {% for client in page_obj %}
-            <tr class="client-card" data-client-id="{{ client.id }}" data-client-nom="{{ client.rs_nom|escapejs }}" data-client-prenom="{{ client.prénom|escapejs }}" style="cursor:pointer;" onclick="openClientModal('{{ client.rs_nom|escapejs }}', '{{ client.prénom|escapejs }}', '{{ client.civilite|escapejs }}', '{{ client.adresse|escapejs }}', '{{ client.code_postal|escapejs }}', '{{ client.ville|escapejs }}', '{{ client.telephone|escapejs }}', '{{ client.e_mail|escapejs }}', '{{ client.statut|escapejs }}', '{{ client.id }}', '{{ client.code_comptable|escapejs }}')">
-              <td>{{ client.civilite|default:" " }}</td>
-              <td>{{ client.rs_nom|default:" " }}</td>
-              <td>{{ client.prénom|default:" " }}</td>
-              <td>{{ client.adresse|default:" " }}</td>
-              <td>{{ client.code_postal|default:" " }}</td>
-              <td>{{ client.ville|default:" " }}</td>
+            {% for client, adresse in clients_with_adresse %}
+            <tr class="client-card" 
+                data-client-id="{{ client.id }}" 
+                data-client-nom="{{ client.rs_nom|escapejs }}"
+                data-client-prenom="{{ client.prénom|escapejs }}"
+                style="cursor:pointer;"
+                onclick="openClientModal(
+                  '{{ client.rs_nom|escapejs }}',
+                  '{{ client.prénom|escapejs }}',
+                  '{{ client.civilite|escapejs }}',
+                  '{{ adresse.adresse|default:''|escapejs }}',
+                  '{{ adresse.code_postal|default:''|escapejs }}',
+                  '{{ adresse.ville|default:''|escapejs }}',
+                  '{{ client.telephone|escapejs }}',
+                  '{{ client.email|escapejs }}',
+                  '{{ client.statut|escapejs }}',
+                  '{{ client.id }}',
+                  '{{ client.code_comptable|escapejs }}'
+                )">
+              <td>{{ client.civilite|default:" " }}</td>
+              <td>{{ client.rs_nom|default:" " }}</td>
+              <td>{{ client.prénom|default:" " }}</td>
+              <td>{{ adresse.adresse|default:" " }}</td>
+              <td>{{ adresse.code_postal|default:" " }}</td>
+              <td>{{ adresse.ville|default:" " }}</td>
             </tr>
             {% empty %}
             <tr><td colspan="6" style="text-align:center;">Aucun client importé trouvé.</td></tr>
@@ -226,12 +254,18 @@
         </table>
       </div>
       <div style="text-align:center;margin:18px 0;">
+        {% with filtre_params="" %}
+          {% if request.GET.filterRaison %}{% with filtre_params=filtre_params|add:"&filterRaison="|add:request.GET.filterRaison %}{% endwith %}{% endif %}
+          {% if request.GET.filterAdresse %}{% with filtre_params=filtre_params|add:"&filterAdresse="|add:request.GET.filterAdresse %}{% endwith %}{% endif %}
+          {% if request.GET.filterCP %}{% with filtre_params=filtre_params|add:"&filterCP="|add:request.GET.filterCP %}{% endwith %}{% endif %}
+          {% if request.GET.filterVille %}{% with filtre_params=filtre_params|add:"&filterVille="|add:request.GET.filterVille %}{% endwith %}{% endif %}
+        {% endwith %}
         {% if page_obj.has_previous %}
-          <a href="?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}">&laquo; Précédent</a>
+          <a href="?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}{% if request.GET.filterRaison %}&filterRaison={{ request.GET.filterRaison }}{% endif %}{% if request.GET.filterAdresse %}&filterAdresse={{ request.GET.filterAdresse }}{% endif %}{% if request.GET.filterCP %}&filterCP={{ request.GET.filterCP }}{% endif %}{% if request.GET.filterVille %}&filterVille={{ request.GET.filterVille }}{% endif %}">&laquo; Précédent</a>
         {% endif %}
         Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
         {% if page_obj.has_next %}
-          <a href="?page={{ page_obj.next_page_number }}&per_page={{ per_page }}">Suivant &raquo;</a>
+          <a href="?page={{ page_obj.next_page_number }}&per_page={{ per_page }}{% if request.GET.filterRaison %}&filterRaison={{ request.GET.filterRaison }}{% endif %}{% if request.GET.filterAdresse %}&filterAdresse={{ request.GET.filterAdresse }}{% endif %}{% if request.GET.filterCP %}&filterCP={{ request.GET.filterCP }}{% endif %}{% if request.GET.filterVille %}&filterVille={{ request.GET.filterVille }}{% endif %}">Suivant &raquo;</a>
         {% endif %}
       </div>
     </div>
@@ -275,59 +309,58 @@
     </div>
   </div>
 
-  <a href="{% if role == 'responsable' or role == 'admin' %}{% url 'dashboard_responsable' %}{% else %}{% url 'dashboard' %}{% endif %}" class="back-login" id="backDashboardBtn" style="position:fixed;left:24px;bottom:20px;z-index:9999;display:flex;align-items:center;gap:8px;color:#fff;font-size:1.15rem;padding:8px 22px;border-radius:12px;box-shadow:0 2px 8px rgba(255, 255, 255, 0.1);backdrop-filter:blur(6px);border:none;text-decoration:none;"><i class="fa fa-arrow-left"></i> Retour</a>
+  <a href="{% if role == 'responsable' or role == 'admin' %}{% url 'dashboard_responsable' %}{% else %}{% url 'dashboard' %}{% endif %}" class="back-login" id="backDashboardBtn" style="position:fixed;left:24px;bottom:20px;z-index:9999;display:flex;align-items:center;gap:8px;color:#fff;font-size:1.15rem;padding:8px 22px;border-radius:8px;box-shadow:0 2px 8px rgba(255, 255, 255, 0.1);backdrop-filter:blur(6px);border:none;text-decoration:none;"><i class="fa fa-arrow-left"></i> Retour</a>
 
 </body>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   // Récupération de toutes les lignes du tableau
   const allRows = Array.from(document.querySelectorAll(".client-card"));
-  // Création de la liste des suggestions (tous les champs concaténés)
-  const suggestions = Array.from(new Set(
-    allRows.flatMap(row => [
-      (row.children[0]?.textContent || "") + " " + (row.children[1]?.textContent || "") + " " + (row.children[2]?.textContent || "") + " " + (row.children[3]?.textContent || "") + " " + (row.children[4]?.textContent || "") + " " + (row.children[5]?.textContent || ""),
-      (row.children[1]?.textContent || ""), // Raison sociale
-      (row.children[2]?.textContent || ""), // Prénom
-      (row.children[3]?.textContent || ""), // Adresse
-      (row.children[5]?.textContent || "")  // Ville
-    ].filter(Boolean))
-  ));
+  // Création de la liste des suggestions via AJAX (civilité, raison sociale, prénom uniquement)
+  async function fetchSuggestions(query) {
+    if (!query.trim()) return [];
+    try {
+      const resp = await fetch(`/search-clients/?q=${encodeURIComponent(query)}`);
+      if (!resp.ok) return [];
+      const data = await resp.json();
+      return data.results || [];
+    } catch (e) {
+      return [];
+    }
+  }
 
-  const searchInput = document.getElementById('clientSearchBar');
-  const suggestionBox = document.getElementById('clientSearchSuggestions');
-
-  // Affiche les suggestions filtrées
-  function showSuggestions(value) {
-    const v = value.trim().toLowerCase();
+  // Affiche les suggestions filtrées (AJAX)
+  async function showSuggestions(value) {
+    const v = value.trim();
     if (!v) {
       suggestionBox.style.display = 'none';
       suggestionBox.innerHTML = '';
       return;
     }
-    const filtered = suggestions.filter(s => s.toLowerCase().includes(v));
-    if (filtered.length === 0) {
+    const suggestions = await fetchSuggestions(v);
+    if (suggestions.length === 0) {
       suggestionBox.style.display = 'none';
       suggestionBox.innerHTML = '';
       return;
     }
-    suggestionBox.innerHTML = filtered.map(s => `<li class='autocomplete-item' style='padding:8px 12px;cursor:pointer;'>${s}</li>`).join('');
+    suggestionBox.innerHTML = suggestions.map(s => `<li class='autocomplete-item' style='padding:8px 12px;cursor:pointer;'>${s.civilite} ${s.rs_nom} ${s.prenom}</li>`).join('');
     suggestionBox.style.display = 'block';
     Array.from(suggestionBox.children).forEach(li => {
       li.addEventListener('mousedown', function(e) {
         e.preventDefault();
         searchInput.value = this.textContent;
-        filterRows(this.textContent);
+        filterTableBySuggestion(this.textContent);
         suggestionBox.style.display = 'none';
       });
     });
   }
 
-  // Filtrage dynamique des lignes du tableau
-  function filterRows(query) {
-    const lowerQuery = query.trim().toLowerCase();
+  // Filtre le tableau sur la suggestion choisie
+  function filterTableBySuggestion(text) {
+    const lowerText = text.trim().toLowerCase();
     allRows.forEach(row => {
-      const rowText = Array.from(row.children).map(td => (td.textContent || "").toLowerCase()).join(" ");
-      if (rowText.includes(lowerQuery)) {
+      const rowText = ((row.children[0]?.textContent || '') + ' ' + (row.children[1]?.textContent || '') + ' ' + (row.children[2]?.textContent || '')).toLowerCase();
+      if (rowText.includes(lowerText)) {
         row.style.display = '';
       } else {
         row.style.display = 'none';
@@ -335,9 +368,92 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  // Recherche dynamique du tableau (AJAX)
+  async function searchAndUpdateTable(query) {
+    if (!query.trim()) {
+      window.location.reload(); // Retour à la pagination serveur
+      return;
+    }
+    try {
+      const resp = await fetch(`/search-clients-table/?q=${encodeURIComponent(query)}`);
+      if (!resp.ok) return;
+      const data = await resp.json();
+      const results = data.results || [];
+      const tbody = document.querySelector('.client-table tbody');
+      tbody.innerHTML = '';
+      
+      // Supprimer l'ancien indicateur s'il existe
+      const existingIndicator = document.querySelector('.client-table').previousElementSibling;
+      if (existingIndicator && existingIndicator.style.background.includes('rgba(229, 57, 53, 0.1)')) {
+        existingIndicator.remove();
+      }
+      
+      // Ajouter un indicateur de recherche active
+      const searchIndicator = document.createElement('div');
+      searchIndicator.style.cssText = 'background: rgba(229, 57, 53, 0.1); border: 1px solid rgba(229, 57, 53, 0.3); border-radius: 6px; padding: 8px 12px; margin: 8px 0; color: #fff; font-size: 0.9rem; text-align: center;';
+      searchIndicator.innerHTML = `<i class="fa fa-search" style="margin-right: 6px;"></i>Résultats de recherche pour "${query}" (${results.length} client${results.length > 1 ? 's' : ''})`;
+      
+      // Insérer l'indicateur avant le tableau
+      const table = document.querySelector('.client-table');
+      table.parentNode.insertBefore(searchIndicator, table);
+      
+      if (results.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#e53935;font-style:italic;">Aucun client trouvé pour "${query}"</td></tr>`;
+        return;
+      }
+      
+      for (const c of results) {
+        const tr = document.createElement('tr');
+        tr.className = 'client-card';
+        tr.style.cursor = 'pointer';
+        tr.style.backgroundColor = 'rgba(229, 57, 53, 0.05)'; // Légère surbrillance
+        tr.innerHTML = `
+          <td>${c.civilite || ''}</td>
+          <td>${c.rs_nom || ''}</td>
+          <td>${c.prenom || ''}</td>
+          <td>${c.adresse || ''}</td>
+          <td>${c.code_postal || ''}</td>
+          <td>${c.ville || ''}</td>
+        `;
+        
+        // Réattacher l'event listener pour ouvrir la modale
+        tr.addEventListener('click', function() {
+          window.openClientModal(
+            c.rs_nom || '',
+            c.prenom || '',
+            c.civilite || '',
+            c.adresse || '',
+            c.code_postal || '',
+            c.ville || '',
+            c.telephone || '',
+            c.email || '',
+            c.statut || '',
+            c.id,
+            c.code_comptable || ''
+          );
+        });
+        
+        tbody.appendChild(tr);
+      }
+    } catch (e) {
+      // Optionnel : afficher une erreur
+    }
+  }
+
+  const searchInput = document.getElementById('clientSearchBar');
+  const suggestionBox = document.getElementById('clientSearchSuggestions');
+
   searchInput.addEventListener('input', function() {
     showSuggestions(this.value);
-    filterRows(this.value);
+    if (this.value.trim()) {
+      searchAndUpdateTable(this.value);
+    } else {
+      // Nettoyer l'indicateur de recherche si la barre est vide
+      const existingIndicator = document.querySelector('.client-table').previousElementSibling;
+      if (existingIndicator && existingIndicator.style.background.includes('rgba(229, 57, 53, 0.1)')) {
+        existingIndicator.remove();
+      }
+    }
   });
 
   searchInput.addEventListener('focus', function() {
@@ -347,7 +463,7 @@ document.addEventListener("DOMContentLoaded", function () {
     setTimeout(() => { suggestionBox.style.display = 'none'; }, 120);
   });
 
-  // Filtres clients
+  // Filtres clients (panneau latéral)
   const filterBtn = document.getElementById('filterBtnClient');
   const filterPanel = document.getElementById('filterPanelClient');
   const closeFilterPanel = document.getElementById('closeFilterPanelClient');
@@ -370,11 +486,11 @@ document.addEventListener("DOMContentLoaded", function () {
     adresseInput.value = '';
     cpInput.value = '';
     villeInput.value = '';
-    filterRows();
+    filterRowsByFilters();
   });
-  form.addEventListener('input', filterRows);
+  form.addEventListener('input', filterRowsByFilters);
 
-  function filterRows() {
+  function filterRowsByFilters() {
     const raison = raisonInput.value.trim().toLowerCase();
     const adresse = adresseInput.value.trim().toLowerCase();
     const cp = cpInput.value.trim().toLowerCase();

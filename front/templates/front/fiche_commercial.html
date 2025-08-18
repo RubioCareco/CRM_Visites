@@ -5,7 +5,20 @@
     <title>Fiche Commercial - {{ commercial.prenom }} {{ commercial.nom }}</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'front/css/fiche_commercial.css' %}">
+    <link rel="stylesheet" href="{% static 'front/css/footer.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+      /* Overrides spécifiques fiche_commercial pour le footer */
+      .site-footer {
+        margin-top: 40px !important;
+        margin-left: -20px !important;
+        margin-right: -20px !important;
+        width: calc(100% + 40px) !important;
+        margin-bottom: -20px !important;
+        padding-bottom: 20px !important;
+        border-radius: 0 !important;
+      }
+    </style>
 </head>
 <body>
     <div class="main-container">
@@ -13,7 +26,9 @@
             <div class="page-title">Fiche commercial - vue responsable</div>
             <div class="commercial-header">
                 <div class="commercial-id">
-                    <div class="avatar">{{ commercial.prenom|slice:":1"|upper }}{{ commercial.nom|slice:":1"|upper }}</div>
+                    <a href="{% url 'profil_commercial' commercial.id %}" class="avatar-link" title="Voir le profil de {{ commercial.prenom }} {{ commercial.nom }}">
+                        <div class="avatar">{{ commercial.prenom|slice:":1"|upper }}{{ commercial.nom|slice:":1"|upper }}</div>
+                    </a>
                     <div class="title-container">
                         <span class="page-subtitle">Fiche commercial</span>
                         <h1>{{ commercial.prenom }} {{ commercial.nom }}</h1>
@@ -41,12 +56,66 @@
             </div>
         </header>
 
+        <!-- Section Satisfaction Client -->
+        <div class="satisfaction-section">
+            <div class="satisfaction-card">
+                <div class="satisfaction-header">
+                    <i class="fa-solid fa-heart"></i>
+                    <span>Satisfaction clients</span>
+                </div>
+                <div class="satisfaction-content">
+                    <div class="satisfaction-percentage">
+                        {{ satisfaction_data.satisfaction_percentage }}%
+                    </div>
+                    <div class="satisfaction-trend">
+                        {% if satisfaction_data.trend == 'up' %}
+                            <i class="fa-solid fa-arrow-up trend-up"></i>
+                        {% elif satisfaction_data.trend == 'down' %}
+                            <i class="fa-solid fa-arrow-down trend-down"></i>
+                        {% else %}
+                            <i class="fa-solid fa-minus trend-neutral"></i>
+                        {% endif %}
+                    </div>
+                    <div class="satisfaction-details">
+                        <span class="satisfaction-avg">{{ satisfaction_data.average_satisfaction }}/10</span>
+                        <span class="satisfaction-count">({{ satisfaction_data.total_responses }} avis)</span>
+                    </div>
+                    
+                    <!-- Comparaisons mensuelles et annuelles -->
+                    <div class="satisfaction-comparisons">
+                        {% if satisfaction_data.monthly_comparison != 0 %}
+                            <div class="comparison-item">
+                                <span class="comparison-label">vs mois dernier:</span>
+                                <span class="comparison-value {% if satisfaction_data.monthly_comparison > 0 %}positive{% else %}negative{% endif %}">
+                                    {% if satisfaction_data.monthly_comparison > 0 %}+{% endif %}{{ satisfaction_data.monthly_comparison }}%
+                                </span>
+                            </div>
+                        {% endif %}
+                        
+                        {% if satisfaction_data.yearly_comparison != 0 %}
+                            <div class="comparison-item">
+                                <span class="comparison-label">vs année dernière:</span>
+                                <span class="comparison-value {% if satisfaction_data.yearly_comparison > 0 %}positive{% else %}negative{% endif %}">
+                                    {% if satisfaction_data.yearly_comparison > 0 %}+{% endif %}{{ satisfaction_data.yearly_comparison }}%
+                                </span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <main class="content-grid">
             <section class="column">
                 <h2>Visites récentes</h2>
                 <div class="card-list">
                     {% for rdv in visites_recentes %}
-                    <div class="rdv-card" data-date="{{ rdv.date_rdv|date:"Y-m-d" }}" data-status="realise">
+                    <div class="rdv-card" data-date="{{ rdv.date_rdv|date:"Y-m-d" }}" data-status="realise" style="position:relative;" data-nb-rdv-valides="{{ rdv.nb_rdv_valides }}">
+                        {% if rdv.nb_rdv_valides > 0 %}
+                        <div class="rdv-counter-bubble" title="{{ rdv.nb_rdv_valides }} rendez-vous validés">
+                            {{ rdv.nb_rdv_valides }}
+                        </div>
+                        {% endif %}
                         <div class="rdv-title">{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom }}</div>
                         <div class="rdv-status-recent">
                             <i class="fa fa-check-square"></i> Validée
@@ -77,7 +146,12 @@
                 <h2>A Rappeler</h2>
                 <div class="card-list">
                     {% for rdv in a_rappeler %}
-                    <div class="rdv-card" data-date="{{ rdv.date_rdv|date:"Y-m-d" }}" data-status="annule">
+                    <div class="rdv-card" data-date="{{ rdv.date_rdv|date:"Y-m-d" }}" data-status="annule" style="position:relative;" data-nb-rdv-valides="{{ rdv.nb_rdv_valides }}">
+                        {% if rdv.nb_rdv_valides > 0 %}
+                        <div class="rdv-counter-bubble" title="{{ rdv.nb_rdv_valides }} rendez-vous validés">
+                            {{ rdv.nb_rdv_valides }}
+                        </div>
+                        {% endif %}
                         <div class="rdv-title">{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom }}</div>
                         <div class="rdv-details" style="margin-bottom: 5px;"><i class="fa fa-phone" style="margin-right: 8px;"></i>{{ rdv.client.telephone|default:"N/A" }}</div>
                         <div class="rdv-status-cancelled">
@@ -136,7 +210,7 @@
             </div>
         </div>
     </div>
-    
+
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Panel Elements
@@ -265,7 +339,72 @@
                 }
             });
         }
+
+        // Ajout : affichage du nombre de rendez-vous validés dans la modale
+        // Supposons que la modale s'ouvre sur clic d'une .rdv-card
+        // et que les champs de la modale ont des IDs comme inputCodeComptable
+
+        // Ajoute ce code dans le DOMContentLoaded
+        const modal = document.getElementById('clientModal');
+        const inputCodeComptable = document.getElementById('inputCodeComptable');
+        const nbRdvValidesDiv = document.createElement('div');
+        nbRdvValidesDiv.id = 'nbRdvValidesDiv';
+        nbRdvValidesDiv.style = 'margin-top:6px;font-size:1.04rem;color:#4dd0e1;font-weight:500;';
+
+        // Fonction pour ouvrir la modale (à adapter selon ton code)
+        document.querySelectorAll('.rdv-card').forEach(card => {
+          card.addEventListener('click', function() {
+            // ... code d'ouverture de la modale ...
+            // Récupérer le nombre de rdv validés
+            const nbRdvValides = this.getAttribute('data-nb-rdv-valides');
+            // Insérer sous le champ code comptable
+            if (inputCodeComptable && inputCodeComptable.parentNode) {
+              nbRdvValidesDiv.textContent = `Nombre de rendez-vous validés : ${nbRdvValides}`;
+              // Supprimer l'ancien si déjà présent
+              if (inputCodeComptable.parentNode.querySelector('#nbRdvValidesDiv')) {
+                inputCodeComptable.parentNode.querySelector('#nbRdvValidesDiv').remove();
+              }
+              inputCodeComptable.parentNode.appendChild(nbRdvValidesDiv);
+            }
+          });
+        });
+
+        // Fonction pour mettre à jour dynamiquement les compteurs de RDV validés
+        function updateRdvCounters() {
+          // Mettre à jour les compteurs sur toutes les cartes clients
+          document.querySelectorAll('[data-nb-rdv-valides]').forEach(card => {
+            const clientRsNom = card.getAttribute('data-rs_nom');
+            if (clientRsNom) {
+              // Récupérer le nombre de RDV validés pour ce client
+              fetch(`/api/rdv-counters-by-client/?rs_nom=${encodeURIComponent(clientRsNom)}`)
+                .then(response => response.json())
+                .then(data => {
+                  const nbRdvValides = data.nb_rdv_valides || 0;
+                  card.setAttribute('data-nb-rdv-valides', nbRdvValides);
+                  
+                  // Mettre à jour ou créer la bulle de compteur
+                  let counterBubble = card.querySelector('.rdv-counter-bubble');
+                  if (nbRdvValides > 0) {
+                    if (!counterBubble) {
+                      counterBubble = document.createElement('div');
+                      counterBubble.className = 'rdv-counter-bubble';
+                      counterBubble.title = `${nbRdvValides} rendez-vous validés`;
+                      card.appendChild(counterBubble);
+                    }
+                    counterBubble.textContent = nbRdvValides;
+                    counterBubble.style.display = 'flex'; // Utiliser flex au lieu de block
+                  } else if (counterBubble) {
+                    counterBubble.remove(); // Supprimer complètement au lieu de cacher
+                  }
+                })
+                .catch(error => {
+                  console.error('Erreur lors de la mise à jour du compteur:', error);
+                });
+            }
+          });
+        }
     });
     </script>
+    {% include 'front/footer.html' %}
 </body>
 </html> 

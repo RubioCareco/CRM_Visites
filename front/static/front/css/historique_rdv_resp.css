@@ -44,11 +44,11 @@
   .tab-content {display:none;}
   .tab-content.active {display:block;}
   .visit-entry, .reminder-entry {
-    width: 99.5%;
+    width: 98%;
     min-width: 340px;
     max-width: 100%;
     margin: 6px auto;
-    margin-left: 13px;
+    margin-left: 18px;
     border-radius: 10px;
     padding: 12px 18px;
     box-sizing: border-box;
@@ -60,6 +60,7 @@
     align-items: start;
     gap: 0 38px;
     font-size: 1.05rem;
+  
   }
   .client-name {
     min-width: 200px;
@@ -314,22 +315,23 @@
     text-decoration: underline;
   }
   .export-excel-btn {
-    position: fixed;
-    bottom: 20px;
-    right: 24px;
-    left: auto;
+    position: static;
     background: rgba(255, 254, 254, 0.18);
     color: #fff;
-    padding: 8px 24px;
+    padding: 12px 24px;
     border-radius: 8px;
     font-weight: bold;
+    font-size: 1rem;
     text-decoration: none;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     transition: background 0.2s;
-    z-index: 1000;
     display: flex;
     align-items: center;
     gap: 8px;
+    height: 48px;
+    box-sizing: border-box;
+    min-width: 350px;
+    justify-content: center;
   }
   .export-excel-btn:hover {
     background: rgba(70, 42, 42, 0.18);
@@ -549,3 +551,214 @@
   .filter-panel input[type="week"]::-webkit-calendar-picker-indicator {
     filter: invert(1);
   }
+  .card {
+    width: 100% !important;
+    max-width: 1400px;
+    min-width: 600px;
+    margin: auto;
+    min-height: 750px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+  .tabs-content-scroll {
+    flex: 1 1 auto;
+    min-width: 100%;
+  }
+  .cards {
+    width: 100%;
+    justify-content: center;
+    align-items: flex-start;
+    display: flex;
+    overflow-x: hidden;
+  }
+  body, html {
+    overflow-x: hidden;
+  }
+  .card,
+  .cards,
+  .tabs-content-scroll,
+  .tab-content {
+    overflow-x: hidden !important;
+  }
+.filter-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #444;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 16px;
+  margin-left: 10px;
+  font-size: 1rem;
+}
+.filter-badge a {
+  color: #ff5a5a;
+  margin-left: 8px;
+  font-weight: bold;
+  text-decoration: none;
+  font-size: 1.1em;
+}
+.retour-dashboard-container {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    max-width: 1400px;
+    margin: 0 auto;
+    align-items: center;
+    height: 48px;
+    margin-top: 11px;
+}
+
+.actions-bar {
+    width: 100%;
+    max-width: 1400px;
+    margin: 24px auto 0 auto;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 18px;
+    padding: 0 12px;
+}
+.retour-dashboard-btn {
+    background: #e53935 !important;
+    color: #fff !important;
+    position: relative;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 350px;
+    justify-content: center;
+    height: 48px;
+    box-sizing: border-box;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.2s;
+    cursor: pointer;
+}
+.retour-dashboard-btn:hover {
+    background: #b71c1c !important;
+    color: #fff !important;
+    transform: scale(1.05);
+}
+.export-btn-container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    height: 48px;
+}
+.buttons-container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 40px auto 20px auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    padding: 0 12px;
+    min-height: 48px;
+}
+/* Modal pour l'historique du client */
+.modal-client-rdv {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(20,20,20,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-content-client-rdv {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border-radius: 18px;
+  padding: 32px 36px 28px 36px;
+  min-width: 420px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  position: relative;
+}
+
+.close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  color: #e53935;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  box-sizing: border-box;
+  padding: 0;
+  z-index: 10;
+}
+
+.table-modal-rdv {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.table-modal-rdv th, .table-modal-rdv td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #333;
+  text-align: left;
+}
+
+.table-modal-rdv th {
+  background: #e53935;
+  color: #fff;
+  font-weight: 600;
+}
+
+.statut-valide {
+  color: #6ee77a;
+  font-weight: bold;
+}
+
+.statut-annule {
+  color: #ff5a5a;
+  font-weight: bold;
+}
+
+.statut-autre {
+  color: #ffa500;
+  font-weight: bold;
+}
+
+@media (max-width: 700px) {
+  .modal-content-client-rdv { 
+    min-width: 0; 
+    padding: 12px 6px; 
+  }
+  .table-modal-rdv th, .table-modal-rdv td { 
+    font-size: 0.95em; 
+    padding: 5px 4px; 
+  }
+}
+
+/* Style pour les cartes cliquables */
+.visit-entry, .reminder-entry {
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.visit-entry:hover, .reminder-entry:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px rgba(229,57,53,0.15);
+}

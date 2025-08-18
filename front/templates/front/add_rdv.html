@@ -78,9 +78,24 @@
     </div>
   </div>
 
-  <div class="success-message" id="successMessage">
-    <i class="fa fa-check-circle"></i> Rendez-vous ajouté avec succès
+  <div class="import-toast" id="rdvImportToast">
+    <i class="fa-solid fa-circle-check"></i>
+    Rendez-vous ajouté avec succès
   </div>
+  {% if success %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const toast = document.getElementById('rdvImportToast');
+      if (toast) {
+        toast.classList.add('show');
+        setTimeout(function() {
+          toast.classList.remove('show');
+          window.location.href = '/dashboard';
+        }, 2000);
+      }
+    });
+  </script>
+  {% endif %}
 
   {% if not from_new_client %}
   <script id="client-data" type="application/json">
@@ -97,7 +112,6 @@
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const form = document.querySelector("form");
-      const successMessage = document.getElementById("successMessage");
       const cancelBtn = document.getElementById("cancelBtn");
       const inputs = form.querySelectorAll("input, textarea, select");
       const nextUrl = document.querySelector("input[name='next']").value || "/dashboard";
@@ -168,18 +182,6 @@
         });
       }
 
-      form.addEventListener("submit", function (e) {
-        e.preventDefault();
-        if (form.checkValidity()) {
-          successMessage.style.display = "flex";
-          setTimeout(() => {
-            form.submit();
-          }, 1500);
-        } else {
-          form.reportValidity();
-        }
-      });
-
       cancelBtn.addEventListener("click", function () {
         if (role === 'responsable' || role === 'admin') {
           window.location.href = dashboardRespUrl;
@@ -206,24 +208,24 @@
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const form = document.querySelector("form");
-      const successMessage = document.getElementById("successMessage");
       const cancelBtn = document.getElementById("cancelBtn");
       const inputs = form.querySelectorAll("input, textarea, select");
       const nextUrl = document.querySelector("input[name='next']").value || "/dashboard";
       const role = '{{ request.session.role|default:"" }}';
       const dashboardRespUrl = "/dashboard-responsable/";
 
-      form.addEventListener("submit", function (e) {
-        e.preventDefault();
-        if (form.checkValidity()) {
-          successMessage.style.display = "flex";
-          setTimeout(() => {
-            form.submit();
-          }, 1500);
-        } else {
-          form.reportValidity();
-        }
-      });
+      // SUPPRESSION DU BLOC JS CI-DESSOUS :
+      // form.addEventListener("submit", function (e) {
+      //   e.preventDefault();
+      //   if (form.checkValidity()) {
+      //     successMessage.style.display = "flex";
+      //     setTimeout(() => {
+      //       form.submit();
+      //     }, 1500);
+      //   } else {
+      //     form.reportValidity();
+      //   }
+      // });
 
       cancelBtn.addEventListener("click", function () {
         if (role === 'responsable' || role === 'admin') {

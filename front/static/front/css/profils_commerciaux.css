@@ -109,7 +109,7 @@ footer {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2.5rem;
+    font-size: 2.1rem;
     font-weight: bold;
     margin: 0 auto 15px;
 }
@@ -123,4 +123,28 @@ footer {
 .commercial-email {
     font-size: 0.9rem;
     color: #ccc;
+}
+
+.absent-commercial {
+  background: rgb(255 11 11 / 28%) !important;
+  border-left: 5px solid #e53935 !important;
+  position: relative;
+}
+.badge-absent {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  background: #e53935;
+  color: #fff !important;
+  border-radius: 8px;
+  padding: 2px 12px 2px 8px;
+  font-size: 0.98em;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(229,57,53,0.08);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 2;
+  margin-left: 10px;
+  margin-top: 10px;
 } 

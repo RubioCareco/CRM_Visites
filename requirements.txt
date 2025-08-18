@@ -1,4 +1,5 @@
 Django
 pandas
 xhtml2pdf
-openpyxl 
+openpyxl
+textblob 

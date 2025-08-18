@@ -85,7 +85,7 @@ body, html {
 
 .filter-button, .sort-button {
   padding: 10px 20px;
-  border-radius: 12px;
+  border-radius: 8px;
   border: none;
   background-color: #e53935;
   color: white;
@@ -104,10 +104,9 @@ body, html {
 
 .cards {
   display: flex;
-  gap: 80px;
-  justify-content: center;
-  width: 100%;
-  overflow: visible !important;
+  gap: 32px;
+  height: 80vh;
+  align-items: stretch;
 }
 
 .card {
@@ -124,18 +123,26 @@ body, html {
   padding-right: 8px;
   scroll-behavior: smooth;
   margin-top: 80px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 }
 
-.card::-webkit-scrollbar {
-  width: 6px;
-}
 
-.card::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.2);
-  border-radius: 5px;
+.card-list {
+  overflow-y: auto;
+  max-height: none;
+  padding: 20px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.18) transparent;
+  color: white;
+}
+.card-list::-webkit-scrollbar {
+  width: 7px;
+}
+.card-list::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.18);
+  border-radius: 8px;
+}
+.card-list::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .user-profile {
@@ -204,6 +211,7 @@ body, html {
   justify-content: center;
   align-items: center;
   transition: background-color 0.18s, color 0.18s;
+  margin-right: 36px;
 }
 
 .add-button:hover {
@@ -226,9 +234,8 @@ body, html {
   display: none;
   flex-direction: row;
   gap: 10px;
-  margin-bottom: 10px;
   align-items: center;
-  margin-right: 60px;
+  margin-right: 95px;
 }
 
 .floating-menu button {
@@ -275,6 +282,8 @@ body, html {
   color: white;
   z-index: 999;
   margin-right: 5px;
+  left: 1px;
+  margin-top: 8px;
 }
 
 .user-menu ul {
@@ -418,11 +427,28 @@ body, html {
 
 .close-btn {
   position: absolute;
-  right: 15px;
-  top: 10px;
-  font-size: 24px;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  color: #e53935;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  color: white;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  box-sizing: border-box;
+  padding: 0;
+  z-index: 10;
+  line-height: 1;
+
+}
+.close-btn:hover {
+  background-color: #e53935;
+  color: #fff;
 }
 
 /* Supprimer le soulignement des liens */
@@ -514,7 +540,7 @@ button {
 .filter-panel {
   font-family: inherit;
   color: #fff;
-  background-color: rgba(250, 250, 250, 0.4) !important;
+  background-color: #222 !important;
   backdrop-filter: blur(6px);
   border-radius: 28px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.25);
@@ -757,3 +783,282 @@ html, body {
   gap: 10px;
 }
 */
+#filterPanel i.fa-calendar-days,
+#filterPanel i.fa-calendar {
+  color: #fff !important;
+}
+
+#filterPanel .date-input-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  height: 38px; /* Ajuste si besoin selon la hauteur de ton input */
+}
+
+#filterPanel .date-input-wrapper input[type="date"] {
+  width: 100%;
+  padding-right: 32px; /* espace pour l’icône */
+  color: #fff;
+  background: rgba(255,255,255,0.04);
+  border-radius: 10px;
+  border: 1px solid #444;
+  height: 38px; /* même hauteur que le wrapper */
+  box-sizing: border-box;
+  font-size: 1rem;
+}
+
+#filterPanel .date-input-wrapper .fa-calendar-days {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #fff;
+  pointer-events: none;
+  font-size: 1.15em;
+  opacity: 0.85;
+  height: 20px;
+  line-height: 1;
+}
+.close-button {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  color: #e53935;
+  font-size: 16px;
+  display: flex
+;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  padding: 0;
+}
+
+.filter-button {
+  transition: transform 0.18s cubic-bezier(.4,0,.2,1);
+}
+
+.filter-button:hover {
+  transform: scale(1.08);
+  z-index: 2;
+}
+
+#recent-visits {
+  display: flex;
+  flex-direction: column;
+}
+#recent-visits .card-header {
+  flex: 0 0 auto;
+}
+#recent-visits-list.card-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  max-height: 600px; /* Valeur par défaut, sera ajustée dynamiquement */
+  padding: 20px;
+}
+
+#recent-visits-list.card-list::-webkit-scrollbar {
+  width: 7px;
+}
+#recent-visits-list.card-list::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.18);
+  border-radius: 8px;
+}
+#recent-visits-list.card-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#recent-visits-list.card-list {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.18) transparent;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.card-header {
+  flex: 0 0 auto;
+}
+.card-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  max-height: 600px;
+  padding: 20px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.18) transparent;
+}
+.card-list::-webkit-scrollbar {
+  width: 7px;
+}
+.card-list::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.18);
+  border-radius: 8px;
+}
+.card-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.filter-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #444;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 16px;
+  margin-left: 10px;
+  font-size: 1rem;
+  font-weight: 500;
+  gap: 6px;
+  transition: background 0.18s;
+}
+.filter-badge .remove-filter, .filter-badge .remove-filter:visited {
+  color: #ff5a5a;
+  margin-left: 8px;
+  font-weight: bold;
+  text-decoration: none;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: color 0.18s;
+}
+.filter-badge .remove-filter:hover {
+  color: #fff;
+  background: #e53935;
+  border-radius: 50%;
+  padding: 0 4px;
+}
+
+@keyframes pulse-alert {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.7);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 10px 5px rgba(229, 57, 53, 0.3);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.7);
+  }
+}
+
+.late-warning {
+  animation: pulse-alert 1.2s infinite;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(229,57,53,0.13);
+  color: #e53935;
+  font-weight: bold;
+  border-radius: 8px;
+  padding: 6px 14px;
+  margin-bottom: 8px;
+  font-size: 1.05em;
+}
+.late-warning i {
+  font-size: 1.2em;
+}
+
+.pdf-corner {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  z-index: 2;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pdf-corner:hover {
+  transform: scale(1.04) rotate(-2deg);
+}
+
+.commercial-card {
+  position: relative;
+  padding-bottom: 56px; /* Espace pour l'icône PDF en bas à droite */
+}
+
+.cookie-banner-center {
+    text-align: center;
+}
+
+.cookie-banner-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.cookie-banner-content ul {
+    display: block;
+    text-align: left;
+    margin: 10px auto 10px auto;
+    max-width: 700px;
+    padding-left: 30px;
+}
+
+.cookie-banner-text {
+    margin: 6px 0 0 0;
+    font-size: 1.05em;
+}
+
+.cookie-banner-center ul {
+    display: inline-block;
+    text-align: left;
+}
+
+/* Badge et couleur pour RDV gelé */
+.gele-rdv {
+  background: rgba(0, 128, 255, 0.5)!important;
+  border-left: 5px solid #2196f3 !important;
+  opacity: 1 !important;
+  color: #1a237e !important;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+.gele-rdv p,
+.gele-rdv strong,
+.gele-rdv .status-à-venir,
+.gele-rdv .visit-date-futur {
+  color: #1a237e !important;
+}
+.badge-gele {
+  background: #2196f3;
+  color: white;
+  border-radius: 8px;
+  padding: 2px 10px;
+  font-size: 0.95em;
+  font-weight: 600;
+  margin-right: 10px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(33,150,243,0.08);
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.dashboard-header-flex {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+@media (max-width: 900px) {
+  .dashboard-header-flex {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+}

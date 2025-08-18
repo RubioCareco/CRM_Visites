@@ -5,6 +5,7 @@
   <title>Historique des rendez-vous (Responsable)</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'front/css/dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'front/css/footer.css' %}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="{% static 'front/css/historique_rdv_resp.css' %}">  
   <style>
@@ -32,13 +33,25 @@
         <input type="text" id="historiqueSearch" placeholder="Rechercher par clients, entreprises ..." autocomplete="off">
         <ul id="historiqueSearchSuggestions" class="autocomplete-results" style="position:absolute;left:0;right:0;top:38px;z-index:10;background:rgba(30,30,30,0.95);color:#fff;border-radius:0 0 8px 8px;max-height:180px;overflow-y:auto;display:none;"></ul>
         <div class="filters-container">
-            <button id="openFilterPanelBtn" class="back-login" style="display:flex;align-items:center;gap:8px;font-size:1.15rem;padding:8px 22px;border-radius:12px;box-shadow:0 2px 8px rgba(255,255,255,0.10);backdrop-filter:blur(6px);border:none;text-decoration:none;background:#e53935;color:#fff;">
+            <button id="openFilterPanelBtn" class="back-login" style="display:flex;align-items:center;gap:8px;font-size:1.15rem;padding:8px 22px;border-radius:8px;box-shadow:0 2px 8px rgba(255,255,255,0.10);backdrop-filter:blur(6px);border:none;text-decoration:none;background:#e53935;color:#fff;">
                 <i class="fa fa-filter"></i> Filtres
-        </button>
+            </button>
         </div>
+        {% if date_label %}
+          <span class="filter-badge">
+            {{ date_label }}
+            <a href="?{% for key, value in request.GET.items %}{% if key != 'date_debut' and key != 'date_fin' and key != 'mois' and key != 'annee' and key != 'semaine' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}" title="Supprimer ce filtre">&times;</a>
+          </span>
+        {% endif %}
+        {% if statut_label %}
+          <span class="filter-badge">
+            {{ statut_label }}
+            <a href="?{% for key, value in request.GET.items %}{% if key != 'statut' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}" title="Supprimer ce filtre">&times;</a>
+          </span>
+        {% endif %}
     </div>
     <div class="cards" style="margin-top:10px;justify-content:center;align-items:flex-start;">
-      <div class="card" style="width:100%;max-width:1400px;margin:auto;min-height:750px;padding-top:0;padding-left:0;padding-right:0;border-radius:12px;overflow:hidden;">
+      <div class="card" style="width:100%;max-width:1600px;margin:auto;min-height:750px;padding-top:0;padding-left:0;padding-right:0;border-radius:12px;overflow:hidden;">
         <div class="tabs-container">
           <button class="tab-btn active" onclick="showTab('general')">Historique général</button>
           <button class="tab-btn" onclick="showTab('recent')">Rendez-vous validés</button>
@@ -48,10 +61,10 @@
           <div id="tab-general" class="tab-content active">
             {% if historique_general %}
               {% for rdv in historique_general %}
-                <div class="{% if rdv.statut_rdv == 'valide' %}visit-entry{% elif rdv.statut_rdv == 'annule' %}reminder-entry{% endif %}" style="margin-bottom:18px;">
+                <div class="{% if rdv.statut_rdv == 'valide' %}visit-entry{% elif rdv.statut_rdv == 'annule' %}reminder-entry{% endif %}" data-client-id="{{ rdv.client.id }}" style="margin-bottom:18px;">
                   <div class="client-name">
                     <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
-                    <p class="infos-adresse">Adresse : {{ rdv.client.adresse }}, {{ rdv.client.code_postal }} {{ rdv.client.ville }}</p>
+                    <p class="infos-adresse">Adresse : {{ rdv.adresse_principale.adresse|default:"" }}, {{ rdv.adresse_principale.code_postal|default:"" }} {{ rdv.adresse_principale.ville|default:"" }}</p>
                   </div>
                   
                   <div class="status-container">
@@ -75,10 +88,10 @@
                             Aucune visite
                           {% endif %}
                           {% if rdv.satisfactionb2b_set.count > 0 %}
-                            <a href="/download-satisfaction/{{ rdv.uuid }}/" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction">
-                              <img src="{% static 'front/img/PDF.svg' %}" alt="PDF">
-                            </a>
-                          {% endif %}
+                              <a href="{% url 'download_satisfaction_pdf' rdv.satisfactionb2b_set.first.uuid %}" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction">
+                                <img src="{% static 'front/img/PDF.svg' %}" alt="PDF">
+                              </a>
+                            {% endif %}
                         </span>
                       </p>
                     {% elif rdv.statut_rdv == 'annule' and rdv.date_statut %}
@@ -93,7 +106,7 @@
                             Aucune visite
                           {% endif %}
                           {% if rdv.satisfactionb2b_set.count > 0 %}
-                            <a href="/download-satisfaction/{{ rdv.uuid }}/" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction">
+                            <a href="{% url 'download_satisfaction_pdf' rdv.satisfactionb2b_set.first.uuid %}" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction">
                               <img src="{% static 'front/img/PDF.svg' %}" alt="PDF">
                             </a>
                           {% endif %}
@@ -115,7 +128,7 @@
                 <div class="visit-entry" style="margin-bottom:18px;">
                   <div class="client-name">
                     <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
-                    <p class="infos-adresse">Adresse : {{ rdv.client.adresse }}, {{ rdv.client.code_postal }} {{ rdv.client.ville }}</p>
+                    <p class="infos-adresse">Adresse : {{ rdv.adresse_principale.adresse|default:"" }}, {{ rdv.adresse_principale.code_postal|default:"" }} {{ rdv.adresse_principale.ville|default:"" }}</p>
                   </div>
                   
                   <div class="status-container">
@@ -135,10 +148,10 @@
                             Aucune visite
                           {% endif %}
                           {% if rdv.satisfactionb2b_set.count > 0 %}
-                            <a href="/download-satisfaction/{{ rdv.uuid }}/" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction">
-                              <img src="{% static 'front/img/PDF.svg' %}" alt="PDF">
-                            </a>
-                          {% endif %}
+                              <a href="{% url 'download_satisfaction_pdf' rdv.satisfactionb2b_set.first.uuid %}" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction">
+                                <img src="{% static 'front/img/PDF.svg' %}" alt="PDF">
+                              </a>
+                            {% endif %}
                         </span>
                       </p>
                     {% endif %}
@@ -153,48 +166,56 @@
             {% if a_rappeler %}
               {% for rdv in a_rappeler %}
                 <div class="reminder-entry" style="margin-bottom:18px;">
-                  <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
-                  <p class="status-à-rappeler"><i class="fa-solid fa-triangle-exclamation"></i> Annulé</p>
-                  {% if rdv.statut_rdv == 'valide' and rdv.date_statut %}
-                    <p class="infos-adresse" style="color:#6ee77a;">
-                      Validé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
-                      <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
-                      <span style="color:#ccc; margin-left: 12px;">
-                        Dernières visites le : 
-                        {% if rdv.derniere_visite %}
-                          {{ rdv.derniere_visite|date:"d/m/Y" }}
-                        {% else %}
-                          Aucune visite antérieure
-                        {% endif %}
-                        {% if rdv.satisfactionb2b_set.count > 0 %}
-                          <a href="/download-satisfaction/{{ rdv.uuid }}/" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction">
-                            <img src="{% static 'front/img/PDF.svg' %}" alt="PDF">
-                          </a>
-                        {% endif %}
-                      </span>
-                    </p>
-                  {% elif rdv.statut_rdv == 'annule' and rdv.date_statut %}
-                    <p class="infos-adresse" style="color:#ff5a5a;">
-                      Annulé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
-                      <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
-                      <span style="color:#ccc; margin-left: 12px;">
-                        Dernières visites le : 
-                        {% if rdv.derniere_visite %}
-                          {{ rdv.derniere_visite|date:"d/m/Y" }}
-                        {% else %}
-                          Aucune visite antérieure
-                        {% endif %}
-                        {% if rdv.satisfactionb2b_set.count > 0 %}
-                          <a href="/download-satisfaction/{{ rdv.uuid }}/" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction">
-                            <img src="{% static 'front/img/PDF.svg' %}" alt="PDF">
-                          </a>
-                        {% endif %}
-                      </span>
-                    </p>
-                  {% else %}
-                    <p class="visit-date-passed">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
-                  {% endif %}
-                  <p class="infos-adresse">Adresse : {{ rdv.client.adresse }}, {{ rdv.client.code_postal }} {{ rdv.client.ville }}</p>
+                  <div class="client-name">
+                    <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
+                    <p class="infos-adresse">Adresse : {{ rdv.adresse_principale.adresse|default:"" }}, {{ rdv.adresse_principale.code_postal|default:"" }} {{ rdv.adresse_principale.ville|default:"" }}</p>
+                  </div>
+                  
+                  <div class="status-container">
+                    <p class="status-à-rappeler"><i class="fa-solid fa-triangle-exclamation"></i> Annulé</p>
+                  </div>
+
+                  <div class="info-container">
+                    {% if rdv.statut_rdv == 'valide' and rdv.date_statut %}
+                      <p class="infos-adresse" style="color:#6ee77a;">
+                        Validé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
+                        <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
+                        <span style="color:#ccc; margin-left: 12px;">
+                          Dernières visites le : 
+                          {% if rdv.derniere_visite %}
+                            {{ rdv.derniere_visite|date:"d/m/Y" }}
+                          {% else %}
+                            Aucune visite antérieure
+                          {% endif %}
+                          {% if rdv.satisfactionb2b_set.count > 0 %}
+                            <a href="{% url 'download_satisfaction_pdf' rdv.satisfactionb2b_set.first.uuid %}" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction">
+                              <img src="{% static 'front/img/PDF.svg' %}" alt="PDF">
+                            </a>
+                          {% endif %}
+                        </span>
+                      </p>
+                    {% elif rdv.statut_rdv == 'annule' and rdv.date_statut %}
+                      <p class="infos-adresse" style="color:#ff5a5a;">
+                        Annulé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
+                        <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
+                        <span style="color:#ccc; margin-left: 12px;">
+                          Dernières visites le : 
+                          {% if rdv.derniere_visite %}
+                            {{ rdv.derniere_visite|date:"d/m/Y" }}
+                          {% else %}
+                            Aucune visite antérieure
+                          {% endif %}
+                          {% if rdv.satisfactionb2b_set.count > 0 %}
+                            <a href="{% url 'download_satisfaction_pdf' rdv.satisfactionb2b_set.first.uuid %}" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction">
+                              <img src="{% static 'front/img/PDF.svg' %}" alt="PDF">
+                            </a>
+                          {% endif %}
+                        </span>
+                      </p>
+                    {% else %}
+                      <p class="visit-date-passed">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
+                    {% endif %}
+                  </div>
                 </div>
               {% endfor %}
             {% else %}
@@ -204,11 +225,34 @@
         </div>
       </div>
     </div>
+    
+    <div class="buttons-container">
+      <!-- Bouton retour - isolé à gauche -->
+      <div class="retour-dashboard-container">
+        <a href="{% url 'dashboard_responsable' %}" class="export-excel-btn retour-dashboard-btn" style="background: #e53935 !important;">
+          <i class="fa fa-arrow-left"></i> Retour au tableau de bord
+        </a>
+      </div>
+      
+      <!-- Bouton export - isolé à droite -->
+      <div class="export-btn-container">
+        <a href="{% url 'export_satisfactions_excel' %}" class="export-excel-btn">
+          <i class="fa fa-file-excel"></i> Extraire les données satisfaction (Excel)
+        </a>
+      </div>
+    </div>
   </div>
-  <a href="{% url 'dashboard_responsable' %}" class="back-login" id="backDashboardBtn" style="position:fixed;left:24px;bottom:20px;z-index:9999;display:flex;align-items:center;gap:8px;color:#fff;font-size:1.15rem;padding:8px 22px;border-radius:12px;box-shadow:0 2px 8px rgba(255,255,255,0.10);backdrop-filter:blur(6px);border:none;text-decoration:none;background:rgba(255,255,255,0.18);"><i class="fa fa-arrow-left"></i> Retour</a>
-  <a href="{% url 'export_satisfactions_excel' %}" class="export-excel-btn">
-    <i class="fa fa-file-excel"></i> Extraire les données satisfaction (Excel)
-  </a>
+  
+  <!-- Modal pour l'historique du client -->
+  <div id="modalClientRDV" class="modal-client-rdv" style="display:none;">
+    <div class="modal-content-client-rdv">
+      <button id="closeModalClientRDV" class="close-btn"><i class="fa fa-times"></i></button>
+      <h2 style="margin-bottom:18px; text-align:center; padding-bottom: 10px;">Historique du client</h2>
+      <div id="modalClientRDVContent">
+        <!-- Les rendez-vous seront injectés ici -->
+      </div>
+    </div>
+  </div>
   <div id="filterPanelOverlay" class="filter-panel-overlay" style="display: none;">
     <form class="filter-panel" method="get" action="">
         <div class="filter-panel-header">
@@ -285,7 +329,9 @@
         });
       }
 
-      searchInput.addEventListener('input', filterEntries);
+      // searchInput.addEventListener('input', filterEntries);
+      // searchInput.addEventListener('input', applyFilters);
+      // => Filtrage local désactivé temporairement
 
       // --- Logique des filtres ---
       const filterBtn = document.getElementById('openFilterPanelBtn');
@@ -433,8 +479,8 @@
       }
 
       // Remplacer l'ancien event listener
-      searchInput.removeEventListener('input', filterEntries);
-      searchInput.addEventListener('input', applyFilters);
+      // searchInput.removeEventListener('input', filterEntries);
+      // searchInput.addEventListener('input', applyFilters);
     });
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -545,6 +591,202 @@
             }
         });
     });
+    
+    // Modal pour l'historique du client
+    document.addEventListener('DOMContentLoaded', function() {
+      const modal = document.getElementById('modalClientRDV');
+      const modalContent = document.getElementById('modalClientRDVContent');
+      const closeBtn = document.getElementById('closeModalClientRDV');
+      
+      // Gestion des clics sur les cartes de rendez-vous
+      document.querySelectorAll('.visit-entry, .reminder-entry').forEach(card => {
+        card.addEventListener('click', function() {
+          const clientId = this.getAttribute('data-client-id');
+          if (clientId) {
+            openClientModal(clientId);
+          }
+        });
+      });
+      
+      // Fermer la modal
+      if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+          modal.style.display = 'none';
+        });
+      }
+      
+      // Fermer en cliquant en dehors
+      if (modal) {
+        modal.addEventListener('click', function(e) {
+          if (e.target === modal) {
+            modal.style.display = 'none';
+          }
+        });
+      }
+      
+      // Fonction pour ouvrir la modal et charger les données
+      function openClientModal(clientId) {
+        modal.style.display = 'flex';
+        modalContent.innerHTML = '<p style="text-align:center;color:#ccc;">Chargement...</p>';
+        
+        // Récupérer tous les rendez-vous du client
+        fetch(`/get_client_rdv/${clientId}/`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              displayClientRDVs(data.rdvs, data.client_name);
+            } else {
+              modalContent.innerHTML = '<p style="text-align:center;color:#ff5a5a;">Erreur lors du chargement des données.</p>';
+            }
+          })
+          .catch(error => {
+            console.error('Erreur:', error);
+            modalContent.innerHTML = '<p style="text-align:center;color:#ff5a5a;">Erreur lors du chargement des données.</p>';
+          });
+      }
+      
+      // Fonction pour afficher les rendez-vous dans la modal
+      function displayClientRDVs(rdvs, clientName) {
+        let html = '';
+        
+        if (rdvs.length === 0) {
+          html = '<p style="color:#ccc;">Aucun rendez-vous trouvé pour ce client.</p>';
+        } else {
+          html = `<table class="table-modal-rdv">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Heure</th>
+                <th>Statut</th>
+                <th>Objet</th>
+                <th>Commentaire</th>
+                <th>Commercial</th>
+              </tr>
+            </thead>
+            <tbody>`;
+          
+          rdvs.forEach(rdv => {
+            let statutClass = '';
+            let statutLabel = '';
+            if (rdv.statut_rdv === 'valide') {
+              statutClass = 'statut-valide';
+              statutLabel = 'Validé';
+            } else if (rdv.statut_rdv === 'annule') {
+              statutClass = 'statut-annule';
+              statutLabel = 'Annulé';
+            } else {
+              statutClass = 'statut-autre';
+              statutLabel = rdv.statut_rdv;
+            }
+            
+            html += `<tr>
+              <td>${rdv.date_rdv}</td>
+              <td>${rdv.heure_rdv}</td>
+              <td><span class="${statutClass}">${statutLabel}</span></td>
+              <td>${rdv.objet}</td>
+              <td>${rdv.commentaire}</td>
+              <td>${rdv.commercial}</td>
+            </tr>`;
+          });
+          
+          html += '</tbody></table>';
+        }
+        
+        modalContent.innerHTML = html;
+      }
+    });
   </script>
+  <script>
+document.addEventListener('DOMContentLoaded', function() {
+  const searchInput = document.getElementById('historiqueSearch');
+  const suggestionBox = document.getElementById('historiqueSearchSuggestions');
+  const allCards = document.querySelectorAll('.visit-entry, .reminder-entry');
+  let debounceTimeout = null;
+
+  function showOnlyMatchingClients(clientIds) {
+    allCards.forEach(card => {
+      const cid = card.getAttribute('data-client-id');
+      if (clientIds.includes(cid)) {
+        card.style.display = '';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+
+  function showAllCards() {
+    allCards.forEach(card => { card.style.display = ''; });
+  }
+
+  searchInput.addEventListener('input', function() {
+    const query = searchInput.value.trim();
+    if (debounceTimeout) clearTimeout(debounceTimeout);
+    if (!query) {
+      suggestionBox.style.display = 'none';
+      suggestionBox.innerHTML = '';
+      showAllCards();
+      return;
+    }
+    debounceTimeout = setTimeout(() => {
+      fetch(`/api/search-rdv-historique/?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+          suggestionBox.innerHTML = '';
+          if (data.results && data.results.length > 0) {
+            // Afficher suggestions
+            data.results.forEach(item => {
+              const li = document.createElement('li');
+              li.className = 'autocomplete-suggestion';
+              li.textContent = item.label;
+              li.style.cursor = 'pointer';
+              li.onclick = function() {
+                const card = document.querySelector(`[data-client-id='${item.client_id}']`);
+                if (card) {
+                  card.scrollIntoView({behavior: 'smooth', block: 'center'});
+                  card.classList.add('highlight-search');
+                  setTimeout(() => card.classList.remove('highlight-search'), 1500);
+                }
+                suggestionBox.style.display = 'none';
+                suggestionBox.innerHTML = '';
+              };
+              suggestionBox.appendChild(li);
+            });
+            suggestionBox.style.display = 'block';
+            // Filtrer les cartes affichées
+            const ids = data.results.map(r => r.client_id.toString());
+            showOnlyMatchingClients(ids);
+          } else {
+            suggestionBox.style.display = 'none';
+            showOnlyMatchingClients([]); // Masquer tout
+          }
+        });
+    }, 200);
+  });
+
+  // Cacher la box si on clique ailleurs
+  document.addEventListener('click', function(e) {
+    if (!suggestionBox.contains(e.target) && e.target !== searchInput) {
+      suggestionBox.style.display = 'none';
+    }
+  });
+});
+</script>
+<style>
+.autocomplete-suggestion {
+  padding: 8px 14px;
+  border-bottom: 1px solid #333;
+  background: #222;
+  color: #fff;
+  font-size: 1rem;
+}
+.autocomplete-suggestion:hover {
+  background: #444;
+}
+.highlight-search {
+  outline: 3px solid #4dd0e1;
+  transition: outline 0.2s;
+}
+</style>
+  {% include 'front/footer.html' %}
 </body>
 </html> 

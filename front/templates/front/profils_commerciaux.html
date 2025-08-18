@@ -15,7 +15,10 @@
 
         <div class="commerciaux-grid">
             {% for commercial in commerciaux %}
-            <a href="{% url 'profil_commercial' commercial.id %}" class="commercial-card">
+            <a href="{% url 'profil_commercial' commercial.id %}" class="commercial-card{% if commercial.is_absent %} absent-commercial{% endif %}">
+                {% if commercial.is_absent %}
+                <span class="badge-absent">Absent</span>
+                {% endif %}
                 <div class="commercial-avatar">
                     {{ commercial.prenom|slice:":1"|upper }}{{ commercial.nom|slice:":1"|upper }}
                 </div>

@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="{% static 'front/css/dashboard.css' %}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="{% static 'front/css/historique_rdv.css' %}">  
+  <link rel="stylesheet" href="{% static 'front/css/footer.css' %}">
 </head>
 <body>
   <div class="dashboard">
@@ -16,9 +17,15 @@
         <input type="text" id="historiqueSearch" placeholder="Rechercher par clients, entreprises ..." autocomplete="off">
         <ul id="historiqueSearchSuggestions" class="autocomplete-results" style="position:absolute;left:0;right:0;top:38px;z-index:10;background:rgba(30,30,30,0.95);color:#fff;border-radius:0 0 8px 8px;max-height:180px;overflow-y:auto;display:none;"></ul>
         <button id="filterBtnHistorique" class="filter-button" style="margin-left:10px;height:38px;display:flex;align-items:center;gap:7px;">
-          <i class="fa-solid fa-sliders"></i> Filtres
+          <i class="fa fa-filter"></i> Filtres
         </button>
-        <div id="filterPopoverHistorique" style="display:none;position:absolute;top:48px;right:0;z-index:1001;background:rgba(40,40,40,0.98);color:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.25);padding:24px 28px 18px 28px;min-width:260px;">
+        {% if date_label %}
+          <span class="filter-badge" style="display:inline-flex;align-items:center;background:#444;color:#fff;padding:6px 14px;border-radius:16px;margin-left:10px;font-size:1rem;">
+            {{ date_label }}
+            <a href="?{% for key, value in request.GET.items %}{% if key != 'date_debut' and key != 'date_fin' and key != 'mois' and key != 'annee' and key != 'semaine' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}" style="color:#ff5a5a;margin-left:8px;font-weight:bold;text-decoration:none;font-size:1.1em;">&times;</a>
+          </span>
+        {% endif %}
+        <div id="filterPopoverHistorique" style="display:none;position:absolute;top:48px;right:0;z-index:1001;color:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.25);padding:24px 28px 18px 28px;min-width:260px;">
           <div style="font-size:1.15rem;font-weight:bold;margin-bottom:14px;color:#fff;">Filtrer par&nbsp;:</div>
           <div style="display:flex;gap:10px;margin-bottom:18px;">
             <button type="button" class="filter-type-btn" data-type="jour" style="padding:6px 14px;border-radius:8px;border:none;background:#333;color:#fff;cursor:pointer;">Jour</button>
@@ -37,7 +44,7 @@
         </div>
     </div>
     <div class="cards" style="margin-top:10px;justify-content:center;align-items:flex-start;">
-      <div class="card" style="width:100%;max-width:1400px;margin:auto;min-height:650px;padding-top:0;padding-left:0;padding-right:0;border-radius:12px;overflow:hidden;">
+      <div class="card" style="width:100%;max-width:1500px;margin:auto;min-height:750px;padding-top:0;padding-left:0;padding-right:0;border-radius:12px;overflow:hidden;">
         <div class="tabs-container">
           <button class="tab-btn active" onclick="showTab('general')">Historique général</button>
           <button class="tab-btn" onclick="showTab('recent')">Rendez-vous validés</button>
@@ -47,10 +54,10 @@
           <div id="tab-general" class="tab-content active">
             {% if historique_general %}
               {% for rdv in historique_general %}
-                <div class="{% if rdv.statut_rdv == 'valide' %}visit-entry{% elif rdv.statut_rdv == 'annule' %}reminder-entry{% endif %}" style="margin-bottom:18px;">
+                <div class="{% if rdv.statut_rdv == 'valide' %}visit-entry{% elif rdv.statut_rdv == 'annule' %}reminder-entry{% endif %}" data-client-id="{{ rdv.client.id }}" style="margin-bottom:18px;">
                   <div class="client-name">
                     <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
-                    <p class="infos-adresse">Adresse : {{ rdv.client.adresse }}, {{ rdv.client.code_postal }} {{ rdv.client.ville }}</p>
+                    <p class="infos-adresse">Adresse : {{ rdv.adresse_principale.adresse|default:"" }}, {{ rdv.adresse_principale.code_postal|default:"" }} {{ rdv.adresse_principale.ville|default:"" }}</p>
                   </div>
                   
                   <div class="status-container">
@@ -62,29 +69,41 @@
                   </div>
 
                   <div class="info-container">
-                    {% if rdv.statut_rdv == 'valide' and rdv.date_statut %}
+                    {% if rdv.statut_rdv == 'valide' and rdv.date_rdv %}
                       <p class="infos-adresse" style="color:#6ee77a;">
-                        Validé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
+                        Rendez-vous le : <span class="visit-date">{{ rdv.date_rdv|date:'d/m/Y' }}{% if rdv.heure_rdv %} {{ rdv.heure_rdv|time:'H:i' }}{% endif %}</span>
                         <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
                         <span style="color:#ccc; margin-left: 12px;">
-                          Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}
+                          Dernières visites le : 
+                          {% if rdv.derniere_visite %}
+                            {{ rdv.derniere_visite|date:"d/m/Y" }}
+                          {% else %}
+                            Aucune visite
+                          {% endif %}
                           {% with satisfaction=rdv.satisfactionb2b_set.first %}
                             {% if satisfaction %}
-                              <a href="/download-satisfaction/{{ rdv.uuid }}/" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction">
+                              <a href="/download-satisfaction/{{ satisfaction.uuid }}/" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction">
                                 <img src="{% static 'front/img/PDF.svg' %}" alt="PDF">
                               </a>
                             {% endif %}
                           {% endwith %}
                         </span>
                       </p>
-                    {% elif rdv.statut_rdv == 'annule' and rdv.date_statut %}
+                    {% elif rdv.statut_rdv == 'annule' and rdv.date_rdv %}
                       <p class="infos-adresse" style="color:#ff5a5a;">
-                        Annulé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
+                        Rendez-vous le : <span class="visit-date">{{ rdv.date_rdv|date:'d/m/Y' }}{% if rdv.heure_rdv %} {{ rdv.heure_rdv|time:'H:i' }}{% endif %}</span>
                         <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
-                        <span style="color:#ccc; margin-left: 12px;">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</span>
+                        <span style="color:#ccc; margin-left: 12px;">
+                          Dernières visites le : 
+                          {% if rdv.derniere_visite %}
+                            {{ rdv.derniere_visite|date:"d/m/Y" }}
+                          {% else %}
+                            Aucune visite
+                          {% endif %}
+                        </span>
                       </p>
                     {% else %}
-                      <p class="visit-date-passed">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
+                      <p class="visit-date-passed">Rendez-vous le : <span class="visit-date">{{ rdv.date_rdv|date:'d/m/Y' }}{% if rdv.heure_rdv %} {{ rdv.heure_rdv|time:'H:i' }}{% endif %}</span></p>
                     {% endif %}
                   </div>
                 </div>
@@ -96,33 +115,36 @@
           <div id="tab-recent" class="tab-content">
             {% if visites_recentes %}
               {% for rdv in visites_recentes %}
-                <div class="visit-entry" style="margin-bottom:18px;">
+                <div class="visit-entry" data-client-id="{{ rdv.client.id }}" style="margin-bottom:18px;">
                   <div class="client-name">
                     <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
-                    <p class="infos-adresse">Adresse : {{ rdv.client.adresse }}, {{ rdv.client.code_postal }} {{ rdv.client.ville }}</p>
+                    <p class="infos-adresse">Adresse : {{ rdv.adresse_principale.adresse|default:"" }}, {{ rdv.adresse_principale.code_postal|default:"" }} {{ rdv.adresse_principale.ville|default:"" }}</p>
                   </div>
-                  
                   <div class="status-container">
                     <p class="status validée"><i class="fa fa-check-square"></i> Validée</p>
                   </div>
-
                   <div class="info-container">
-                    {% if rdv.statut_rdv == 'valide' and rdv.date_statut %}
-                      <p class="infos-adresse" style="color:#6ee77a;">
-                        Validé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
-                        <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
-                        <span style="color:#ccc; margin-left: 12px;">
-                          Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}
-                          {% with satisfaction=rdv.satisfactionb2b_set.first %}
-                            {% if satisfaction %}
-                              <a href="/download-satisfaction/{{ rdv.uuid }}/" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction">
+                    <p class="infos-adresse" style="color:#6ee77a;">
+                      Rendez-vous le : <span class="visit-date">{{ rdv.date_rdv|date:'d/m/Y' }}{% if rdv.heure_rdv %} {{ rdv.heure_rdv|time:'H:i' }}{% endif %}</span>
+                      <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
+                      <span style="color:#ccc; margin-left: 12px;">
+                        Dernières visites le : 
+                        {% if rdv.derniere_visite %}
+                          {{ rdv.derniere_visite|date:"d/m/Y" }}
+                        {% else %}
+                          Aucune visite
+                        {% endif %}
+                        {% with satisfaction=rdv.satisfactionb2b_set.first %}
+                          {% if satisfaction %}
+                            <span class="rdv-pdf">
+                              <a href="/download-satisfaction/{{ satisfaction.uuid }}/" target="_blank" rel="noopener noreferrer" class="pdf-download-icon" title="Télécharger le formulaire de satisfaction">
                                 <img src="{% static 'front/img/PDF.svg' %}" alt="PDF">
                               </a>
-                            {% endif %}
-                          {% endwith %}
-                        </span>
-                      </p>
-                    {% endif %}
+                            </span>
+                          {% endif %}
+                        {% endwith %}
+                      </span>
+                    </p>
                   </div>
                 </div>
               {% endfor %}
@@ -133,25 +155,22 @@
           <div id="tab-rappeler" class="tab-content">
             {% if a_rappeler %}
               {% for rdv in a_rappeler %}
-                <div class="reminder-entry" style="margin-bottom:18px;">
+                <div class="reminder-entry" data-client-id="{{ rdv.client.id }}" style="margin-bottom:18px;">
                   <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
                   <p class="status-à-rappeler"><i class="fa-solid fa-triangle-exclamation"></i> Annulé</p>
-                  {% if rdv.statut_rdv == 'valide' and rdv.date_statut %}
-                    <p class="infos-adresse" style="color:#6ee77a;">
-                      Validé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
-                      <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
-                      <span style="color:#ccc; margin-left: 12px;">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</span>
-                    </p>
-                  {% elif rdv.statut_rdv == 'annule' and rdv.date_statut %}
-                    <p class="infos-adresse" style="color:#ff5a5a;">
-                      Annulé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
-                      <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
-                      <span style="color:#ccc; margin-left: 12px;">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</span>
-                    </p>
-                  {% else %}
-                    <p class="visit-date-passed">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</p>
-                  {% endif %}
-                  <p class="infos-adresse">Adresse : {{ rdv.client.adresse }}, {{ rdv.client.code_postal }} {{ rdv.client.ville }}</p>
+                  <p class="infos-adresse" style="color:#ff5a5a;">
+                    Rendez-vous prévu le : <span class="visit-date">{{ rdv.date_rdv|date:'d/m/Y' }}{% if rdv.heure_rdv %} {{ rdv.heure_rdv|time:'H:i' }}{% endif %}</span>
+                    <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
+                    <span style="color:#ccc; margin-left: 12px;">
+                      Dernières visites le : 
+                      {% if rdv.derniere_visite %}
+                        {{ rdv.derniere_visite|date:"d/m/Y" }}
+                      {% else %}
+                        Aucune visite
+                      {% endif %}
+                    </span>
+                  </p>
+                  <p class="infos-adresse">Adresse : {{ rdv.adresse_principale.adresse|default:"" }}, {{ rdv.adresse_principale.code_postal|default:"" }} {{ rdv.adresse_principale.ville|default:"" }}</p>
                 </div>
               {% endfor %}
             {% else %}
@@ -162,7 +181,90 @@
       </div>
     </div>
   </div>
-  <a href="{% if role == 'responsable' or role == 'admin' %}{% url 'dashboard_responsable' %}{% else %}{% url 'dashboard' %}{% endif %}" class="back-login" id="backDashboardBtn" style="position:fixed; left:24px; bottom:20px; z-index:9999; color:#f55; text-shadow: 1px 1px 6px #000, 0 0 2px #fff2; font-size: 12px;">&larr; Retour au tableau de bord</a>
+  <a href="{% if role == 'responsable' or role == 'admin' %}{% url 'dashboard_responsable' %}{% else %}{% url 'dashboard' %}{% endif %}" class="back-login" id="backDashboardBtn" style="position:fixed;left:24px;bottom:20px;z-index:9999;display:flex;align-items:center;gap:8px;color:#fff;font-size:1.15rem;padding:8px 22px;border-radius:12px;box-shadow:0 2px 8px rgba(255, 255, 255, 0.18);backdrop-filter:blur(6px);border:none;text-decoration:none; background:rgba(255,255,255,0.18);">&larr; Retour</a>
+  <div id="modalClientRDV" class="modal-client-rdv" style="display:none;">
+    <div class="modal-content-client-rdv">
+      <button id="closeModalClientRDV" class="close-btn"><i class="fa fa-times"></i></button>
+      <h2 style="margin-bottom:18px; text-align:center; padding-bottom: 10px ;">Historique du client</h2>
+      <div id="modalClientRDVContent">
+        <!-- Les rendez-vous seront injectés ici -->
+      </div>
+    </div>
+  </div>
+  <style>
+    .modal-client-rdv {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(20,20,20,0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    .modal-content-client-rdv {
+      background: rgba(255, 255, 255, 0.18);
+      color: #fff;
+      border-radius: 18px;
+      padding: 32px 36px 28px 36px;
+      min-width: 420px;
+      max-width: 90vw;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+      position: relative;
+    }
+    .close-modal-client-rdv {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: transparent;
+    color: #e53935;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    box-sizing: border-box;
+    padding: 0;
+    z-index: 10;
+}
+
+    .table-modal-rdv {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    .table-modal-rdv th, .table-modal-rdv td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #333;
+      text-align: left;
+    }
+    .table-modal-rdv th {
+      background: #e53935;
+      color: #fff;
+      font-weight: 600;
+    }
+    .statut-valide {
+      color: #6ee77a;
+      font-weight: bold;
+    }
+    .statut-annule {
+      color: #ff5a5a;
+      font-weight: bold;
+    }
+    .statut-autre {
+      color: #ffa500;
+      font-weight: bold;
+    }
+    @media (max-width: 700px) {
+      .modal-content-client-rdv { min-width: 0; padding: 12px 6px; }
+      .table-modal-rdv th, .table-modal-rdv td { font-size: 0.95em; padding: 5px 4px; }
+    }
+  </style>
   <script>
     function showTab(tab) {
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -289,16 +391,7 @@
           html = `<select id="inputFiltreAnnee">${options}</select>`;
         }
         filterInputs.innerHTML = html;
-        // --- Ouvre le sélecteur natif au clic sur l'input (si supporté) ---
-        const input = filterInputs.querySelector('input');
-        if (input && input.showPicker) {
-          input.addEventListener('focus', function() {
-            input.showPicker();
-          });
-          input.addEventListener('click', function() {
-            input.showPicker();
-          });
-        }
+        // Suppression de l'appel à showPicker() pour éviter l'erreur navigateur
       }
       renderInput(currentType);
       filterTypeBtns.forEach(btn => {
@@ -379,8 +472,45 @@
       }
 
       applyBtn.addEventListener('click', function() {
-        filterByDate();
-        filterPopover.style.display = 'none';
+        let params = new URLSearchParams(window.location.search);
+        if (currentType === 'jour') {
+          const val = document.getElementById('inputFiltreDate').value;
+          if (val) {
+            params.set('date_debut', val);
+            params.set('date_fin', val);
+            params.delete('mois');
+            params.delete('annee');
+            params.delete('semaine');
+          }
+        } else if (currentType === 'semaine') {
+          const val = document.getElementById('inputFiltreSemaine').value;
+          if (val) {
+            params.set('semaine', val);
+            params.delete('date_debut');
+            params.delete('date_fin');
+            params.delete('mois');
+            params.delete('annee');
+          }
+        } else if (currentType === 'mois') {
+          const val = document.getElementById('inputFiltreMois').value;
+          if (val) {
+            params.set('mois', val);
+            params.delete('date_debut');
+            params.delete('date_fin');
+            params.delete('annee');
+            params.delete('semaine');
+          }
+        } else if (currentType === 'annee') {
+          const val = document.getElementById('inputFiltreAnnee').value;
+          if (val) {
+            params.set('annee', val);
+            params.delete('date_debut');
+            params.delete('date_fin');
+            params.delete('mois');
+            params.delete('semaine');
+          }
+        }
+        window.location.search = params.toString();
       });
       filterInputs.addEventListener('change', filterByDate);
       resetBtn.addEventListener('click', function() {
@@ -391,5 +521,182 @@
       });
     });
   </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Ouvre la modal au clic sur une carte dans l'onglet validés
+      document.querySelectorAll('#tab-recent .visit-entry').forEach(card => {
+        card.style.cursor = 'pointer';
+        card.addEventListener('click', function(e) {
+          if (e.target.closest('a')) return;
+          const clientId = this.getAttribute('data-client-id');
+          if (!clientId) return;
+          fetch(`/get_client_rdv/${clientId}/?statut=valide`)
+            .then(resp => resp.json())
+            .then(data => {
+              let html = '';
+              if (data.rdvs.length === 0) {
+                html = '<p style="color:#ccc;">Aucun rendez-vous validé pour ce client.</p>';
+              } else {
+                html = `<table class="table-modal-rdv">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Heure</th>
+                      <th>Statut</th>
+                      <th>Objet</th>
+                      <th>Commentaire</th>
+                      <th>Commercial</th>
+                    </tr>
+                  </thead>
+                  <tbody>`;
+                data.rdvs.forEach(rdv => {
+                  let statutClass = '';
+                  let statutLabel = '';
+                  if (rdv.statut_rdv === 'valide') {
+                    statutClass = 'statut-valide';
+                    statutLabel = 'Validé';
+                  } else if (rdv.statut_rdv === 'annule') {
+                    statutClass = 'statut-annule';
+                    statutLabel = 'Annulé';
+                  } else {
+                    statutClass = 'statut-autre';
+                    statutLabel = rdv.statut_rdv;
+                  }
+                  html += `<tr>
+                    <td>${rdv.date_rdv}</td>
+                    <td>${rdv.heure_rdv}</td>
+                    <td><span class="${statutClass}">${statutLabel}</span></td>
+                    <td>${rdv.objet}</td>
+                    <td>${rdv.commentaire}</td>
+                    <td>${rdv.commercial}</td>
+                  </tr>`;
+                });
+                html += '</tbody></table>';
+              }
+              document.getElementById('modalClientRDVContent').innerHTML = html;
+              document.getElementById('modalClientRDV').style.display = 'flex';
+            });
+        });
+      });
+      // Ouvre la modal au clic sur une carte dans les autres onglets (historique général, à rappeler)
+      document.querySelectorAll('#tab-general .visit-entry, #tab-general .reminder-entry').forEach(card => {
+        card.style.cursor = 'pointer';
+        card.addEventListener('click', function(e) {
+          if (e.target.closest('a')) return;
+          const clientId = this.getAttribute('data-client-id');
+          if (!clientId) return;
+          fetch(`/get_client_rdv/${clientId}/`)
+            .then(resp => resp.json())
+            .then(data => {
+              let html = '';
+              if (data.rdvs.length === 0) {
+                html = '<p style="color:#ccc;">Aucun rendez-vous pour ce client.</p>';
+              } else {
+                html = `<table class="table-modal-rdv">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Heure</th>
+                      <th>Statut</th>
+                      <th>Objet</th>
+                      <th>Commentaire</th>
+                      <th>Commercial</th>
+                    </tr>
+                  </thead>
+                  <tbody>`;
+                data.rdvs.forEach(rdv => {
+                  let statutClass = '';
+                  let statutLabel = '';
+                  if (rdv.statut_rdv === 'valide') {
+                    statutClass = 'statut-valide';
+                    statutLabel = 'Validé';
+                  } else if (rdv.statut_rdv === 'annule') {
+                    statutClass = 'statut-annule';
+                    statutLabel = 'Annulé';
+                  } else {
+                    statutClass = 'statut-autre';
+                    statutLabel = rdv.statut_rdv;
+                  }
+                  html += `<tr>
+                    <td>${rdv.date_rdv}</td>
+                    <td>${rdv.heure_rdv}</td>
+                    <td><span class="${statutClass}">${statutLabel}</span></td>
+                    <td>${rdv.objet}</td>
+                    <td>${rdv.commentaire}</td>
+                    <td>${rdv.commercial}</td>
+                  </tr>`;
+                });
+                html += '</tbody></table>';
+              }
+              document.getElementById('modalClientRDVContent').innerHTML = html;
+              document.getElementById('modalClientRDV').style.display = 'flex';
+            });
+        });
+      });
+      // À rappeler : délégation d'événement pour robustesse
+      document.getElementById('tab-rappeler').addEventListener('click', function(e) {
+        const card = e.target.closest('.reminder-entry');
+        if (!card) return;
+        if (e.target.closest('a')) return;
+        const clientId = card.getAttribute('data-client-id');
+        if (!clientId) return;
+        fetch(`/get_client_rdv/${clientId}/?statut=annule`)
+          .then(resp => resp.json())
+          .then(data => {
+            let html = '';
+            if (data.rdvs.length === 0) {
+              html = '<p style="color:#ccc;">Aucun rendez-vous annulé pour ce client.</p>';
+            } else {
+              html = `<table class="table-modal-rdv">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Heure</th>
+                    <th>Statut</th>
+                    <th>Objet</th>
+                    <th>Commentaire</th>
+                    <th>Commercial</th>
+                  </tr>
+                </thead>
+                <tbody>`;
+              data.rdvs.forEach(rdv => {
+                let statutClass = '';
+                let statutLabel = '';
+                if (rdv.statut_rdv === 'valide') {
+                  statutClass = 'statut-valide';
+                  statutLabel = 'Validé';
+                } else if (rdv.statut_rdv === 'annule') {
+                  statutClass = 'statut-annule';
+                  statutLabel = 'Annulé';
+                } else {
+                  statutClass = 'statut-autre';
+                  statutLabel = rdv.statut_rdv;
+                }
+                html += `<tr>
+                  <td>${rdv.date_rdv}</td>
+                  <td>${rdv.heure_rdv}</td>
+                  <td><span class="${statutClass}">${statutLabel}</span></td>
+                  <td>${rdv.objet}</td>
+                  <td>${rdv.commentaire}</td>
+                  <td>${rdv.commercial}</td>
+                </tr>`;
+              });
+              html += '</tbody></table>';
+            }
+            document.getElementById('modalClientRDVContent').innerHTML = html;
+            document.getElementById('modalClientRDV').style.display = 'flex';
+          });
+      });
+      // Ferme la modal
+      document.getElementById('closeModalClientRDV').addEventListener('click', function() {
+        document.getElementById('modalClientRDV').style.display = 'none';
+      });
+      // Ferme la modal au clic hors contenu
+      document.getElementById('modalClientRDV').addEventListener('click', function(e) {
+        if (e.target === this) this.style.display = 'none';
+      });
+    });
+  </script>
+  {% include 'front/footer.html' %}
 </body>
 </html> 

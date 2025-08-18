@@ -19,15 +19,12 @@ from django.urls import path
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from front.views import satisfaction_b2b
+from front import views as front_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('front.urls')),
-    path('reset-password/', auth_views.PasswordResetView.as_view(
-        template_name='front/reset_password.html',
-        email_template_name='front/reset_password_email.html',
-        subject_template_name='front/reset_password_subject.txt'
-    ), name='reset_password'),
+    path('reset-password/', front_views.reset_password, name='reset_password'),
     path('reset-password/done/', auth_views.PasswordResetDoneView.as_view(
         template_name='front/reset_password_done.html'
     ), name='password_reset_done'),
@@ -38,4 +35,5 @@ urlpatterns = [
         template_name='front/reset_password_complete.html'
     ), name='password_reset_complete'),
     path('satisfaction-b2b/', satisfaction_b2b, name='satisfaction_b2b'),
+    path('new-password/', front_views.new_password, name='new_password'),
 ]

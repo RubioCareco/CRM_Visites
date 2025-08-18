@@ -6,6 +6,7 @@
   <title>Enquête de satisfaction B2B Careco Rubio</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'front/css/satisfaction_b2b.css' %}">
+  <link rel="stylesheet" href="{% static 'front/css/footer.css' %}">
 </head>
 <body>
   <div class="satisfaction-container">
@@ -24,7 +25,6 @@
     <form method="post" autocomplete="off" class="satisfaction-form">
       {% csrf_token %}
       <input type="hidden" name="rs_nom" value="{{ rs_nom|default:'' }}">
-      <input type="hidden" name="commercial_id" value="{{ request.session.commercial_id }}">
       <input type="hidden" name="rdv_id" value="{{ request.GET.rdv_id|default:'' }}">
       <!-- 1 -->
       <div class="form-group required">
@@ -203,5 +203,6 @@
       }
     });
   </script>
+  {% include 'front/footer.html' %}
 </body>
 </html> 

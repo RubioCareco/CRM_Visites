@@ -1,9 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Commercial, Client, Rendezvous, CommentaireRdv, ImportClientCorrected, SatisfactionB2B, FrontClient, ActivityLog
+from .models import Commercial, Rendezvous, CommentaireRdv, ImportClientCorrected, SatisfactionB2B, FrontClient, ActivityLog
 from django.contrib.auth.hashers import check_password, make_password
 from functools import wraps
 from django.http import JsonResponse, HttpResponse, Http404
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from django.utils import timezone
 import json
 from django.core.mail import send_mail, EmailMultiAlternatives
@@ -20,8 +20,10 @@ from io import BytesIO
 from django.core.exceptions import PermissionDenied
 from django.views.decorators.http import require_GET
 import pandas as pd
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Q
 from django.db.models.functions import Coalesce, TruncDay, TruncWeek, TruncMonth, TruncYear
+from .models import Adresse
+from front.utils import generer_rendezvous_automatiques
 
 # 🔐 Décorateur de protection
 def login_required(view_func):
@@ -60,6 +62,7 @@ def logout_view(request):
 reset_tokens = {}
 
 def reset_password(request):
+    print("RESET PASSWORD VIEW CALLED")
     if request.method == 'POST':
         email = request.POST.get('email')
         users = User.objects.filter(email=email)
@@ -71,9 +74,13 @@ def reset_password(request):
             token = get_random_string(48)
             reset_tokens[token] = ('user', user.id)
             reset_link = request.build_absolute_uri(reverse('new_password')) + f'?token={token}'
-            subject = 'Réinitialisation de mot de passe'
-            text_content = f'''Bonjour,\n\nVous avez demandé la réinitialisation de votre mot de passe.\n\nCliquez sur le lien ci-dessous pour choisir un nouveau mot de passe :\n{reset_link}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.\n\n— L'équipe CRM'''
-            html_content = f'''<p>Bonjour,</p><p>Vous avez demandé la réinitialisation de votre mot de passe.</p><p>Cliquez sur le lien ci-dessous pour choisir un nouveau mot de passe :<br><a href="{reset_link}">Réinitialiser mon mot de passe</a></p><p>Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.</p><p>— L'équipe CRM</p>'''
+            subject = render_to_string('front/reset_password_subject.txt').strip()
+            html_content = render_to_string('front/reset_password_email.html', {
+                'reset_link': reset_link,
+                'user': user,
+            })
+            text_content = f"Pour réinitialiser votre mot de passe, cliquez sur ce lien : {reset_link}"
+            print("HTML CONTENT:", html_content)
             msg = EmailMultiAlternatives(subject, text_content, 'bznjamin.gillens@gmail.com', [email])
             msg.attach_alternative(html_content, "text/html")
             msg.send()
@@ -82,14 +89,17 @@ def reset_password(request):
             token = get_random_string(48)
             reset_tokens[token] = ('commercial', commercial.id)
             reset_link = request.build_absolute_uri(reverse('new_password')) + f'?token={token}'
-            subject = 'Réinitialisation de mot de passe'
-            text_content = f'''Bonjour,\n\nVous avez demandé la réinitialisation de votre mot de passe.\n\nCliquez sur le lien ci-dessous pour choisir un nouveau mot de passe :\n{reset_link}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.\n\n— L'équipe CRM'''
-            html_content = f'''<p>Bonjour,</p><p>Vous avez demandé la réinitialisation de votre mot de passe.</p><p>Cliquez sur le lien ci-dessous pour choisir un nouveau mot de passe :<br><a href="{reset_link}">Réinitialiser mon mot de passe</a></p><p>Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.</p><p>— L'équipe CRM</p>'''
+            subject = render_to_string('front/reset_password_subject.txt').strip()
+            html_content = render_to_string('front/reset_password_email.html', {
+                'reset_link': reset_link,
+                'user': commercial,
+            })
+            text_content = f"Pour réinitialiser votre mot de passe, cliquez sur ce lien : {reset_link}"
+            print("HTML CONTENT:", html_content)
             msg = EmailMultiAlternatives(subject, text_content, 'bznjamin.gillens@gmail.com', [email])
             msg.attach_alternative(html_content, "text/html")
             msg.send()
             reset_links.append(reset_link)
-        # Pour debug local, on affiche le dernier lien généré
         return render(request, 'front/reset_password_done.html', {'email': email, 'reset_link': reset_links[-1]})
     return render(request, 'front/reset_password.html')
 
@@ -116,6 +126,14 @@ def new_password(request):
 # 🏠 Dashboard
 @login_required
 def dashboard(request):
+    # --- Génération automatique des RDV à la demande (hors week-end) ---
+    today = date.today()
+    if today.weekday() < 5:  # 0=lundi, ..., 4=vendredi
+        from front.models import Rendezvous
+        deja_genere = Rendezvous.objects.filter(date_rdv=today, statut_rdv='a_venir').exists()
+        if not deja_genere:
+            generer_rendezvous_automatiques(today)
+    # --- Fin génération automatique ---
     commercial_id = request.session.get('commercial_id')
     commercial = Commercial.objects.get(id=commercial_id)
     now = timezone.now()
@@ -133,6 +151,81 @@ def dashboard(request):
             a_rappeler.append(rdv)
         else:
             a_venir.append(rdv)
+
+    # Ajout du compteur de rendez-vous validés par client
+    for rdv in visites_recentes:
+        last_rdv = Rendezvous.objects.filter(
+            client=rdv.client,
+            commercial=rdv.commercial,
+            statut_rdv='valide',
+            date_rdv__lt=rdv.date_rdv
+        ).order_by('-date_rdv', '-heure_rdv').first()
+        rdv.derniere_visite = last_rdv.date_rdv if last_rdv else None
+        
+        # Compteur de rendez-vous validés pour ce client
+        rdv.nb_rdv_valides = Rendezvous.objects.filter(
+            client=rdv.client,
+            commercial=rdv.commercial,
+            statut_rdv='valide'
+        ).count()
+        
+    for rdv in a_rappeler:
+        last_rdv = Rendezvous.objects.filter(
+            client=rdv.client,
+            commercial=rdv.commercial,
+            statut_rdv='valide',
+            date_rdv__lt=rdv.date_rdv
+        ).order_by('-date_rdv', '-heure_rdv').first()
+        rdv.derniere_visite = last_rdv.date_rdv if last_rdv else None
+        
+        # Compteur de rendez-vous validés pour ce client
+        rdv.nb_rdv_valides = Rendezvous.objects.filter(
+            client=rdv.client,
+            commercial=rdv.commercial,
+            statut_rdv='valide'
+        ).count()
+
+    # Préparation des données client de manière robuste
+    def prepare_client_data(rdv):
+        try:
+            client, adresse, client_type = get_client_and_adresse(rdv.client.id)
+            # Attacher les données client et adresse au rdv pour le template
+            rdv.client_data = client
+            rdv.adresse_data = adresse
+            rdv.client_type = client_type
+        except Exception as e:
+            # Fallback si get_client_and_adresse échoue
+            rdv.client_data = rdv.client
+            rdv.adresse_data = {
+                "adresse": getattr(rdv.client, 'adresse', ''),
+                "code_postal": getattr(rdv.client, 'code_postal', ''),
+                "ville": getattr(rdv.client, 'ville', ''),
+            }
+            rdv.client_type = "fallback"
+
+    for rdv in visites_recentes:
+        prepare_client_data(rdv)
+        rdv.adresse_principale = Adresse.objects.filter(client=rdv.client).first() if rdv.client else None
+    for rdv in a_venir:
+        prepare_client_data(rdv)
+        rdv.adresse_principale = Adresse.objects.filter(client=rdv.client).first() if rdv.client else None
+        # Ajout de l'attribut en_retard
+        if rdv.date_rdv and rdv.heure_rdv:
+            dt = datetime.combine(rdv.date_rdv, rdv.heure_rdv)
+            if timezone.is_naive(dt):
+                dt = timezone.make_aware(dt, timezone.get_current_timezone())
+            rdv.en_retard = dt < timezone.now()
+        else:
+            rdv.en_retard = False
+        # Ajout du compteur de rendez-vous validés pour ce client (comme les autres colonnes)
+        rdv.nb_rdv_valides = Rendezvous.objects.filter(
+            client=rdv.client,
+            commercial=rdv.commercial,
+            statut_rdv='valide'
+        ).count()
+    for rdv in a_rappeler:
+        prepare_client_data(rdv)
+        rdv.adresse_principale = Adresse.objects.filter(client=rdv.client).first() if rdv.client else None
 
     return render(request, 'front/dashboard.html', {
         'commercial': commercial,
@@ -156,9 +249,11 @@ def new_client(request):
                 'siret': request.POST.get('siret'),
                 'adresse': request.POST.get('adresse'),
                 'code_postal': request.POST.get('code_postal'),
+                'ville': request.POST.get('ville'),
                 'email': request.POST.get('email'),
                 'telephone': request.POST.get('telephone')
             }
+            request.session['show_success'] = True
             return redirect('/add-rdv?from=new-client')
 
         temp_data = request.session.get('client_temp') or {}
@@ -168,21 +263,29 @@ def new_client(request):
         siret = request.POST.get('siret') or temp_data.get('siret')
         adresse = request.POST.get('adresse') or temp_data.get('adresse')
         code_postal = request.POST.get('code_postal') or temp_data.get('code_postal')
+        ville = request.POST.get('ville') or temp_data.get('ville')
         email = request.POST.get('email') or temp_data.get('email')
         telephone = request.POST.get('telephone') or temp_data.get('telephone')
 
-        client = Client.objects.create(
+        client = FrontClient.objects.create(
             nom=nom,
             prenom=prenom,
-            entreprise=entreprise,
+            rs_nom=entreprise,
             siret=siret,
-            adresse=adresse,
-            code_postal=code_postal,
             email=email,
             telephone=telephone,
             commercial=commercial
         )
 
+        # Ajout : création de l'adresse liée
+        Adresse.objects.create(
+            client=client,
+            adresse=adresse,
+            code_postal=code_postal,
+            ville=ville
+        )
+
+        # Création d'un rendez-vous si besoin (après ajout manuel)
         rdv_temp = request.session.get('rdv_temp')
         if rdv_temp:
             Rendezvous.objects.create(
@@ -194,16 +297,25 @@ def new_client(request):
                 notes=rdv_temp.get('notes')
             )
 
+        # Nettoyage des données temporaires
         request.session.pop('client_temp', None)
         request.session.pop('rdv_temp', None)
 
-        return redirect('dashboard')
+        # Affichage notification succès puis redirection JS
+        return render(request, 'front/new_client.html', {
+            'client_temp': None,
+            'rdv_temp': None,
+            'success': True
+        })
 
+    # En GET, on récupère le flag de succès éventuel
+    success = request.GET.get('success') == '1'
     client_temp = request.session.get('client_temp')
     rdv_temp = request.session.get('rdv_temp')
     return render(request, 'front/new_client.html', {
         'client_temp': client_temp,
-        'rdv_temp': rdv_temp
+        'rdv_temp': rdv_temp,
+        'success': success
     })
 
 # ➕ Nouveau rendez-vous
@@ -218,7 +330,7 @@ def add_rdv(request):
     client_prefill = None
     if client_id_prefill:
         try:
-            client_prefill = ImportClientCorrected.objects.get(id=client_id_prefill)
+            client_prefill, adresse_prefill, client_type_prefill = get_client_and_adresse(client_id_prefill)
         except ImportClientCorrected.DoesNotExist:
             client_prefill = None
 
@@ -248,7 +360,7 @@ def add_rdv(request):
                 commercial = Commercial.objects.get(id=commercial_id)
 
             client_id = request.POST.get('client_id')
-            client = ImportClientCorrected.objects.get(id=client_id)
+            client, adresse, client_type = get_client_and_adresse(client_id)
 
             Rendezvous.objects.create(
                 client=client,
@@ -257,7 +369,8 @@ def add_rdv(request):
                 heure_rdv=request.POST.get('heure_rdv'),
                 objet=request.POST.get('objet'),
                 notes=request.POST.get('notes'),
-                statut_rdv='a_venir'  # Par défaut, à venir
+                statut_rdv='a_venir',  # Par défaut, à venir
+                rs_nom=client.rs_nom  # Ajouter le rs_nom du client
             )
 
             # Enregistrer l'activité dans le journal
@@ -266,6 +379,11 @@ def add_rdv(request):
                 action_type='RDV_AJOUTE',
                 description=f'Nouveau RDV ajouté pour {client.rs_nom}'
             )
+
+            # Ajout : si show_success dans la session, on revient sur new_client avec notification
+            if request.session.get('show_success'):
+                request.session.pop('show_success')
+                return redirect('/new-client?success=1')
 
             if role in ['responsable', 'admin']:
                 return redirect('dashboard_responsable')
@@ -340,7 +458,33 @@ def profil(request, commercial_id=None):
         commercial.prenom = request.POST.get('prenom') or commercial.prenom
         commercial.email = request.POST.get('email') or commercial.email
         commercial.telephone = request.POST.get('telephone') or commercial.telephone
+        # Gestion du switch absent
+        was_absent = commercial.is_absent
+        is_absent_now = bool(request.POST.get('is_absent'))
+        commercial.is_absent = is_absent_now
         commercial.save()
+
+        # Geler/dégeler les rendez-vous à venir si changement d'état
+        from .models import Rendezvous, ActivityLog
+        today = timezone.now().date()
+        if not was_absent and is_absent_now:
+            # Passage à absent : geler tous les RDV à venir
+            Rendezvous.objects.filter(commercial=commercial, statut_rdv='a_venir', date_rdv__gte=today).update(statut_rdv='gele')
+            # Log activité absence
+            ActivityLog.objects.create(
+                commercial=commercial,
+                action_type='ABSENCE_ON',
+                description=f"{commercial.prenom} {commercial.nom} s'est déclaré absent"
+            )
+        elif was_absent and not is_absent_now:
+            # Passage à présent : dégeler les RDV gelés à venir
+            Rendezvous.objects.filter(commercial=commercial, statut_rdv='gele', date_rdv__gte=today).update(statut_rdv='a_venir')
+            # Log activité retour
+            ActivityLog.objects.create(
+                commercial=commercial,
+                action_type='ABSENCE_OFF',
+                description=f"{commercial.prenom} {commercial.nom} est de retour (présent)"
+            )
 
         # Redirection appropriée
         if 'commercial_id' in request.resolver_match.kwargs:
@@ -356,11 +500,13 @@ def profil(request, commercial_id=None):
 
     # On passe une variable pour savoir si on peut éditer (le user peut éditer son profil, ou un responsable peut éditer un commercial)
     can_edit = (not commercial_id) or (request.session.get('role') in ['responsable', 'admin'])
+    is_profil_commercial = commercial_id is not None
 
     return render(request, 'front/profil.html', {
         'commercial': commercial, 
         'role': request.session.get('role'),
-        'can_edit': can_edit
+        'can_edit': can_edit,
+        'is_profil_commercial': is_profil_commercial,
     })
 
 # ❌ Supprimer le rdv temporaire
@@ -386,8 +532,8 @@ def update_statut(request, uuid, statut):
             rdv.date_statut = timezone.now()
             if commentaire.strip():
                 rdv.notes = commentaire  # (optionnel)
-                client = rdv.client
-                rs_nom = getattr(client, 'rs_nom', None) or getattr(client, 'nom', None) or ''
+                client, adresse, client_type = get_client_and_adresse(rdv.client.id)
+                rs_nom = adresse["adresse"] if adresse else getattr(rdv.client, 'rs_nom', None) or getattr(rdv.client, 'nom', None) or ''
                 commercial_id = request.session.get('commercial_id')
                 commercial = Commercial.objects.get(id=commercial_id) if commercial_id else None
                 CommentaireRdv.objects.create(
@@ -402,8 +548,8 @@ def update_statut(request, uuid, statut):
             rdv.date_statut = timezone.now()
             if commentaire.strip():
                 rdv.notes = commentaire  # (optionnel)
-                client = rdv.client
-                rs_nom = getattr(client, 'rs_nom', None) or getattr(client, 'nom', None) or ''
+                client, adresse, client_type = get_client_and_adresse(rdv.client.id)
+                rs_nom = adresse["adresse"] if adresse else getattr(rdv.client, 'rs_nom', None) or getattr(rdv.client, 'nom', None) or ''
                 commercial_id = request.session.get('commercial_id')
                 commercial = Commercial.objects.get(id=commercial_id) if commercial_id else None
                 CommentaireRdv.objects.create(
@@ -416,8 +562,8 @@ def update_statut(request, uuid, statut):
         elif statut == "commentaire":
             # On ajoute juste un commentaire sans changer le statut
             if commentaire.strip():
-                client = rdv.client
-                rs_nom = getattr(client, 'rs_nom', None) or getattr(client, 'nom', None) or ''
+                client, adresse, client_type = get_client_and_adresse(rdv.client.id)
+                rs_nom = adresse["adresse"] if adresse else getattr(rdv.client, 'rs_nom', None) or getattr(rdv.client, 'nom', None) or ''
                 commercial_id = request.session.get('commercial_id')
                 commercial = Commercial.objects.get(id=commercial_id) if commercial_id else None
                 CommentaireRdv.objects.create(
@@ -448,6 +594,13 @@ def update_statut(request, uuid, statut):
             )
 
         client = rdv.client
+        
+        # Calculer le nombre de RDV validés pour ce client
+        nb_rdv_valides = Rendezvous.objects.filter(
+            client__rs_nom=client.rs_nom,
+            statut_rdv='valide'
+        ).count()
+        
         # On récupère tous les champs utiles pour la carte
         return JsonResponse({
             'status': 'ok',
@@ -466,6 +619,7 @@ def update_statut(request, uuid, statut):
             'date': rdv.date_rdv.strftime('%d/%m/%Y'),
             'heure': rdv.heure_rdv.strftime('%H:%M'),
             'date_statut': rdv.date_statut.strftime('%d/%m/%Y %H:%M') if rdv.date_statut else '',
+            'nb_rdv_valides': nb_rdv_valides,
         })
     else:
         print("DEBUG : Méthode non autorisée pour update_statut")
@@ -479,7 +633,7 @@ def get_rdv_info(request, uuid):
         rdv = Rendezvous.objects.get(uuid=uuid)
         if not (request.user.is_superuser or (rdv.commercial and rdv.commercial.id == request.session.get('commercial_id'))):
             raise PermissionDenied("Vous n'avez pas le droit d'accéder à ce rendez-vous.")
-        client = rdv.client
+        client, adresse, client_type = get_client_and_adresse(rdv.client.id)
         # Récupérer les commentaires liés à ce rendez-vous
         commentaires = rdv.commentaires.order_by('date_creation').all()
         commentaires_data = [
@@ -498,12 +652,12 @@ def get_rdv_info(request, uuid):
                 'date': rdv.date_creation.strftime('%d/%m/%Y %H:%M')
             })
         return JsonResponse({
-            'entreprise': getattr(client, 'rs_nom', ''),
+            'entreprise': adresse["adresse"] if adresse else getattr(rdv.client, 'rs_nom', ''),
             'nom': getattr(client, 'prénom', ''),
             'prenom': getattr(client, 'prénom', ''),
-            'adresse': getattr(client, 'adresse', ''),
-            'code_postal': getattr(client, 'code_postal', ''),
-            'ville': getattr(client, 'ville', ''),
+            'adresse': adresse["adresse"] if adresse else getattr(client, 'adresse', ''),
+            'code_postal': adresse["code_postal"] if adresse else getattr(client, 'code_postal', ''),
+            'ville': adresse["ville"] if adresse else getattr(client, 'ville', ''),
             'telephone': getattr(client, 'telephone', ''),
             'email': getattr(client, 'e_mail', ''),
             'statut': getattr(client, 'statut', ''),
@@ -519,32 +673,62 @@ def client_file(request):
     per_page = int(request.GET.get('per_page', 50))
     page_number = request.GET.get('page', 1)
     role = request.session.get('role')
-    
-    # Récupérer la liste des commerciaux pour le sélecteur (uniquement pour les responsables/admins)
+
     commerciaux = None
     if role in ['responsable', 'admin']:
         commerciaux = Commercial.objects.filter(role='commercial')
 
-    # Filtrage des clients
-    clients_qs = ImportClientCorrected.objects.all()
-    selected_commercial = request.GET.get('commercial') # Le nom du commercial depuis l'URL
+    # Optimisation : Utiliser prefetch_related pour les adresses
+    clients_qs = FrontClient.objects.prefetch_related('adresses')
+    selected_commercial = request.GET.get('commercial')
 
-    if role in ['responsable', 'admin']:
-        if selected_commercial:
-            clients_qs = clients_qs.filter(commercial__iexact=selected_commercial)
-    else: # Pour un commercial normal, on filtre sur son propre nom
+    # Filtres personnalisés - Appliquer directement sur les querysets
+    if selected_commercial and role in ['responsable', 'admin']:
+        # Normalisation du filtre pour les responsables/admins
+        selected_commercial_normalise = selected_commercial.replace(' ', '').upper()
+        clients_qs = clients_qs.extra(
+            where=["REPLACE(UPPER(commercial), ' ', '') = %s"], params=[selected_commercial_normalise]
+        )
+    elif role not in ['responsable', 'admin']:
         commercial_nom = request.session.get('commercial_nom')
         if commercial_nom:
-            # Normalisation : suppression des espaces et mise en majuscules
             nom_normalise = commercial_nom.replace(' ', '').upper()
-            # On filtre tous les clients dont le champ commercial (après normalisation) correspond
-            clients_qs = clients_qs.extra(where=["REPLACE(UPPER(commercial), ' ', '') = %s"], params=[nom_normalise])
+            clients_qs = clients_qs.extra(
+                where=["REPLACE(UPPER(commercial), ' ', '') = %s"], params=[nom_normalise]
+            )
 
-    paginator = Paginator(clients_qs.order_by('rs_nom'), per_page)
+    filter_raison = request.GET.get('filterRaison')
+    if filter_raison:
+        clients_qs = clients_qs.filter(rs_nom__icontains=filter_raison)
+
+    # Construire les couples de manière optimisée
+    couples = []
+    for client in clients_qs:
+        adresses = list(client.adresses.all())
+        
+        # Appliquer les filtres d'adresse directement sur la liste
+        if request.GET.get('filterAdresse'):
+            adresses = [a for a in adresses if request.GET.get('filterAdresse').lower() in (a.adresse or '').lower()]
+        if request.GET.get('filterCP'):
+            adresses = [a for a in adresses if (a.code_postal or '').startswith(request.GET.get('filterCP'))]
+        if request.GET.get('filterVille'):
+            adresses = [a for a in adresses if request.GET.get('filterVille').lower() in (a.ville or '').lower()]
+        
+        # Ajouter les couples avec adresses filtrées
+        for adresse in adresses:
+            couples.append((client, adresse))
+        
+        # Si aucun filtre d'adresse et aucune adresse, ajouter le client sans adresse
+        if not any([request.GET.get('filterAdresse'), request.GET.get('filterCP'), request.GET.get('filterVille')]) and not adresses:
+            couples.append((client, None))
+
+    from django.core.paginator import Paginator
+    paginator = Paginator(couples, per_page)
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'front/Client_file.html', {
+    return render(request, 'front/client_file.html', {
         'page_obj': page_obj,
+        'clients_with_adresse': page_obj,
         'per_page': per_page,
         'paginator': paginator,
         'role': role,
@@ -568,13 +752,57 @@ def historique_rdv(request):
         elif rdv.statut_rdv == 'annule':
             a_rappeler.append(rdv)
             historique_general.append(rdv)
+        # Ajout de l'adresse principale du client
+        if rdv.client:
+            rdv.adresse_principale = Adresse.objects.filter(client=rdv.client).first()
+        else:
+            rdv.adresse_principale = None
     # On trie l'historique général par date décroissante (déjà fait par la requête)
+    for rdv in visites_recentes:
+        last_rdv = Rendezvous.objects.filter(
+            client=rdv.client,
+            commercial=rdv.commercial,
+            statut_rdv__in=['valide', 'annule'],
+            date_rdv__lt=rdv.date_rdv
+        ).order_by('-date_rdv', '-heure_rdv').first()
+        rdv.derniere_visite = last_rdv.date_rdv if last_rdv else None
+    for rdv in a_rappeler:
+        last_rdv = Rendezvous.objects.filter(
+            client=rdv.client,
+            commercial=rdv.commercial,
+            statut_rdv__in=['valide', 'annule'],
+            date_rdv__lt=rdv.date_rdv
+        ).order_by('-date_rdv', '-heure_rdv').first()
+        rdv.derniere_visite = last_rdv.date_rdv if last_rdv else None
+    for rdv in historique_general:
+        last_rdv = Rendezvous.objects.filter(
+            client=rdv.client,
+            commercial=rdv.commercial,
+            statut_rdv__in=['valide', 'annule'],
+            date_rdv__lt=rdv.date_rdv
+        ).order_by('-date_rdv', '-heure_rdv').first()
+        rdv.derniere_visite = last_rdv.date_rdv if last_rdv else None
+    # --- Détection filtre date actif pour badge ---
+    date_label = None
+    if 'date_debut' in request.GET and 'date_fin' in request.GET:
+        if request.GET['date_debut'] == request.GET['date_fin']:
+            date_label = f"Jour : {request.GET['date_debut']}"
+        else:
+            date_label = f"Période : {request.GET['date_debut']} au {request.GET['date_fin']}"
+    elif 'mois' in request.GET:
+        date_label = f"Mois : {request.GET['mois']}"
+    elif 'annee' in request.GET:
+        date_label = f"Année : {request.GET['annee']}"
+    elif 'semaine' in request.GET:
+        date_label = f"Semaine : {request.GET['semaine']}"
     return render(request, 'front/historique_rdv.html', {
         'commercial': commercial,
         'visites_recentes': visites_recentes,
         'a_rappeler': a_rappeler,
         'historique_general': historique_general,
         'role': request.session.get('role'),
+        'date_label': date_label,
+        'request': request,
     })    
 
 @login_required
@@ -616,16 +844,16 @@ def historique_rdv_resp(request):
                     )
                 
             elif statut == 'annule':
-                # Pour les RDV annulés, filtrer sur date_statut (date d'annulation)
+                # Pour les RDV annulés, filtrer sur date_rdv (date prévue)
                 if date_debut_obj:
                     rdvs_archives = rdvs_archives.filter(
                         statut_rdv='annule',
-                        date_statut__date__gte=date_debut_obj
+                        date_rdv__gte=date_debut_obj
                     )
                 if date_fin_obj:
                     rdvs_archives = rdvs_archives.filter(
                         statut_rdv='annule',
-                        date_statut__date__lt=date_fin_obj
+                        date_rdv__lt=date_fin_obj
                     )
                 
             elif statut == 'a_venir':
@@ -664,55 +892,94 @@ def historique_rdv_resp(request):
             # En cas d'erreur de conversion de date, on ignore le filtrage
             pass
     
-    visites_recentes = []
-    a_rappeler = []
-    historique_general = []
-    
-    for rdv in rdvs_archives:
-        if statut and statut != 'all' and rdv.statut_rdv != statut:
-            continue
-        if rdv.statut_rdv == 'valide':
-            visites_recentes.append(rdv)
-            historique_general.append(rdv)
-        elif rdv.statut_rdv == 'annule':
-            a_rappeler.append(rdv)
-            historique_general.append(rdv)
-    
-    # Tri du plus récent au plus ancien
-    visites_recentes = sorted(visites_recentes, key=lambda r: (r.date_rdv, r.heure_rdv), reverse=True)
-    a_rappeler = sorted(a_rappeler, key=lambda r: (r.date_rdv, r.heure_rdv), reverse=True)
+    # DEBUG : Afficher toutes les dates de RDV annulés avant filtrage
+    print('--- RDV annulés AVANT filtrage ---')
+    for rdv in Rendezvous.objects.filter(statut_rdv='annule').order_by('date_rdv'):
+        print(f"Annulé : {rdv.date_rdv} (date_statut={rdv.date_statut})")
 
-    # Ajout de la date de dernière visite pour chaque rdv
-    for rdv in historique_general:
-        last_rdv = Rendezvous.objects.filter(
-            client=rdv.client,
-            commercial=rdv.commercial,
-            statut_rdv__in=['valide', 'annule'],
-            date_rdv__lt=rdv.date_rdv
-        ).order_by('-date_rdv', '-heure_rdv').first()
-        rdv.derniere_visite = last_rdv.date_rdv if last_rdv else None
-    for rdv in visites_recentes:
-        last_rdv = Rendezvous.objects.filter(
-            client=rdv.client,
-            commercial=rdv.commercial,
-            statut_rdv__in=['valide', 'annule'],
-            date_rdv__lt=rdv.date_rdv
-        ).order_by('-date_rdv', '-heure_rdv').first()
-        rdv.derniere_visite = last_rdv.date_rdv if last_rdv else None
-    for rdv in a_rappeler:
-        last_rdv = Rendezvous.objects.filter(
-            client=rdv.client,
-            commercial=rdv.commercial,
-            statut_rdv__in=['valide', 'annule'],
-            date_rdv__lt=rdv.date_rdv
-        ).order_by('-date_rdv', '-heure_rdv').first()
-        rdv.derniere_visite = last_rdv.date_rdv if last_rdv else None
+    # Correction : si aucun filtre, on transmet tout
+    if not statut and not date_debut and not date_fin:
+        visites_recentes = [r for r in rdvs_archives if r.statut_rdv == 'valide']
+        a_rappeler = [r for r in rdvs_archives if r.statut_rdv == 'annule']
+        historique_general = [r for r in rdvs_archives if r.statut_rdv in ['valide', 'annule']]
+    else:
+        visites_recentes = []
+        a_rappeler = []
+        historique_general = []
+        for rdv in rdvs_archives:
+            if statut and statut != 'all' and rdv.statut_rdv != statut:
+                continue
+            if rdv.statut_rdv == 'valide':
+                visites_recentes.append(rdv)
+                historique_general.append(rdv)
+            elif rdv.statut_rdv == 'annule':
+                a_rappeler.append(rdv)
+                historique_general.append(rdv)
+            # Ajout de l'adresse principale du client
+            if rdv.client:
+                rdv.adresse_principale = Adresse.objects.filter(client=rdv.client).first()
+            else:
+                rdv.adresse_principale = None
+    
+    # DEBUG : Afficher toutes les dates de RDV annulés après filtrage
+    print('--- RDV annulés APRES filtrage ---')
+    for rdv in rdvs_archives.filter(statut_rdv='annule').order_by('date_rdv'):
+        print(f"Annulé filtré : {rdv.date_rdv} (date_statut={rdv.date_statut})")
+
+    # Ajout systématique de l'adresse principale pour chaque rdv (sécurisé)
+    for rdv in set(visites_recentes + a_rappeler + historique_general):
+        if not hasattr(rdv, 'adresse_principale') or rdv.adresse_principale is None:
+            rdv.adresse_principale = Adresse.objects.filter(client=rdv.client).first() if getattr(rdv, 'client', None) else None
+
+    # Tri spécifique selon l'onglet
+    visites_recentes = sorted(visites_recentes, key=lambda r: (r.date_statut or r.date_rdv, r.heure_rdv), reverse=True)
+    a_rappeler = sorted(a_rappeler, key=lambda r: (r.date_statut or r.date_rdv, r.heure_rdv), reverse=True)
+    # Pour l'historique général :
+    def tri_pertinent(r):
+        if r.statut_rdv in ['valide', 'annule'] and r.date_statut:
+            return (r.date_statut, r.heure_rdv)
+        return (r.date_rdv, r.heure_rdv)
+    historique_general = sorted(historique_general, key=tri_pertinent, reverse=True)
+
+    # Créer le label pour le badge de filtre
+    date_label = None
+    if date_debut and date_fin:
+        date_label = f"Du {date_debut} au {date_fin}"
+    elif date_debut:
+        date_label = f"À partir du {date_debut}"
+    elif date_fin:
+        date_label = f"Jusqu'au {date_fin}"
+    
+    # Créer le label pour le badge de statut
+    statut_label = None
+    if statut:
+        if statut == 'valide':
+            statut_label = "Validés"
+        elif statut == 'annule':
+            statut_label = "Annulés"
+        elif statut == 'a_venir':
+            statut_label = "À venir"
+    
+    # Calcul de la dernière visite validée antérieure pour affichage dans le template
+    for rdv in set(visites_recentes + a_rappeler + historique_general):
+        try:
+            last_rdv = Rendezvous.objects.filter(
+                client=rdv.client,
+                commercial=rdv.commercial,
+                statut_rdv='valide',
+                date_rdv__lt=rdv.date_rdv
+            ).order_by('-date_rdv', '-heure_rdv').first()
+            rdv.derniere_visite = last_rdv.date_rdv if last_rdv else None
+        except Exception:
+            rdv.derniere_visite = None
 
     return render(request, 'front/historique_rdv_resp.html', {
         'visites_recentes': visites_recentes,
         'a_rappeler': a_rappeler,
         'historique_general': historique_general,
         'role': request.session.get('role'),
+        'date_label': date_label,
+        'statut_label': statut_label,
     })
 
 @csrf_exempt  # À remplacer par @login_required + gestion CSRF si besoin
@@ -720,7 +987,7 @@ def update_client(request, client_id):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            client = ImportClientCorrected.objects.get(pk=client_id)
+            client, adresse, client_type = get_client_and_adresse(client_id)
             client.adresse = data.get("adresse", client.adresse)
             client.code_postal = data.get("code_postal", client.code_postal)
             client.ville = data.get("ville", client.ville)
@@ -735,7 +1002,8 @@ def update_client(request, client_id):
 def satisfaction_b2b(request):
     note_recommandation_choices = list(range(1, 11))
     rs_nom = request.GET.get('rs_nom') or request.POST.get('rs_nom')
-    commercial_id = request.GET.get('commercial_id') or request.POST.get('commercial_id')
+    # Récupérer l'ID du commercial depuis la session au lieu de l'URL
+    commercial_id = request.session.get('commercial_id')
     rdv_uuid = request.GET.get('rdv_id') or request.POST.get('rdv_id')
 
     if request.method == 'POST':
@@ -777,6 +1045,15 @@ def satisfaction_b2b(request):
         if rdv and not (request.user.is_superuser or (rdv.commercial and rdv.commercial.id == request.session.get('commercial_id'))):
             raise PermissionDenied("Vous n'avez pas le droit d'accéder à ce rendez-vous.")
 
+        # Fonction helper pour convertir en int si possible
+        def to_int_or_none(value):
+            if value and value.strip():
+                try:
+                    return int(value)
+                except (ValueError, TypeError):
+                    return None
+            return None
+
         # Création de l'objet SatisfactionB2B avec toutes les réponses du formulaire
         SatisfactionB2B.objects.create(
             pdf_base64=pdf_b64,
@@ -784,7 +1061,7 @@ def satisfaction_b2b(request):
             commercial=commercial,
             rdv=rdv,
             satisfaction_qualite_pieces=data.get('qualite_satisfait'),
-            note_qualite_pieces=data.get('note_qualite_globale'),
+            note_qualite_pieces=to_int_or_none(data.get('note_qualite_globale')),
             probleme_qualite_piece=data.get('probleme_qualite'),
             type_probleme_qualite_piece=data.get('type_probleme'),
             satisfaction_delai_livraison=data.get('delai_satisfait'),
@@ -792,17 +1069,17 @@ def satisfaction_b2b(request):
             delai_livraison_ideal=data.get('delai_ideal'),
             delai_livraison_ideal_autre=data.get('delai_ideal_autre'),
             recours_sav=data.get('recours_sav'),
-            note_sav=data.get('note_sav'),
+            note_sav=to_int_or_none(data.get('note_sav')),
             piece_non_dispo=data.get('pieces_non_dispo'),
             satisfaction_experience_rubio=data.get('experience_satisfait'),
             personnel_joignable=data.get('personnel_joignable'),
-            note_accueil=data.get('note_accueil'),
+            note_accueil=to_int_or_none(data.get('note_accueil')),
             commande_simple=data.get('commande_simple'),
             moyen_commande=data.get('moyen_commande'),
             moyen_commande_autre=data.get('moyen_commande_autre'),
             suggestion=data.get('suggestions'),
             motivation_commande=data.get('motivation_commande'),
-            note_recommandation=data.get('note_recommandation'),
+            note_recommandation=to_int_or_none(data.get('note_recommandation')),
         )
         return render(request, 'front/satisfaction_b2b.html', {'success': True, 'note_recommandation_choices': note_recommandation_choices, 'rs_nom': rs_nom})
     return render(request, 'front/satisfaction_b2b.html', {'note_recommandation_choices': note_recommandation_choices, 'rs_nom': rs_nom})    
@@ -813,13 +1090,21 @@ def check_satisfaction_exists(request, uuid):
     if rdv and not (request.user.is_superuser or (rdv.commercial and rdv.commercial.id == request.session.get('commercial_id'))):
         raise PermissionDenied("Vous n'avez pas le droit d'accéder à ce rendez-vous.")
     exists = False
+    satisfaction_uuid = None
     if rdv:
-        exists = SatisfactionB2B.objects.filter(rdv=rdv).exists()
-    return JsonResponse({'exists': exists})
+        satisfaction = SatisfactionB2B.objects.filter(rdv=rdv).first()
+        if satisfaction:
+            exists = True
+            satisfaction_uuid = satisfaction.uuid
+    return JsonResponse({'exists': exists, 'satisfaction_uuid': satisfaction_uuid})
 
 def download_satisfaction_pdf(request, uuid):
-    from .models import SatisfactionB2B, Rendezvous
-    rdv = Rendezvous.objects.filter(uuid=uuid).first()
+    from .models import SatisfactionB2B
+    satisfaction = SatisfactionB2B.objects.filter(uuid=uuid).first()
+    if not satisfaction or not satisfaction.pdf_base64:
+        raise Http404("PDF non trouvé")
+    # Sécurité : vérifier que l'utilisateur a le droit d'accéder à ce PDF
+    rdv = satisfaction.rdv if hasattr(satisfaction, 'rdv') else None
     role = request.session.get('role')
     if rdv and not (
         request.user.is_superuser or
@@ -827,9 +1112,6 @@ def download_satisfaction_pdf(request, uuid):
         (role in ['responsable', 'admin'])
     ):
         raise PermissionDenied("Vous n'avez pas le droit d'accéder à ce rendez-vous.")
-    satisfaction = SatisfactionB2B.objects.filter(rdv=rdv).first() if rdv else None
-    if not satisfaction or not satisfaction.pdf_base64:
-        raise Http404("PDF non trouvé")
     pdf_bytes = base64.b64decode(satisfaction.pdf_base64)
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="satisfaction_{uuid}.pdf"'
@@ -853,6 +1135,35 @@ def get_client_comments(request, client_id):
     return JsonResponse({'commentaires': data})
 
 @login_required
+def get_client_rdv(request, client_id):
+    statut = request.GET.get('statut')
+    qs = Rendezvous.objects.filter(client_id=client_id)
+    if statut:
+        qs = qs.filter(statut_rdv=statut)
+    rdvs = qs.order_by('-date_rdv', '-heure_rdv')
+    
+    # Récupérer le nom du client
+    client = FrontClient.objects.get(id=client_id)
+    client_name = f"{client.civilite or ''} {client.rs_nom or '(sans raison sociale)'}".strip()
+    
+    data = []
+    for rdv in rdvs:
+        data.append({
+            'date_rdv': rdv.date_rdv.strftime('%d/%m/%Y'),
+            'heure_rdv': rdv.heure_rdv.strftime('%H:%M') if rdv.heure_rdv else '',
+            'statut_rdv': rdv.statut_rdv,
+            'commentaire': rdv.notes or '',
+            'commercial': str(rdv.commercial),
+            'objet': rdv.objet or '',
+        })
+    
+    return JsonResponse({
+        'success': True,
+        'rdvs': data,
+        'client_name': client_name
+    })
+
+@login_required
 def dashboard_responsable(request):
     # S'assurer que seul un responsable ou admin peut voir cette page
     role = request.session.get('role')
@@ -863,10 +1174,22 @@ def dashboard_responsable(request):
 
     # Récupérer le dernier RDV pour chaque commercial
     for commercial in commerciaux:
-        dernier_rdv = Rendezvous.objects.filter(
-            commercial=commercial, 
+        # On ne veut que les RDV validés ou annulés ET déjà passés
+        now = timezone.now()
+        # On combine date et heure pour comparer à maintenant
+        rdvs = Rendezvous.objects.filter(
+            commercial=commercial,
             statut_rdv__in=['valide', 'annule']
-        ).order_by('-date_rdv', '-heure_rdv').first()
+        )
+        dernier_rdv = None
+        for rdv in rdvs.order_by('-date_rdv', '-heure_rdv'):
+            from datetime import datetime
+            dt = datetime.combine(rdv.date_rdv, rdv.heure_rdv)
+            if timezone.is_naive(dt):
+                dt = timezone.make_aware(dt, timezone.get_current_timezone())
+            if dt <= now:
+                dernier_rdv = rdv
+                break
         commercial.dernier_rdv = dernier_rdv
         if dernier_rdv:
             satisfaction_pdf = SatisfactionB2B.objects.filter(rdv=dernier_rdv).first()
@@ -878,20 +1201,45 @@ def dashboard_responsable(request):
     latest_activities = ActivityLog.objects.all()[:5]
 
     # Calculer les moyennes de satisfaction
-    satisfaction_data = SatisfactionB2B.objects.all()
-    if satisfaction_data.exists():
-        moyenne_qualite = satisfaction_data.aggregate(Avg('note_qualite_pieces'))['note_qualite_pieces__avg'] or 0
-        moyenne_sav = satisfaction_data.aggregate(Avg('note_sav'))['note_sav__avg'] or 0
-        moyenne_accueil = satisfaction_data.aggregate(Avg('note_accueil'))['note_accueil__avg'] or 0
-        moyenne_recommandation = satisfaction_data.aggregate(Avg('note_recommandation'))['note_recommandation__avg'] or 0
+    satisfactions = SatisfactionB2B.objects.all()
+    if satisfactions.exists():
+        # Calcul des moyennes pour chaque type de note
+        avg_qualite = satisfactions.aggregate(Avg('note_qualite_pieces'))['note_qualite_pieces__avg'] or 0
+        avg_sav = satisfactions.aggregate(Avg('note_sav'))['note_sav__avg'] or 0
+        avg_accueil = satisfactions.aggregate(Avg('note_accueil'))['note_accueil__avg'] or 0
+        avg_recommandation = satisfactions.aggregate(Avg('note_recommandation'))['note_recommandation__avg'] or 0
         
         # Normaliser les notes sur 5 vers une échelle de 10
-        moyenne_qualite = round(moyenne_qualite * 2, 2)
-        moyenne_sav = round(moyenne_sav * 2, 2)
-        moyenne_accueil = round(moyenne_accueil * 2, 2)
+        avg_qualite_normalisee = avg_qualite * 2
+        avg_sav_normalisee = avg_sav * 2
+        avg_accueil_normalisee = avg_accueil * 2
         # La recommandation est déjà sur 10, pas besoin de conversion
+        
+        # Calculer la moyenne globale sur 10
+        moyenne_globale = (avg_qualite_normalisee + avg_sav_normalisee + avg_accueil_normalisee + avg_recommandation) / 4
+        
+        satisfaction_data = {
+            'total_responses': satisfactions.count(),
+            'average_satisfaction': round(moyenne_globale, 1),
+            'satisfaction_percentage': round(moyenne_globale * 10),  # Multiplier par 10 pour avoir le pourcentage
+            'trend': 'neutral'  # 'up', 'down', 'neutral'
+        }
+        
+        # Déterminer la tendance
+        if moyenne_globale >= 8:
+            satisfaction_data['trend'] = 'up'
+        elif moyenne_globale < 6:
+            satisfaction_data['trend'] = 'down'
+        else:
+            satisfaction_data['trend'] = 'neutral'
     else:
-        moyenne_qualite = moyenne_sav = moyenne_accueil = moyenne_recommandation = 0
+        satisfaction_data = {
+            'total_responses': 0,
+            'average_satisfaction': 0,
+            'satisfaction_percentage': 0,
+            'trend': 'neutral'
+        }
+        moyenne_globale = 0
 
     chart_data = {
         "labels": ["Qualité pièces", "SAV", "Accueil", "Recommandation"],
@@ -899,10 +1247,10 @@ def dashboard_responsable(request):
             {
                 "label": "Moyenne des notes",
                 "data": [
-                    moyenne_qualite,
-                    moyenne_sav,
-                    moyenne_accueil,
-                    moyenne_recommandation
+                    avg_qualite_normalisee,
+                    avg_sav_normalisee,
+                    avg_accueil_normalisee,
+                    avg_recommandation
                 ],
                 "backgroundColor": [
                     "rgba(229, 57, 53, 0.6)",
@@ -922,8 +1270,13 @@ def dashboard_responsable(request):
         ]
     }
 
+    # Récupérer l'utilisateur connecté
+    commercial_id = request.session.get('commercial_id')
+    user_commercial = Commercial.objects.get(id=commercial_id)
+    
     context = {
         'commerciaux': commerciaux,
+        'user_commercial': user_commercial,  # Ajout de l'utilisateur connecté
         'stats_satisfaction_chart': json.dumps(chart_data),
         'latest_activities': latest_activities,
         'conversion_labels': json.dumps([f"{c.prenom} {c.nom}" for c in commerciaux]),
@@ -939,6 +1292,7 @@ def api_satisfaction_stats(request):
     commercial_id = request.GET.get('commercial_id')
     start_date_str = request.GET.get('start_date')
     end_date_str = request.GET.get('end_date')
+    period = request.GET.get('period')
     granularity = request.GET.get('granularity', 'mois')
 
     queryset = SatisfactionB2B.objects.all()
@@ -953,6 +1307,54 @@ def api_satisfaction_stats(request):
         end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
         queryset = queryset.filter(date_soumission__date__range=[start_date, end_date])
 
+    # Si aucun filtre de période n'est appliqué, retourner le format initial
+    if not start_date_str and not end_date_str and not period:
+        # Calculer les moyennes globales
+        if queryset.exists():
+            moyenne_qualite = queryset.aggregate(Avg('note_qualite_pieces'))['note_qualite_pieces__avg'] or 0
+            moyenne_sav = queryset.aggregate(Avg('note_sav'))['note_sav__avg'] or 0
+            moyenne_accueil = queryset.aggregate(Avg('note_accueil'))['note_accueil__avg'] or 0
+            moyenne_recommandation = queryset.aggregate(Avg('note_recommandation'))['note_recommandation__avg'] or 0
+            
+            # Normaliser les notes sur 5 vers une échelle de 10
+            moyenne_qualite = round(moyenne_qualite * 2, 2)
+            moyenne_sav = round(moyenne_sav * 2, 2)
+            moyenne_accueil = round(moyenne_accueil * 2, 2)
+            # La recommandation est déjà sur 10, pas besoin de conversion
+        else:
+            moyenne_qualite = moyenne_sav = moyenne_accueil = moyenne_recommandation = 0
+
+        chart_data = {
+            "labels": ["Qualité pièces", "SAV", "Accueil", "Recommandation"],
+            "datasets": [
+                {
+                    "label": "Moyenne des notes",
+                    "data": [
+                        moyenne_qualite,
+                        moyenne_sav,
+                        moyenne_accueil,
+                        moyenne_recommandation
+                    ],
+                    "backgroundColor": [
+                        "rgba(229, 57, 53, 0.6)",
+                        "rgba(255, 138, 101, 0.6)", 
+                        "rgba(255, 209, 128, 0.6)",
+                        "rgba(120, 144, 156, 0.6)"
+                    ],
+                    "borderColor": [
+                        "rgba(229, 57, 53, 1)",
+                        "rgba(255, 138, 101, 1)",
+                        "rgba(255, 209, 128, 1)", 
+                        "rgba(120, 144, 156, 1)"
+                    ],
+                    "borderWidth": 1,
+                    "borderRadius": 5
+                }
+            ]
+        }
+        return JsonResponse(chart_data)
+
+    # Sinon, retourner les données groupées par période
     # Groupement dynamique
     if granularity == 'jour':
         trunc = TruncDay('date_soumission')
@@ -1015,7 +1417,7 @@ def get_last_rdv_commercial(request, commercial_id):
         statut_rdv__in=['valide', 'annule']
     ).order_by('-date_rdv', '-heure_rdv').first()
     if dernier_rdv:
-        client = dernier_rdv.client
+        client, adresse, client_type = get_client_and_adresse(dernier_rdv.client.id)
         return JsonResponse({
             'statut': dernier_rdv.statut_rdv,
             'date': dernier_rdv.date_rdv.strftime('%d/%m/%Y'),
@@ -1029,9 +1431,13 @@ def get_last_rdv_commercial(request, commercial_id):
 @login_required
 def api_rdv_counters(request):
     now = timezone.now()
+    # Pour les RDV réalisés et annulés, on garde le filtre par mois (historique)
     total_realise = Rendezvous.objects.filter(statut_rdv='valide', date_rdv__year=now.year, date_rdv__month=now.month).count()
-    total_avenir = Rendezvous.objects.filter(statut_rdv='a_venir', date_rdv__year=now.year, date_rdv__month=now.month).count()
     total_annule = Rendezvous.objects.filter(statut_rdv='annule', date_rdv__year=now.year, date_rdv__month=now.month).count()
+    
+    # Pour les RDV à venir, on affiche tous les futurs (pas de filtre par mois)
+    total_avenir = Rendezvous.objects.filter(statut_rdv='a_venir', date_rdv__gte=now.date()).count()
+    
     return JsonResponse({
         'total_realise': total_realise,
         'total_avenir': total_avenir,
@@ -1053,10 +1459,10 @@ def api_rdvs_a_venir(request):
     rdvs = Rendezvous.objects.filter(commercial_id=commercial_id, statut_rdv='a_venir').order_by('date_rdv', 'heure_rdv')
     data = []
     for rdv in rdvs:
-        client = rdv.client
+        client, adresse, client_type = get_client_and_adresse(rdv.client.id)
         data.append({
             'uuid': str(rdv.uuid),
-            'client': str(client.rs_nom) if client else '',
+            'client': adresse["adresse"] if adresse else getattr(rdv.client, 'rs_nom', ''),
             'civilite': getattr(client, 'civilite', ''),
             'rs_nom': getattr(client, 'rs_nom', ''),
             'date': rdv.date_rdv.strftime('%d/%m/%Y'),
@@ -1065,6 +1471,22 @@ def api_rdvs_a_venir(request):
             'notes': rdv.notes,
         })
     return JsonResponse({'rdvs': data})
+
+@login_required
+@require_GET
+def api_rdv_counters_by_client(request):
+    """API pour récupérer le nombre de RDV validés pour un client spécifique"""
+    rs_nom = request.GET.get('rs_nom', '').strip()
+    if not rs_nom:
+        return JsonResponse({'nb_rdv_valides': 0})
+    
+    # Compter les RDV validés pour ce client
+    nb_rdv_valides = Rendezvous.objects.filter(
+        client__rs_nom=rs_nom,
+        statut_rdv='valide'
+    ).count()
+    
+    return JsonResponse({'nb_rdv_valides': nb_rdv_valides})
 
 @require_GET
 @login_required
@@ -1077,12 +1499,12 @@ def api_clients_by_commercial(request):
         # On prend le nom de code (ex: "Commercial 1") et on supprime les espaces
         commercial_name = commercial.commercial.replace(' ', '').strip()
         # On cherche les clients avec ce nom de code (insensible à la casse)
-        clients = ImportClientCorrected.objects.filter(commercial__iexact=commercial_name)
+        clients = FrontClient.objects.filter(commercial__iexact=commercial_name)
         data = [
             {
                 'id': client.id,
                 'nom': client.rs_nom or '',
-                'prenom': client.prénom or ''
+                'prenom': client.prenom or ''
             }
             for client in clients
         ]
@@ -1098,22 +1520,43 @@ def import_clients_excel(request):
             df = pd.read_excel(excel_file)
             commercial_id = request.session.get('commercial_id')
             clients = []
+            adresses_data = []
+            # On prépare les objets FrontClient sans les enregistrer tout de suite
             for _, row in df.iterrows():
-                clients.append(FrontClient(
+                client = FrontClient(
                     nom=row.get('nom', ''),
                     prenom=row.get('prenom', ''),
-                    entreprise=row.get('entreprise', ''),
-                    siret=row.get('siret', ''),
-                    adresse=row.get('adresse', ''),
-                    code_postal=row.get('code_postal', ''),
-                    email=row.get('email', ''),
+                    civilite=row.get('civilite', ''),
+                    rs_nom=row.get('rs_nom', ''),
                     telephone=row.get('telephone', ''),
+                    statut=row.get('statut', ''),
+                    en_compte=row.get('en_compte', False) in [True, 'True', '1', 1, 'oui', 'Oui', 'OUI'],
+                    actif=True,
+                    code_comptable=row.get('code_comptable', ''),
+                    email=row.get('email', ''),
+                    email_comptabilite=row.get('email_comptabilite', ''),
+                    siret=row.get('siret', ''),
                     date_creation=datetime.now(),
                     commercial_id=commercial_id,
                     commentaires=row.get('commentaires', ''),
-                ))
+                    commercial=row.get('commercial', ''),
+                )
+                clients.append(client)
+            # Création en base
             FrontClient.objects.bulk_create(clients)
-            return JsonResponse({'message': f'Import réussi ({len(clients)} clients)'})
+            # On récupère les clients créés (ordre inverse d'insertion)
+            created_clients = list(FrontClient.objects.order_by('-id')[:len(clients)][::-1])
+            for i, client in enumerate(created_clients):
+                row = df.iloc[i]
+                adresse = Adresse(
+                    client=client,
+                    adresse=row.get('adresse', ''),
+                    code_postal=row.get('code_postal', ''),
+                    ville=row.get('ville', ''),
+                )
+                adresses_data.append(adresse)
+            Adresse.objects.bulk_create(adresses_data)
+            return JsonResponse({'message': f'Import réussi ({len(clients)} clients, {len(adresses_data)} adresses)'})
         except Exception as e:
             return JsonResponse({'message': f'Erreur lors de l\'import : {e}'}, status=400)
     return JsonResponse({'message': 'Aucun fichier reçu'}, status=400)
@@ -1136,13 +1579,147 @@ def fiche_commercial_view(request, commercial_id):
     commercial = get_object_or_404(Commercial, id=commercial_id)
     rdvs = Rendezvous.objects.filter(commercial=commercial).select_related('client').order_by('-date_rdv')
 
-    visites_recentes = [r for r in rdvs if r.statut_rdv == 'valide' and r.date_rdv <= timezone.now().date()]
-    visites_a_venir = [r for r in rdvs if r.date_rdv > timezone.now().date()]
+    # Filtrer les rendez-vous par statut ET date
+    now = timezone.now().date()
+    visites_recentes = [r for r in rdvs if r.statut_rdv == 'valide' and r.date_rdv <= now]
+    visites_a_venir = [r for r in rdvs if r.statut_rdv == 'a_venir' and r.date_rdv >= now]
     a_rappeler = [r for r in rdvs if r.statut_rdv == 'annule']
 
     total_realise = len(visites_recentes)
     total_avenir = len(visites_a_venir)
     total_annule = len(a_rappeler)
+
+    # Ajout du compteur de rendez-vous validés pour chaque rdv (comme sur le dashboard)
+    for rdv in visites_recentes + a_rappeler:
+        rdv.nb_rdv_valides = Rendezvous.objects.filter(
+            client=rdv.client,
+            commercial=rdv.commercial,
+            statut_rdv='valide'
+        ).count()
+
+    # Calcul des données de satisfaction client
+    satisfactions = SatisfactionB2B.objects.filter(commercial=commercial)
+    satisfaction_data = {
+        'total_responses': satisfactions.count(),
+        'average_satisfaction': 0,
+        'satisfaction_percentage': 0,
+        'trend': 'neutral',  # 'up', 'down', 'neutral'
+        'monthly_comparison': 0,
+        'yearly_comparison': 0,
+        'current_month_score': 0,
+        'previous_month_score': 0,
+        'current_year_score': 0,
+        'previous_year_score': 0
+    }
+    
+    if satisfactions.exists():
+        # Utiliser le nouveau score hybride au lieu de l'ancien calcul
+        from .utils import calculate_comprehensive_satisfaction_score
+        
+        # Calculer le score hybride pour chaque satisfaction
+        hybrid_scores = []
+        for satisfaction in satisfactions:
+            try:
+                score = calculate_comprehensive_satisfaction_score(satisfaction)
+                hybrid_scores.append(score)
+            except Exception as e:
+                # En cas d'erreur, utiliser le score hybride stocké en base
+                if satisfaction.score_hybride:
+                    hybrid_scores.append(float(satisfaction.score_hybride))
+                else:
+                    # Fallback sur l'ancien système
+                    avg_qualite = satisfaction.note_qualite_pieces or 0
+                    avg_sav = satisfaction.note_sav or 0
+                    avg_accueil = satisfaction.note_accueil or 0
+                    avg_recommandation = satisfaction.note_recommandation or 0
+                    
+                    if any([avg_qualite, avg_sav, avg_accueil, avg_recommandation]):
+                        avg_qualite_normalisee = avg_qualite * 2
+                        avg_sav_normalisee = avg_sav * 2
+                        avg_accueil_normalisee = avg_accueil * 2
+                        moyenne_globale = (avg_qualite_normalisee + avg_sav_normalisee + avg_accueil_normalisee + avg_recommandation) / 4
+                        hybrid_scores.append(moyenne_globale)
+        
+        # Calculer la moyenne des scores hybrides
+        if hybrid_scores:
+            moyenne_globale = sum(hybrid_scores) / len(hybrid_scores)
+        else:
+            moyenne_globale = 0
+        
+        satisfaction_data['average_satisfaction'] = round(moyenne_globale, 1)
+        satisfaction_data['satisfaction_percentage'] = round(moyenne_globale * 10)  # Multiplier par 10 pour avoir le pourcentage
+        
+        # Calcul des comparaisons mensuelles et annuelles
+        from datetime import datetime, timedelta
+        # from django.utils import timezone  # SUPPRIMÉ car déjà importé en haut
+        
+        now = timezone.now()
+        
+        # Périodes pour les comparaisons
+        current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        previous_month_start = (current_month_start - timedelta(days=1)).replace(day=1)
+        previous_month_end = current_month_start - timedelta(microseconds=1)
+        
+        current_year_start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        previous_year_start = current_year_start.replace(year=current_year_start.year - 1)
+        previous_year_end = current_year_start - timedelta(microseconds=1)
+        
+        # Calcul des scores par période
+        def calculate_period_score(satisfactions_period):
+            if not satisfactions_period.exists():
+                return 0
+            
+            period_scores = []
+            for satisfaction in satisfactions_period:
+                try:
+                    score = calculate_comprehensive_satisfaction_score(satisfaction)
+                    period_scores.append(score)
+                except Exception as e:
+                    if satisfaction.score_hybride:
+                        period_scores.append(float(satisfaction.score_hybride))
+            
+            return sum(period_scores) / len(period_scores) if period_scores else 0
+        
+        # Scores par période
+        current_month_satisfactions = satisfactions.filter(date_soumission__gte=current_month_start)
+        previous_month_satisfactions = satisfactions.filter(
+            date_soumission__gte=previous_month_start,
+            date_soumission__lte=previous_month_end
+        )
+        
+        current_year_satisfactions = satisfactions.filter(date_soumission__gte=current_year_start)
+        previous_year_satisfactions = satisfactions.filter(
+            date_soumission__gte=previous_year_start,
+            date_soumission__lte=previous_year_end
+        )
+        
+        # Calcul des scores
+        current_month_score = calculate_period_score(current_month_satisfactions)
+        previous_month_score = calculate_period_score(previous_month_satisfactions)
+        current_year_score = calculate_period_score(current_year_satisfactions)
+        previous_year_score = calculate_period_score(previous_year_satisfactions)
+        
+        # Comparaisons (convertir en pourcentage)
+        monthly_comparison = (current_month_score - previous_month_score) * 10
+        yearly_comparison = (current_year_score - previous_year_score) * 10
+        
+        # Stockage des données
+        satisfaction_data.update({
+            'monthly_comparison': round(monthly_comparison, 1),
+            'yearly_comparison': round(yearly_comparison, 1),
+            'current_month_score': round(current_month_score, 1),
+            'previous_month_score': round(previous_month_score, 1),
+            'current_year_score': round(current_year_score, 1),
+            'previous_year_score': round(previous_year_score, 1)
+        })
+        
+        # Déterminer la tendance (basée sur la comparaison mensuelle)
+        if monthly_comparison > 0.5:
+            satisfaction_data['trend'] = 'up'
+        elif monthly_comparison < -0.5:
+            satisfaction_data['trend'] = 'down'
+        else:
+            satisfaction_data['trend'] = 'neutral'
 
     context = {
         'commercial': commercial,
@@ -1152,6 +1729,7 @@ def fiche_commercial_view(request, commercial_id):
         'total_realise': total_realise,
         'total_avenir': total_avenir,
         'total_annule': total_annule,
+        'satisfaction_data': satisfaction_data,
         'role': getattr(request.user, 'role', '')
     }
     return render(request, 'front/fiche_commercial.html', context)
@@ -1172,3 +1750,214 @@ def export_satisfactions_excel(request):
     response['Content-Disposition'] = 'attachment; filename="satisfactions.xlsx"'
     df.to_excel(response, index=False)
     return response
+
+@require_GET
+def search_clients(request):
+    q = request.GET.get('q', '').strip()
+    if not q:
+        return JsonResponse({'results': []})
+    
+    # Optimisation : Utiliser only() pour récupérer seulement les champs nécessaires
+    qs = FrontClient.objects.filter(
+        Q(rs_nom__icontains=q) |
+        Q(prenom__icontains=q) |
+        Q(civilite__icontains=q)
+    ).only('civilite', 'rs_nom', 'prenom')[:15]  # Limite à 15 résultats
+    
+    results = [
+        {
+            'civilite': c.civilite or '',
+            'rs_nom': c.rs_nom or '',
+            'prenom': c.prenom or ''
+        }
+        for c in qs
+    ]
+    return JsonResponse({'results': results})
+
+@require_GET
+def search_clients_table(request):
+    q = request.GET.get('q', '').strip()
+    if not q:
+        return JsonResponse({'results': []})
+    
+    # Optimisation : Utiliser select_related pour éviter les requêtes N+1
+    clients = FrontClient.objects.filter(
+        Q(rs_nom__icontains=q) |
+        Q(prenom__icontains=q) |
+        Q(civilite__icontains=q)
+    ).prefetch_related('adresses')[:50]  # Limite à 50 résultats pour la performance
+    
+    results = []
+    for c in clients:
+        adresse_obj = c.adresses.first()  # Utilise la relation préchargée
+        results.append({
+            'civilite': c.civilite or '',
+            'rs_nom': c.rs_nom or '',
+            'prenom': c.prenom or '',
+            'adresse': adresse_obj.adresse if adresse_obj else '',
+            'code_postal': adresse_obj.code_postal if adresse_obj else '',
+            'ville': adresse_obj.ville if adresse_obj else ''
+        })
+    return JsonResponse({'results': results})
+
+# === Fonctions utilitaires safe pour la migration ===
+def get_client_and_adresse(client_id):
+    """
+    Récupère un client et son adresse de façon sécurisée, en privilégiant FrontClient/Adresse,
+    avec fallback sur ImportClientCorrected si besoin.
+    """
+    from .models import FrontClient, Adresse, ImportClientCorrected
+    try:
+        client = FrontClient.objects.get(id=client_id)
+        adresse_obj = Adresse.objects.filter(client=client).first()
+        adresse = {
+            "adresse": adresse_obj.adresse if adresse_obj else "",
+            "code_postal": adresse_obj.code_postal if adresse_obj else "",
+            "ville": adresse_obj.ville if adresse_obj else "",
+        }
+        client_type = "front"
+    except FrontClient.DoesNotExist:
+        # Fallback temporaire
+        client = ImportClientCorrected.objects.get(id=client_id)
+        adresse = {
+            "adresse": client.adresse,
+            "code_postal": client.code_postal,
+            "ville": client.ville,
+        }
+        client_type = "import"
+    return client, adresse, client_type
+
+# === Remplacement dans les vues ===
+# Exemple pour add_rdv (à adapter pour chaque vue concernée)
+# ... existing code ...
+# Remplacer :
+# client = ImportClientCorrected.objects.get(id=client_id)
+# par :
+# client, adresse, client_type = get_client_and_adresse(client_id)
+# Utiliser ensuite client.rs_nom, adresse["adresse"], etc.
+# ... existing code ...
+
+def politique_confidentialite(request):
+    role = request.session.get('role', '')
+    return render(request, 'front/politique_confidentialite.html', {'role': role})
+
+@login_required
+def mentions_legales(request):
+    role = request.session.get('role', '')
+    return render(request, 'front/mentions_legales.html', {'role': role})
+
+def mentions_legales(request):
+    return render(request, 'front/mentions_legales.html')
+
+# Nouvelles vues pour l'optimisation de trajet
+@login_required
+def route_optimisee(request):
+    """Vue pour afficher la page de route optimisée"""
+    commercial_id = request.session.get('commercial_id')
+    if not commercial_id:
+        return redirect('login')
+    
+    commercial = Commercial.objects.get(id=commercial_id)
+    
+    # Date par défaut (aujourd'hui)
+    from datetime import date
+    default_date = date.today().strftime('%Y-%m-%d')
+    
+    return render(request, 'front/route_optimisee.html', {
+        'commercial': commercial,
+        'default_date': default_date
+    })
+
+@login_required
+def api_route_optimisee(request, date):
+    """API pour récupérer la route optimisée pour une date donnée"""
+    commercial_id = request.session.get('commercial_id')
+    if not commercial_id:
+        return JsonResponse({'error': 'Non autorisé'}, status=401)
+    
+    try:
+        commercial = Commercial.objects.get(id=commercial_id)
+        from .services import RouteOptimizationService
+        
+        route_data = RouteOptimizationService.get_optimized_route_for_commercial(commercial, date)
+        
+        # Préparer les données pour le template
+        rdvs_data = []
+        for rdv in route_data['rdvs']:
+            address = None
+            if rdv.client:
+                address = rdv.client.adresses.filter(
+                    latitude__isnull=False,
+                    longitude__isnull=False
+                ).first()
+            
+            rdvs_data.append({
+                'id': rdv.id,
+                'uuid': str(rdv.uuid),
+                'client_name': rdv.client.rs_nom if rdv.client else 'Client inconnu',
+                'heure': rdv.heure_rdv.strftime('%H:%M'),
+                'objet': rdv.objet or '',
+                'address': address,
+                'latitude': float(address.latitude) if address else None,
+                'longitude': float(address.longitude) if address else None,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'rdvs': rdvs_data,
+            'total_distance': route_data['total_distance'],
+            'estimated_time_minutes': route_data['estimated_time_minutes']
+        })
+        
+    except Commercial.DoesNotExist:
+        return JsonResponse({'error': 'Commercial non trouvé'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def geocoder_adresses(request):
+    """Vue pour déclencher le géocodage des adresses"""
+    if request.method == 'POST':
+        try:
+            from .services import GeocodingService
+            GeocodingService.geocode_all_addresses()
+            return JsonResponse({'success': True, 'message': 'Géocodage terminé avec succès'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return render(request, 'front/geocoder_adresses.html')
+
+from django.http import JsonResponse
+
+@login_required
+def api_search_rdv_historique(request):
+    query = request.GET.get('q', '').strip().lower()
+    if not query:
+        return JsonResponse({'results': []})
+
+    # On cherche dans les clients liés à des rendez-vous archivés
+    rdvs = Rendezvous.objects.filter(
+        statut_rdv__in=['valide', 'annule']
+    ).select_related('client')
+
+    seen_clients = set()
+    results = []
+    for rdv in rdvs:
+        client = rdv.client
+        if not client or client.id in seen_clients:
+            continue
+        # Champs à rechercher
+        nom = (getattr(client, 'nom', '') or '').lower()
+        prenom = (getattr(client, 'prenom', '') or '').lower()
+        rs_nom = (getattr(client, 'rs_nom', '') or '').lower()
+        # Match sur nom, prénom, raison sociale
+        if query in nom or query in prenom or query in rs_nom:
+            label = client.rs_nom or f"{client.nom or ''} {client.prenom or ''}".strip()
+            results.append({
+                'client_id': client.id,
+                'label': label,
+            })
+            seen_clients.add(client.id)
+            if len(results) >= 10:
+                break
+    return JsonResponse({'results': results})

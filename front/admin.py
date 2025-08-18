@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Commercial, Client, Rendezvous, CommentaireRdv
+from .models import Commercial, Rendezvous, CommentaireRdv
 from django.contrib.auth.hashers import make_password
 
 class CommercialAdmin(admin.ModelAdmin):
@@ -13,6 +13,5 @@ class CommercialAdmin(admin.ModelAdmin):
 
 # admin.site.unregister(Commercial)  # <-- À retirer ou commenter
 admin.site.register(Commercial, CommercialAdmin)
-admin.site.register(Client)
 admin.site.register(Rendezvous)
 admin.site.register(CommentaireRdv)

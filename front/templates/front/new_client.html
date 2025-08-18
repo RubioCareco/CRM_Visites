@@ -52,6 +52,7 @@
                 <div class="nc-field"><i class="fa-solid fa-user"></i><input type="text" name="prenom" placeholder="Prénom" required value="{{ client_temp.prenom|default:'' }}"></div>
                 <div class="nc-field"><i class="fa-solid fa-id-card"></i><input type="text" name="siret" placeholder="Numéro SIRET" pattern="[0-9]{14}" value="{{ client_temp.siret|default:'' }}"></div>
                 <div class="nc-field"><i class="fa-solid fa-location-dot"></i><input type="text" name="adresse" placeholder="Adresse" value="{{ client_temp.adresse|default:'' }}"></div>
+                <div class="nc-field"><i class="fa fa-globe-europe"></i><input type="text" name="ville" placeholder="Ville" value="{{ client_temp.ville|default:'' }}"></div>
                 <div class="nc-field"><i class="fa-solid fa-location-dot"></i><input type="text" name="code_postal" placeholder="Code Postal" pattern="[0-9]{5}" value="{{ client_temp.code_postal|default:'' }}"></div>
                 <div class="nc-field"><i class="fa-solid fa-envelope"></i><input type="email" name="email" placeholder="E-mail" value="{{ client_temp.email|default:'' }}"></div>
                 <div class="nc-field"><i class="fa-solid fa-phone"></i><input type="tel" name="telephone" placeholder="Téléphone" pattern="[0-9]{10}" value="{{ client_temp.telephone|default:'' }}"></div>
@@ -73,6 +74,16 @@
     <i class="fa-solid fa-circle-check"></i>
     Import réussi&nbsp;!
   </div>
+  {% if success %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelector('.success-message').style.display = 'block';
+      setTimeout(function() {
+        window.location.href = '/dashboard';
+      }, 2000);
+    });
+  </script>
+  {% endif %}
   <script>
     function toggleAccordion(header) {
       const section = header.parentElement;

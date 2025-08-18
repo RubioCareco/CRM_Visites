@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mentions Légales</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'front/css/mentions_legales.css' %}"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <!-- Suppression des blocs de debug rôle/session -->
+  <div class="mentions-legales-container">
+    <div class="mentions-legales-header">
+      <img src="{% static 'front/img/Logo.png' %}" alt="Logo Rubio" class="mentions-legales-logo">
+      <h1 class="mentions-legales-title">Mentions légales</h1>
+    </div>
+
+    <section class="mentions-legales-section">
+      <h2 class="mentions-legales-section-title"><i class="fa-solid fa-user-shield"></i> Éditeur du site</h2>
+      <p class="mentions-legales-section-content">
+        <strong>Editeur de l'applicatif : </strong> L'applicatif web « Rubio CRM » ainsi que tous ses composants (textes, logos, base de données, etc.) sont la propriété exclusive de la société Rubio, sauf mention contraire.<br>
+        <strong>Raison sociale : Rubio</strong><br>
+        <strong>Forme juridique : </strong> Société par actions simplifiées (SAS)<br>
+        <strong>Capital social : </strong> 100 000 €<br>
+        <strong>Siren : </strong> 309 160 828<br>
+        <strong>RCS : </strong> Pau<br>
+        <strong> Siège social : </strong> 15 rue larregain, 64140 Lons, France<br>
+        <strong> Téléphone : </strong> 05 59 32 26 81<br>
+        <strong> Directeur de la publication : </strong> Loïc Rubio<br>
+      </p>
+    </section>
+
+    <section class="mentions-legales-section">
+      <h2 class="mentions-legales-section-title"><i class="fa-solid fa-server"></i> Hébergeur du site</h2>
+      <p class="mentions-legales-section-content">
+        <strong>Hébergeur : </strong> Nalta <br>
+        <strong>Adresse : </strong> 6 passage de l'Europe 64000 PAU<br>
+        <strong>Site internet : </strong> <a href="https://www.nalta.fr/" target="_blank" rel="noopener noreferrer" class="mentions-legales-link">https://www.nalta.fr/</a>
+      </p>
+    </section>
+
+    <section class="mentions-legales-section">
+      <h2 class="mentions-legales-section-title"><i class="fa-solid fa-copyright"></i> Propriété intellectuelle</h2>
+      <p class="mentions-legales-section-content">
+        L’ensemble des contenus (textes, logos, code source, etc.) présents sur ce site sont la propriété exclusive de Rubio. Toute reproduction, représentation, modification, publication, adaptation de tout ou partie des éléments du site, quel que soit le moyen ou le procédé utilisé, est interdite, sauf autorisation écrite préalable.
+      </p>
+    </section>
+
+    <section class="mentions-legales-section">
+      <h2 class="mentions-legales-section-title"><i class="fa-solid fa-user-lock"></i> Données personnelles</h2>
+      <p class="mentions-legales-section-content">
+        Les informations recueillies font l’objet d’un traitement informatique destiné à la gestion de la relation client. Conformément à la loi « Informatique et Libertés » et au RGPD, vous disposez d’un droit d’accès, de rectification et de suppression des données vous concernant. Pour exercer ce droit, contactez [adresse e-mail de contact].<br>
+        Voir aussi notre <a href="/politique-confidentialite" class="mentions-legales-link">politique de confidentialité.</a><br>
+        </p>
+    </section>
+
+    <div class="mentions-legales-row">
+      <section class="mentions-legales-section mentions-legales-section-half">
+        <h2 class="mentions-legales-section-title"><i class="fa-solid fa-cookie-bite"></i> Cookies</h2>
+        <p class="mentions-legales-section-content">
+          Le site utilise des cookies pour permettre une meilleure navigation et un suivi des visites. Notre application utilise uniquement des cookies strictement nécessaires à son bon fonctionnement.
+          Aucun cookie à des fins publicitaires ou de suivi commercial n’est utilisé.
+          Conformément au RGPD, ces cookies ne nécessitent pas de consentement car ils sont indispensables au fonctionnement de l’outil.
+        </p>
+      </section>
+      <section class="mentions-legales-section mentions-legales-section-half">
+        <h2 class="mentions-legales-section-title"><i class="fa-solid fa-scale-balanced"></i> Droit applicable</h2>
+        <p class="mentions-legales-section-content">
+            Cet applicatif interne est soumis au droit français. Tout litige relatif à son utilisation relève de la compétence exclusive des juridictions françaises.
+        </p>
+      </section>
+    </div>
+  </div>
+  <div class="main-container">
+    {% if request.session.role == 'responsable' or request.session.role == 'admin' %}
+      <a href="{% url 'dashboard_responsable' %}" class="back-login" id="backDashboardBtn" style="position:fixed;left:24px;bottom:20px;z-index:9999;display:flex;align-items:center;gap:8px;color:#fff;font-size:1.15rem;padding:8px 22px;border-radius:12px;box-shadow:0 2px 8px rgba(255,255,255,0.10);backdrop-filter:blur(6px);border:none;text-decoration:none;background:rgba(255,255,255,0.18);"><i class="fa fa-arrow-left"></i> Retour</a>
+    {% else %}
+      <a href="{% url 'dashboard' %}" class="back-login" id="backDashboardBtn" style="position:fixed;left:24px;bottom:20px;z-index:9999;display:flex;align-items:center;gap:8px;color:#fff;font-size:1.15rem;padding:8px 22px;border-radius:12px;box-shadow:0 2px 8px rgba(255,255,255,0.10);backdrop-filter:blur(6px);border:none;text-decoration:none;background:rgba(255,255,255,0.18);"><i class="fa fa-arrow-left"></i> Retour</a>
+    {% endif %}
+
+  </div>
+</body>
+</html>

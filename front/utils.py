@@ -260,6 +260,34 @@ def calculate_hybrid_satisfaction_score(satisfaction_obj):
     
     return round(hybrid_score, 2) 
 
+def calculate_text_satisfaction_score(satisfaction_obj) -> float:
+    """
+    Calcule un score textuel 0-100 à partir des champs libres de SatisfactionB2B
+    en s’appuyant sur analyze_sentiment_french (score -1..1).
+    On agrège les champs textuels disponibles et on moyenne.
+    """
+    text_fields = []
+    # Collecter les champs potentiels si présents sur l’objet
+    for attr in [
+        'commentaire_general', 'remarques', 'points_amelioration', 'points_forts',
+        'avis_libre', 'suggestions', 'commentaires'
+    ]:
+        if hasattr(satisfaction_obj, attr):
+            val = getattr(satisfaction_obj, attr) or ''
+            if isinstance(val, str) and val.strip():
+                text_fields.append(val)
+
+    if not text_fields:
+        return 50.0  # neutre si pas de texte
+
+    scores = []
+    for txt in text_fields:
+        s = analyze_sentiment_french(txt)  # -1..1
+        # Convertir en 0..100
+        scores.append((s + 1.0) * 50.0)
+
+    return sum(scores) / len(scores)
+
 def haversine_distance(lon1, lat1, lon2, lat2):
     R = 6371  # Rayon de la Terre en km
     phi1 = math.radians(lat1)

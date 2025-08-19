@@ -324,6 +324,12 @@ def generer_rendezvous_automatiques(date_cible=None):
 
     commerciaux = Commercial.objects.filter(role='commercial')
     for commercial_obj in commerciaux:
+        # --- NOUVEAU : Supprimer TOUS les RDV existants de la date cible ---
+        Rendezvous.objects.filter(
+            commercial=commercial_obj,
+            date_rdv=date_cible
+        ).delete()
+        
         # Correspondance insensible à la casse et aux espaces
         nom_commercial_normalise = commercial_obj.commercial.replace(' ', '').upper()
         clients = FrontClient.objects.filter(
@@ -357,6 +363,14 @@ def generer_rendezvous_automatiques(date_cible=None):
                 lon0, lat0 = point_depart
         else:
             lon0, lat0 = point_depart
+
+        # --- NOUVEAU : exclure les clients déjà planifiés/visités la veille ---
+        clients_hier_ids = set(
+            Rendezvous.objects.filter(commercial=commercial_obj, date_rdv=hier)
+            .values_list('client_id', flat=True)
+        )
+        points_haversine = [p for p in points_haversine if p['client_id'] not in clients_hier_ids]
+
         for p in points_haversine:
             lon, lat = p['coords']
             p['distance_from_start'] = haversine_distance(lon0, lat0, lon, lat)
@@ -368,14 +382,7 @@ def generer_rendezvous_automatiques(date_cible=None):
             client_obj = FrontClient.objects.filter(id=rdv['client_id']).first()
             if not client_obj:
                 continue
-            existe = Rendezvous.objects.filter(
-                client=client_obj,
-                commercial=commercial_obj,
-                date_rdv=date_cible,
-                heure_rdv=creneaux[idx]
-            ).exists()
-            if existe:
-                continue
+            # Plus besoin de vérifier l'existence car on a tout supprimé
             Rendezvous.objects.create(
                 client=client_obj,
                 commercial=commercial_obj,

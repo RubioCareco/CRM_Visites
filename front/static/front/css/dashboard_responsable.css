@@ -475,6 +475,20 @@ body.dashboard-resp-bg {
   scrollbar-color: rgba(255,255,255,0.18) transparent;
 }
 
+/* Badge d'absence dans la modal */
+.modal-absent-badge {
+  display: inline-block;
+  background: rgba(229, 57, 53, 0.18);
+  color: #ff6b6b;
+  border: 1px solid rgba(229,57,53,0.35);
+  border-radius: 12px;
+  padding: 4px 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-left: 12px;
+  box-shadow: 0 2px 8px rgba(229,57,53,0.12);
+}
+
 .pdf-download-icon {
   transition: transform 0.18s, box-shadow 0.18s;
   border-radius: 8px;
@@ -724,8 +738,55 @@ body.dashboard-resp-bg {
   max-width: 750px;
   margin-left: auto;
   margin-right: auto;
+  max-height: 500px;
+  overflow: hidden;
 }
 
+.activity-log-card ul {
+  max-height: 460px;
+  overflow-y: auto;
+  padding-right: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.18) transparent;
+}
+
+.activity-log-card ul::-webkit-scrollbar {
+  width: 8px;
+  background: transparent;
+  margin-left: 30px;
+}
+
+.activity-log-card ul::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.18);
+  border-radius: 8px;
+}
+
+.activity-log-card ul::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.activity-log-card ul li { position: relative; }
+.badge-activity {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+.badge-absence-on {
+  background: rgba(229, 57, 53, 0.18);
+  color: #ff6b6b;
+  border: 1px solid rgba(229,57,53,0.35);
+  box-shadow: 0 2px 10px rgba(229,57,53,0.12);
+}
+.badge-absence-off {
+  background: rgba(30, 203, 107, 0.18);
+  color: #1ecb6b;
+  border: 1px solid rgba(30,203,107,0.35);
+  box-shadow: 0 2px 10px rgba(30,203,107,0.12);
+}
 .dashboard-resp-stats > .dashboard-resp-section-title {
   margin-right: 100px;
   align-items: center;

@@ -220,7 +220,13 @@
             {% for activity in latest_activities %}
                 <li>
                     <strong class="activity-commercial">{{ activity.commercial.nom|default:"Système" }}</strong> :
-                    <span class="activity-description">{{ activity.description }}</span>
+                    {% if activity.action_type == 'ABSENCE_ON' %}
+                      <span class="badge-activity badge-absence-on"><i class="fa-solid fa-user-slash"></i> Commercial absent</span>
+                    {% elif activity.action_type == 'ABSENCE_OFF' %}
+                      <span class="badge-activity badge-absence-off"><i class="fa-solid fa-user-check"></i> Retour de présence</span>
+                    {% else %}
+                      <span class="activity-description">{{ activity.description }}</span>
+                    {% endif %}
                     <br>
                     <span class="activity-timestamp">{{ activity.timestamp|date:"d/m/Y H:i" }}</span>
                 </li>
@@ -525,8 +531,12 @@
               const rdvs = rdvData.rdvs || [];
               const section = document.createElement('div');
               section.className = 'accordion-section';
+              const absentBadge = commercial.is_absent ? '<span class="modal-absent-badge">❄️ Absent</span>' : '';
               section.innerHTML = `
-                <div class="accordion-header">${commercial.nom} ${commercial.prenom} (${rdvs.length} à venir)</div>
+                <div class="accordion-header">
+                  ${commercial.nom} ${commercial.prenom} (${rdvs.length} à venir)
+                  ${absentBadge}
+                </div>
                 <div class="accordion-body">
                   ${rdvs.length === 0 ? '<i>Aucun rendez-vous à venir</i>' : rdvs.map(rdv => `
                     <div class=\"rdv-card\">

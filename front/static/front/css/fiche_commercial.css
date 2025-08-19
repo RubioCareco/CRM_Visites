@@ -161,7 +161,7 @@ header .page-title {
     cursor: pointer;
     transition: background-color 0.2s;
     font-weight: 500;
-    margin-bottom: -180px;
+    margin-bottom: -250px;
 }
 .filter-main-btn:hover {
     background: rgba(255, 255, 255, 0.2);

@@ -226,20 +226,15 @@
                 data-client-id="{{ client.id }}" 
                 data-client-nom="{{ client.rs_nom|escapejs }}"
                 data-client-prenom="{{ client.prénom|escapejs }}"
-                style="cursor:pointer;"
-                onclick="openClientModal(
-                  '{{ client.rs_nom|escapejs }}',
-                  '{{ client.prénom|escapejs }}',
-                  '{{ client.civilite|escapejs }}',
-                  '{{ adresse.adresse|default:''|escapejs }}',
-                  '{{ adresse.code_postal|default:''|escapejs }}',
-                  '{{ adresse.ville|default:''|escapejs }}',
-                  '{{ client.telephone|escapejs }}',
-                  '{{ client.email|escapejs }}',
-                  '{{ client.statut|escapejs }}',
-                  '{{ client.id }}',
-                  '{{ client.code_comptable|escapejs }}'
-                )">
+                data-client-civilite="{{ client.civilite|escapejs }}"
+                data-client-adresse="{{ adresse.adresse|default:""|escapejs }}"
+                data-client-cp="{{ adresse.code_postal|default:""|escapejs }}"
+                data-client-ville="{{ adresse.ville|default:""|escapejs }}"
+                data-client-telephone="{{ client.telephone|escapejs }}"
+                data-client-email="{{ client.email|escapejs }}"
+                data-client-statut="{{ client.statut|escapejs }}"
+                data-client-code-comptable="{{ client.code_comptable|escapejs }}"
+                style="cursor:pointer;">
               <td>{{ client.civilite|default:" " }}</td>
               <td>{{ client.rs_nom|default:" " }}</td>
               <td>{{ client.prénom|default:" " }}</td>
@@ -316,6 +311,26 @@
 document.addEventListener("DOMContentLoaded", function () {
   // Récupération de toutes les lignes du tableau
   const allRows = Array.from(document.querySelectorAll(".client-card"));
+  
+  // Ajout des event listeners pour ouvrir la modale
+  allRows.forEach(row => {
+    row.addEventListener('click', function() {
+      const rs_nom = this.getAttribute('data-client-nom') || '';
+      const prenom = this.getAttribute('data-client-prenom') || '';
+      const civilite = this.getAttribute('data-client-civilite') || '';
+      const adresse = this.getAttribute('data-client-adresse') || '';
+      const code_postal = this.getAttribute('data-client-cp') || '';
+      const ville = this.getAttribute('data-client-ville') || '';
+      const telephone = this.getAttribute('data-client-telephone') || '';
+      const email = this.getAttribute('data-client-email') || '';
+      const statut = this.getAttribute('data-client-statut') || '';
+      const id = this.getAttribute('data-client-id') || '';
+      const code_comptable = this.getAttribute('data-client-code-comptable') || '';
+      
+      openClientModal(rs_nom, prenom, civilite, adresse, code_postal, ville, telephone, email, statut, id, code_comptable);
+    });
+  });
+  
   // Création de la liste des suggestions via AJAX (civilité, raison sociale, prénom uniquement)
   async function fetchSuggestions(query) {
     if (!query.trim()) return [];

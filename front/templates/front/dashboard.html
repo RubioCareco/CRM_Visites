@@ -85,6 +85,24 @@
 <body>
   <div class="dashboard">
     <h1 class="dashboard-title">Tableau de bord</h1>
+    
+    {% if request.session.rdvs_nettoyes %}
+      <div class="nettoyage-notification" style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 8px; padding: 12px 16px; margin: 16px 0; color: #2e7d32; font-size: 0.95rem; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <i class="fa fa-broom" style="color: #4caf50;"></i>
+        <span><strong>{{ request.session.rdvs_nettoyes }}</strong> RDV ancien(s) automatiquement marqué(s) comme "en retard" et nécessitant votre attention.</span>
+      </div>
+      <script>
+        // Supprimer la notification après 10 secondes
+        setTimeout(function() {
+          const notification = document.querySelector('.nettoyage-notification');
+          if (notification) {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateY(-10px)';
+            setTimeout(() => notification.remove(), 300);
+          }
+        }, 10000);
+      </script>
+    {% endif %}
     <div class="search-bar" style="position:relative;">
         <i class="fa fa-search search-icon"></i>
         <input type="text" id="dashboardSearch" placeholder="Rechercher par clients, entreprises ..." autocomplete="off">

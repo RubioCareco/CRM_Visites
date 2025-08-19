@@ -25,6 +25,46 @@ from django.db.models.functions import Coalesce, TruncDay, TruncWeek, TruncMonth
 from .models import Adresse
 from front.utils import generer_rendezvous_automatiques
 
+def nettoyer_rdv_anciens_automatiquement():
+    """
+    Nettoie automatiquement les RDV anciens non traités pour tous les commerciaux.
+    Cette fonction est appelée automatiquement depuis le dashboard.
+    """
+    from datetime import date, timedelta
+    
+    # Date de référence (hier par défaut)
+    reference_date = date.today() - timedelta(days=1)
+    
+    # Récupérer tous les commerciaux
+    commerciaux = Commercial.objects.all()
+    
+    total_rdv_traites = 0
+    
+    for commercial in commerciaux:
+        # RDV à venir du jour de référence
+        rdvs_anciens = Rendezvous.objects.filter(
+            commercial=commercial,
+            statut_rdv='a_venir',
+            date_rdv=reference_date
+        )
+        
+        if rdvs_anciens.exists():
+            # Marquer comme "en_retard" pour que le commercial puisse le traiter
+            for rdv in rdvs_anciens:
+                rdv.statut_rdv = 'en_retard'
+                rdv.save()
+                
+                # Log de l'action
+                ActivityLog.objects.create(
+                    commercial=commercial,
+                    action_type='RDV_AUTO_RETARD',
+                    description=f"RDV du {reference_date} {rdv.heure_rdv} - {rdv.client.rs_nom if rdv.client else 'Client supprimé'} automatiquement marqué comme en retard"
+                )
+                
+                total_rdv_traites += 1
+    
+    return total_rdv_traites
+
 # 🔐 Décorateur de protection
 def login_required(view_func):
     @wraps(view_func)
@@ -134,6 +174,13 @@ def dashboard(request):
         if not deja_genere:
             generer_rendezvous_automatiques(today)
     # --- Fin génération automatique ---
+    
+    # --- Nettoyage automatique des RDV anciens ---
+    rdvs_nettoyes = nettoyer_rdv_anciens_automatiquement()
+    if rdvs_nettoyes > 0:
+        # Stocker l'info pour l'afficher dans le template
+        request.session['rdvs_nettoyes'] = rdvs_nettoyes
+    # --- Fin nettoyage automatique ---
     commercial_id = request.session.get('commercial_id')
     commercial = Commercial.objects.get(id=commercial_id)
     now = timezone.now()
@@ -1206,6 +1253,13 @@ def dashboard_responsable(request):
 	role = request.session.get('role')
 	if role not in ['responsable', 'admin']:
 		raise PermissionDenied
+	
+	# --- Nettoyage automatique des RDV anciens ---
+	rdvs_nettoyes = nettoyer_rdv_anciens_automatiquement()
+	if rdvs_nettoyes > 0:
+		# Stocker l'info pour l'afficher dans le template
+		request.session['rdvs_nettoyes'] = rdvs_nettoyes
+	# --- Fin nettoyage automatique ---
 
 	commerciaux = Commercial.objects.filter(role='commercial')
 

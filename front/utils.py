@@ -119,7 +119,11 @@ def calculate_comprehensive_satisfaction_score(satisfaction_obj):
     
     # Q2: Note qualité pièces (1-5)
     if satisfaction_obj.note_qualite_pieces:
-        score = (satisfaction_obj.note_qualite_pieces * 2)  # 1-5 -> 2-10
+        # Gérer le cas où la note pourrait être déjà sur 10
+        if satisfaction_obj.note_qualite_pieces <= 5:
+            score = (satisfaction_obj.note_qualite_pieces * 2)  # 1-5 -> 2-10
+        else:
+            score = satisfaction_obj.note_qualite_pieces  # Déjà sur 10
         scores.append(score)
     
     # Q3: Problème qualité pièce (Oui/Non) - INVERSE
@@ -171,7 +175,11 @@ def calculate_comprehensive_satisfaction_score(satisfaction_obj):
     
     # Q10: Note SAV (1-5)
     if satisfaction_obj.note_sav:
-        score = (satisfaction_obj.note_sav * 2)  # 1-5 -> 2-10
+        # Gérer le cas où la note pourrait être déjà sur 10
+        if satisfaction_obj.note_sav <= 5:
+            score = (satisfaction_obj.note_sav * 2)  # 1-5 -> 2-10
+        else:
+            score = satisfaction_obj.note_sav  # Déjà sur 10
         scores.append(score)
     
     # Q11: Pièces non disponibles (texte)
@@ -189,7 +197,11 @@ def calculate_comprehensive_satisfaction_score(satisfaction_obj):
     
     # Q14: Note accueil (1-5)
     if satisfaction_obj.note_accueil:
-        score = (satisfaction_obj.note_accueil * 2)  # 1-5 -> 2-10
+        # Gérer le cas où la note pourrait être déjà sur 10
+        if satisfaction_obj.note_accueil <= 5:
+            score = (satisfaction_obj.note_accueil * 2)  # 1-5 -> 2-10
+        else:
+            score = satisfaction_obj.note_accueil  # Déjà sur 10
         scores.append(score)
     
     # Q15: Commande simple (Oui/Non)

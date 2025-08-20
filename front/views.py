@@ -1300,14 +1300,27 @@ def dashboard_responsable(request):
 		avg_accueil = satisfactions.aggregate(Avg('note_accueil'))['note_accueil__avg'] or 0
 		avg_recommandation = satisfactions.aggregate(Avg('note_recommandation'))['note_recommandation__avg'] or 0
 		
-		# Normaliser les notes sur 5 vers une échelle de 10
-		avg_qualite_normalisee = avg_qualite * 2
-		avg_sav_normalisee = avg_sav * 2
-		avg_accueil_normalisee = avg_accueil * 2
-		# La recommandation est déjà sur 10, pas besoin de conversion
+		# Normaliser les notes intelligemment selon leur échelle
+		if avg_qualite <= 5:
+			avg_qualite_normalisee = avg_qualite * 2  # 1-5 -> 2-10
+		else:
+			avg_qualite_normalisee = avg_qualite  # Déjà sur 10
+		
+		if avg_sav <= 5:
+			avg_sav_normalisee = avg_sav * 2  # 1-5 -> 2-10
+		else:
+			avg_sav_normalisee = avg_sav  # Déjà sur 10
+		
+		if avg_accueil <= 5:
+			avg_accueil_normalisee = avg_accueil * 2  # 1-5 -> 2-10
+		else:
+			avg_accueil_normalisee = avg_accueil  # Déjà sur 10
+		
+		# La note de recommandation est déjà sur 10, pas besoin de la multiplier par 2
+		avg_recommandation_normalisee = avg_recommandation
 		
 		# Calculer la moyenne globale sur 10
-		moyenne_globale = (avg_qualite_normalisee + avg_sav_normalisee + avg_accueil_normalisee + avg_recommandation) / 4
+		moyenne_globale = (avg_qualite_normalisee + avg_sav_normalisee + avg_accueil_normalisee + avg_recommandation_normalisee) / 4
 		
 		satisfaction_data = {
 			'total_responses': satisfactions.count(),
@@ -1341,7 +1354,7 @@ def dashboard_responsable(request):
 					avg_qualite_normalisee,
 					avg_sav_normalisee,
 					avg_accueil_normalisee,
-					avg_recommandation
+					avg_recommandation_normalisee
 				],
 				"backgroundColor": [
 					"rgba(229, 57, 53, 0.6)",
@@ -1398,7 +1411,7 @@ def api_satisfaction_stats(request):
 		end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
 		queryset = queryset.filter(date_soumission__date__range=[start_date, end_date])
 
-	# Si aucun filtre de période n'est appliqué, retourner le format initial
+			# Si aucun filtre de période n'est appliqué, retourner le format initial
 	if not start_date_str and not end_date_str and not period:
 		# Calculer les moyennes globales
 		if queryset.exists():
@@ -1407,11 +1420,24 @@ def api_satisfaction_stats(request):
 			moyenne_accueil = queryset.aggregate(Avg('note_accueil'))['note_accueil__avg'] or 0
 			moyenne_recommandation = queryset.aggregate(Avg('note_recommandation'))['note_recommandation__avg'] or 0
 			
-			# Normaliser les notes sur 5 vers une échelle de 10
-			moyenne_qualite = round(moyenne_qualite * 2, 2)
-			moyenne_sav = round(moyenne_sav * 2, 2)
-			moyenne_accueil = round(moyenne_accueil * 2, 2)
-			# La recommandation est déjà sur 10, pas besoin de conversion
+			# Normaliser les notes intelligemment selon leur échelle
+			if moyenne_qualite <= 5:
+				moyenne_qualite = round(moyenne_qualite * 2, 2)  # 1-5 -> 2-10
+			else:
+				moyenne_qualite = round(moyenne_qualite, 2)  # Déjà sur 10
+			
+			if moyenne_sav <= 5:
+				moyenne_sav = round(moyenne_sav * 2, 2)  # 1-5 -> 2-10
+			else:
+				moyenne_sav = round(moyenne_sav, 2)  # Déjà sur 10
+			
+			if moyenne_accueil <= 5:
+				moyenne_accueil = round(moyenne_accueil * 2, 2)  # 1-5 -> 2-10
+			else:
+				moyenne_accueil = round(moyenne_accueil, 2)  # Déjà sur 10
+			
+			# La note de recommandation est déjà sur 10, pas besoin de la multiplier par 2
+			moyenne_recommandation = round(moyenne_recommandation, 2)
 		else:
 			moyenne_qualite = moyenne_sav = moyenne_accueil = moyenne_recommandation = 0
 
@@ -1482,12 +1508,29 @@ def api_satisfaction_stats(request):
 		else:
 			labels.append(period.strftime(date_format))
 		
-		# Normaliser les notes sur 5 vers une échelle de 10
-		qualite.append(round((entry['moyenne_qualite_pieces'] or 0) * 2, 2))
-		sav.append(round((entry['moyenne_sav'] or 0) * 2, 2))
-		accueil.append(round((entry['moyenne_accueil'] or 0) * 2, 2))
-		# La recommandation est déjà sur 10, pas besoin de conversion
-		recommandation.append(round(entry['moyenne_recommandation'] or 0, 2))
+		# Normaliser les notes intelligemment selon leur échelle
+		note_qualite = entry['moyenne_qualite_pieces'] or 0
+		note_sav = entry['moyenne_sav'] or 0
+		note_accueil = entry['moyenne_accueil'] or 0
+		note_recommandation = entry['moyenne_recommandation'] or 0
+		
+		if note_qualite <= 5:
+			qualite.append(round(note_qualite * 2, 2))  # 1-5 -> 2-10
+		else:
+			qualite.append(round(note_qualite, 2))  # Déjà sur 10
+		
+		if note_sav <= 5:
+			sav.append(round(note_sav * 2, 2))  # 1-5 -> 2-10
+		else:
+			sav.append(round(note_sav, 2))  # Déjà sur 10
+		
+		if note_accueil <= 5:
+			accueil.append(round(note_accueil * 2, 2))  # 1-5 -> 2-10
+		else:
+			accueil.append(round(note_accueil, 2))  # Déjà sur 10
+		
+		# La note de recommandation est déjà sur 10, pas besoin de la multiplier par 2
+		recommandation.append(round(note_recommandation, 2))
 
 	chart_data = {
 		"labels": labels,

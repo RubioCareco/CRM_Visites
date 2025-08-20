@@ -159,7 +159,9 @@ class SatisfactionB2B(models.Model):
         except Exception as e:
             # En cas d'erreur, on garde le score numérique uniquement
             if self.moyenne:
-                self.score_hybride = self.moyenne * 2  # Conversion 1-5 vers 0-10
+                # La moyenne peut contenir des notes sur 5 et sur 10, donc on ne multiplie pas par 2
+                # car cela pourrait donner des valeurs supérieures à 10
+                self.score_hybride = min(self.moyenne, 10.0)  # Limiter à 10 maximum
             else:
                 self.score_hybride = None
         

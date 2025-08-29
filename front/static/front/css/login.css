@@ -143,3 +143,80 @@ body, html {
   input[type="password"]::-webkit-input-decoration-container {
     display: none !important;
   }
+
+/* === Responsive: Tablette (600px–1366px) === */
+@media (min-width: 600px) and (max-width: 1366px) {
+  .login-container {
+    height: 100vh;
+    padding: 36px 24px;
+  }
+  .login-box {
+    width: 600px !important;
+    padding: 54px 50px;
+    border-radius: 24px;
+  }
+  .logo {
+    width: 300px;
+    margin-bottom: -6px;
+  }
+  .welcome-text {
+    font-size: 23px;
+    margin: 16px 0 36px;
+  }
+  .input-group label { font-size: 15.5px; }
+  .input-group input {
+    font-size: 18px;
+    padding: 16px 18px;
+  }
+  .input-icon input {
+    padding-left: 46px;
+    padding-right: 46px;
+  }
+  .input-icon i { font-size: 18px; }
+  .forgot-password { font-size: 14.5px; margin-bottom: 26px; }
+  .login-btn {
+    padding: 16px;
+    font-size: 18.5px;
+    border-radius: 16px;
+  }
+}
+
+/* === Responsive: Mobile (≤599px) === */
+@media (max-width: 599px) {
+  .login-container {
+    min-height: 100vh;
+    height: auto;
+    padding: 28px 18px;
+    align-items: center;
+  }
+  .login-box {
+    width: 96vw;
+    max-width: 560px;
+    padding: 30px 24px;
+    border-radius: 20px;
+  }
+  .logo {
+    width: 210px;
+    margin-bottom: -6px;
+  }
+  .welcome-text {
+    font-size: 19px;
+    margin: 12px 0 28px;
+  }
+  .input-group label { font-size: 14px; }
+  .input-group input {
+    font-size: 16.5px;
+    padding: 14px 14px;
+  }
+  .input-icon input {
+    padding-left: 44px;
+    padding-right: 44px;
+  }
+  .input-icon i { font-size: 17px; }
+  .forgot-password { font-size: 13.5px; margin-bottom: 24px; }
+  .login-btn {
+    padding: 14px;
+    font-size: 17.5px;
+    border-radius: 14px;
+  }
+}

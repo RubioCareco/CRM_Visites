@@ -8,6 +8,95 @@ body, html {
   overflow-x: hidden !important;
 }
 
+/* Structure flexbox pour sticky footer */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Conteneur principal qui prend tout l'espace disponible */
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  position: relative;
+  flex: 1 0 auto; /* Prend tout l'espace disponible */
+  min-height: 0; /* Permet au contenu de se rétrécir si nécessaire */
+}
+
+/* Le footer reste en bas naturellement grâce au flexbox du body */
+
+/* === NOUVEAU : Styles pour la navigation entre les jours === */
+.visites-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.date-navigation {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px 16px;
+  border-radius: 25px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.nav-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(229, 57, 53, 0.8);
+  color: white;
+  border-radius: 50%;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.nav-arrow:hover {
+  background: rgba(229, 57, 53, 1);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(229, 57, 53, 0.4);
+}
+
+.current-date {
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  min-width: 120px;
+  text-align: center;
+}
+
+.pagination-info {
+  text-align: center;
+  margin-top: 15px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.rdv-count {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  font-style: italic;
+}
+
 .dashboard-title {
   position: absolute;
   top: 5px;
@@ -16,14 +105,6 @@ body, html {
   font-size: 34px;
   font-weight: bold;
   margin-bottom: 30px;
-}
-
-.dashboard {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px;
-  position: relative;
 }
 
 .search-bar {
@@ -196,9 +277,9 @@ body, html {
 }
 
 .add-button {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
+  position: relative;
+  bottom: auto;
+  right: auto;
   background-color: #e53935;
   color: white;
   border: none;
@@ -211,7 +292,8 @@ body, html {
   justify-content: center;
   align-items: center;
   transition: background-color 0.18s, color 0.18s;
-  margin-right: 36px;
+  margin: 0;
+  align-self: flex-end;
 }
 
 .add-button:hover {
@@ -220,14 +302,16 @@ body, html {
 }
 
 .floating-actions {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
+  position: relative;
+  bottom: auto;
+  right: auto;
   display: flex;
   flex-direction: row-reverse;
   align-items: center;
   gap: 10px;
   z-index: 999;
+  margin: 20px 0;
+  justify-content: flex-end;
 }
 
 .floating-menu {
@@ -236,6 +320,15 @@ body, html {
   gap: 10px;
   align-items: center;
   margin-right: 95px;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  border-radius: 12px;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
 }
 
 .floating-menu button {
@@ -764,14 +857,39 @@ html, body {
 /* --- FIN PATCH TOOLTIP GLOBAL --- */
 
 /* --- COULEURS STATUTS DASHBOARD --- */
+/* Statuts dans "Visites récentes" (surlignage vert) */
+.recent-visits .status.validée, 
+.recent-visits .status.validée i,
+.card.recent-visits .status.validée,
+.card.recent-visits .status.validée i {
+  color: #4caf50 !important;
+}
+
+/* Statuts dans "Visites à venir" (surlignage orange) */
+.upcoming-visits .status.à-venir, 
+.upcoming-visits .status.à-venir i,
+.card.upcoming-visits .status.à-venir,
+.card.upcoming-visits .status.à-venir i {
+  color: #ff9800 !important;
+}
+
+/* Statuts dans "À Rappeler" (surlignage rouge) */
+.reminders .status.à-rappeler, 
+.reminders .status.à-rappeler i,
+.card.reminders .status.à-rappeler,
+.card.reminders .status.à-rappeler i {
+  color: #e53935 !important;
+}
+
+/* Surcharge globale pour tous les statuts */
 .status.validée, .status.validée i {
-  color: #6ee77a !important;
+  color: #4caf50 !important;
 }
-.status-à-venir, .status-à-venir i {
-  color: #ffb347 !important;
+.status.à-venir, .status.à-venir i {
+  color: #ff9800 !important;
 }
-.status-à-rappeler, .status-à-rappeler i {
-  color: #ff5a5a !important;
+.status.à-rappeler, .status.à-rappeler i {
+  color: #e53935 !important;
 }
 /* --- FIN COULEURS STATUTS DASHBOARD --- */
 
@@ -1060,5 +1178,969 @@ html, body {
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
+  }
+}
+
+/* === MODAL DES FILTRES RESPONSIVE === */
+.filter-panel {
+  font-family: inherit;
+  color: #fff;
+  background: rgba(40,40,40,0.98);
+  border-radius: 28px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  min-width: 340px;
+  max-width: 95vw;
+  padding: 32px 32px 24px 32px;
+  z-index: 2000;
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+}
+
+/* Classes pour la structure de la modal */
+.filter-title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 18px;
+  color: #fff;
+}
+
+.filter-section {
+  margin-bottom: 18px;
+}
+
+.filter-section-title {
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #fff;
+}
+
+.date-range-container {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.date-separator {
+  color: #aaa;
+  font-weight: bold;
+}
+
+.filter-toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toggle-label {
+  color: #fff;
+  font-size: 1rem;
+}
+
+.reset-filters-link {
+  margin-left: auto;
+  color: #4dd0e1;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.reset-filters-link:hover {
+  color: #26c6da;
+  text-decoration: underline;
+}
+
+/* Styles pour les inputs de date */
+.filter-date {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #444;
+  background: rgba(255,255,255,0.04);
+  color: #fff;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.filter-date:focus {
+  outline: none;
+  border-color: #e53935;
+  background: rgba(255,255,255,0.08);
+}
+
+.date-input-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+.date-input-wrapper i {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #aaa;
+  pointer-events: none;
+}
+
+/* Responsive pour tablette */
+@media (max-width: 1366px) {
+  .filter-panel {
+    min-width: 300px;
+    max-width: 90vw;
+    padding: 28px 24px 20px 24px;
+    top: 50px;
+    border-radius: 24px;
+  }
+  
+  .filter-title {
+    font-size: 1.8rem !important;
+    margin-bottom: 16px !important;
+  }
+  
+  .filter-section {
+    margin-bottom: 16px !important;
+  }
+  
+  .filter-section-title {
+    font-size: 1rem !important;
+    margin-bottom: 6px !important;
+  }
+  
+  .filter-checkbox {
+    font-size: 0.95rem !important;
+    margin-right: 16px !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .filter-checkbox input[type="checkbox"] {
+    width: 16px !important;
+    height: 16px !important;
+  }
+  
+  .date-input-wrapper {
+    flex: 1 !important;
+  }
+  
+  .filter-date {
+    padding: 6px 10px !important;
+    font-size: 0.9rem !important;
+  }
+  
+  .switch {
+    width: 34px !important;
+    height: 20px !important;
+  }
+  
+  .slider:before {
+    height: 14px !important;
+    width: 14px !important;
+    left: 3px !important;
+    bottom: 3px !important;
+  }
+  
+  input:checked + .slider:before {
+    transform: translateX(14px) !important;
+  }
+}
+
+/* Responsive pour smartphone */
+@media (max-width: 480px) {
+  .filter-panel {
+    min-width: 280px;
+    max-width: 95vw;
+    padding: 24px 20px 16px 20px;
+    top: 40px;
+    border-radius: 20px;
+    left: 20px;
+    right: 20px;
+    transform: none;
+    width: calc(100vw - 40px);
+  }
+  
+  .filter-title {
+    font-size: 1.6rem !important;
+    margin-bottom: 14px !important;
+    text-align: center;
+  }
+  
+  .filter-section {
+    margin-bottom: 14px !important;
+  }
+  
+  .filter-section-title {
+    font-size: 0.95rem !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .filter-checkbox {
+    display: block !important;
+    font-size: 0.9rem !important;
+    margin-right: 0 !important;
+    margin-bottom: 10px !important;
+  }
+  
+  .filter-checkbox input[type="checkbox"] {
+    width: 18px !important;
+    height: 18px !important;
+  }
+  
+  .date-input-wrapper {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+  
+  .filter-date {
+    padding: 8px 12px !important;
+    font-size: 0.85rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  
+  .switch {
+    width: 36px !important;
+    height: 22px !important;
+  }
+  
+  .slider:before {
+    height: 16px !important;
+    width: 16px !important;
+    left: 3px !important;
+    bottom: 3px !important;
+  }
+  
+  input:checked + .slider:before {
+    transform: translateX(14px) !important;
+  }
+  
+  /* Ajuster l'espacement des éléments sur mobile */
+  .filter-toggle-container {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+  
+  .toggle-label {
+    margin-bottom: 4px !important;
+  }
+  
+  .reset-filters-link {
+    margin-left: 0 !important;
+    margin-top: 8px !important;
+    display: block !important;
+  }
+}
+
+/* Ajustements pour les inputs de date sur mobile */
+@media (max-width: 480px) {
+  .date-range-container {
+    flex-direction: column !important;
+    gap: 8px !important;
+    align-items: stretch !important;
+  }
+  
+  .date-separator {
+    display: none !important;
+  }
+  
+  .date-input-wrapper {
+    width: 100% !important;
+  }
+}
+
+/* Bouton de fermeture responsive */
+#closeFilterPanel {
+  position: absolute !important;
+  top: 16px !important;
+  right: 16px !important;
+  background: none !important;
+  border: none !important;
+  color: #e53935 !important;
+  font-size: 1.5rem !important;
+  cursor: pointer !important;
+  padding: 8px !important;
+  border-radius: 50% !important;
+  transition: all 0.2s ease !important;
+}
+
+#closeFilterPanel:hover {
+  background: rgba(229, 57, 53, 0.1) !important;
+  color: #e53935 !important;
+}
+
+@media (max-width: 1366px) {
+  #closeFilterPanel {
+    top: 14px !important;
+    right: 14px !important;
+    font-size: 1.3rem !important;
+    padding: 6px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  #closeFilterPanel {
+    top: 12px !important;
+    right: 12px !important;
+    font-size: 1.2rem !important;
+    padding: 8px !important;
+  }
+}
+
+/* === INTERFACE PC - 3 COLONNES CÔTE À CÔTE === */
+.cards.pc-only {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: stretch !important;
+  gap: 24px !important;
+  width: 100% !important;
+  max-width: 1400px !important;
+  margin: 0 auto !important;
+  margin-top: 20px !important;
+  margin-bottom: 40px !important;
+  flex: 1 0 auto !important;
+}
+
+/* Carte individuelle sur PC */
+.cards.pc-only .card {
+  flex: 1 !important;
+  min-width: 0 !important;
+  max-width: calc(33.333% - 16px) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+  border-radius: 16px !important;
+  padding: 24px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: fit-content !important;
+  min-height: 400px !important;
+}
+
+/* En-tête de carte sur PC */
+.cards.pc-only .card-header {
+  margin-bottom: 20px !important;
+}
+
+.cards.pc-only .visites-header {
+  margin-bottom: 20px !important;
+}
+
+/* Titre de colonne sur PC */
+.cards.pc-only .titre-colonne {
+  font-size: 1.8rem !important;
+  margin-bottom: 16px !important;
+  text-align: center !important;
+}
+
+/* Navigation des dates sur PC */
+.cards.pc-only .date-navigation {
+  margin-top: 12px !important;
+  justify-content: center !important;
+}
+
+/* Liste des éléments dans les cartes PC */
+.cards.pc-only .card-list {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  max-height: 300px !important;
+}
+
+/* Entrées de visite sur PC */
+.cards.pc-only .visit-entry,
+.cards.pc-only .upcoming-entry,
+.cards.pc-only .reminder-entry {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  margin-bottom: 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  transition: all 0.2s ease !important;
+}
+
+.cards.pc-only .visit-entry:hover,
+.cards.pc-only .upcoming-entry:hover,
+.cards.pc-only .reminder-entry:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Informations dans les entrées PC */
+.cards.pc-only .visit-entry p,
+.cards.pc-only .upcoming-entry p,
+.cards.pc-only .reminder-entry p {
+  margin: 6px 0 !important;
+  font-size: 0.95rem !important;
+  line-height: 1.4 !important;
+}
+
+.cards.pc-only .visit-entry strong,
+.cards.pc-only .upcoming-entry strong,
+.cards.pc-only .reminder-entry strong {
+  font-size: 1rem !important;
+  color: #fff !important;
+}
+
+/* Statuts sur PC */
+.cards.pc-only .status {
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+}
+
+/* Surcharge spécifique pour PC - Visites récentes (vert) */
+.cards.pc-only .recent-visits .status.validée,
+.cards.pc-only .recent-visits .status.validée i {
+  color: #4caf50 !important;
+}
+
+/* Surcharge spécifique pour PC - Visites à venir (orange) */
+.cards.pc-only .upcoming-visits .status.à-venir,
+.cards.pc-only .upcoming-visits .status.à-venir i {
+  color: #ff9800 !important;
+}
+
+/* Surcharge spécifique pour PC - À Rappeler (rouge) */
+.cards.pc-only .reminders .status.à-rappeler,
+.cards.pc-only .reminders .status.à-rappeler i {
+  color: #e53935 !important;
+}
+
+/* Fallback pour PC si les sélecteurs spécifiques ne marchent pas */
+.cards.pc-only .status.validée {
+  color: #4caf50 !important;
+}
+
+.cards.pc-only .status.à-venir {
+  color: #ff9800 !important;
+}
+
+.cards.pc-only .status.à-rappeler {
+  color: #e53935 !important;
+}
+
+/* Pagination sur PC */
+.cards.pc-only .pagination-info {
+  margin-top: 16px !important;
+  text-align: center !important;
+  padding: 12px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-radius: 8px !important;
+}
+
+/* Responsive pour grands écrans PC */
+@media (min-width: 1400px) {
+  .cards.pc-only {
+    max-width: 1600px !important;
+    gap: 32px !important;
+  }
+  
+  .cards.pc-only .card {
+    padding: 28px !important;
+    min-height: 450px !important;
+  }
+  
+  .cards.pc-only .titre-colonne {
+    font-size: 2rem !important;
+  }
+}
+
+/* Responsive pour écrans moyens PC */
+@media (min-width: 1200px) and (max-width: 1399px) {
+  .cards.pc-only {
+    max-width: 1200px !important;
+    gap: 20px !important;
+  }
+  
+  .cards.pc-only .card {
+    padding: 20px !important;
+    min-height: 380px !important;
+  }
+}
+
+/* Masquage du carrousel sur PC */
+@media (min-width: 1367px) {
+  .dashboard-carousel.mobile-only {
+    display: none !important;
+  }
+  
+  .cards.pc-only {
+    display: flex !important;
+  }
+}
+
+/* Masquage des cartes PC sur mobile/tablette */
+@media (max-width: 1366px) {
+  .cards.pc-only {
+    display: none !important;
+  }
+  
+  .dashboard-carousel.mobile-only {
+    display: block !important;
+  }
+}
+
+/* === OPTIMISATION FOOTER SANS SCROLL SUR PC === */
+@media (min-width: 1367px) {
+  /* Ajuster l'espacement pour éviter le scroll */
+  .dashboard {
+    padding-bottom: 20px !important;
+    margin-bottom: 0 !important;
+  }
+  
+  /* Optimiser la hauteur des cartes pour s'adapter à l'écran */
+  .cards.pc-only {
+    margin-bottom: 20px !important;
+    flex: 1 0 auto !important;
+    min-height: 0 !important;
+  }
+  
+  .cards.pc-only .card {
+    min-height: 350px !important;
+    max-height: 500px !important;
+    overflow: hidden !important;
+  }
+  
+  /* Ajuster la hauteur de la liste pour éviter le débordement */
+  .cards.pc-only .card-list {
+    max-height: 250px !important;
+    overflow-y: auto !important;
+  }
+  
+  /* Réduire l'espacement des éléments pour optimiser l'espace */
+  .cards.pc-only .visit-entry,
+  .cards.pc-only .upcoming-entry,
+  .cards.pc-only .reminder-entry {
+    padding: 12px !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .cards.pc-only .visit-entry p,
+  .cards.pc-only .upcoming-entry p,
+  .cards.pc-only .reminder-entry p {
+    margin: 4px 0 !important;
+    font-size: 0.9rem !important;
+  }
+  
+  /* Optimiser l'espacement des titres */
+  .cards.pc-only .titre-colonne {
+    margin-bottom: 12px !important;
+    font-size: 1.6rem !important;
+  }
+  
+  .cards.pc-only .card-header,
+  .cards.pc-only .visites-header {
+    margin-bottom: 16px !important;
+  }
+  
+  /* Ajuster la navigation des dates */
+  .cards.pc-only .date-navigation {
+    margin-top: 8px !important;
+  }
+  
+  /* Optimiser la pagination */
+  .cards.pc-only .pagination-info {
+    margin-top: 12px !important;
+    padding: 8px !important;
+  }
+  
+  /* === CENTRAGE TITRE ET POSITIONNEMENT DATE SUR PC === */
+  /* Centrer le titre "Visites à venir" */
+  .cards.pc-only .upcoming-visits .titre-colonne {
+    text-align: center !important;
+    margin-bottom: 8px !important;
+  }
+  
+  /* Positionner la date juste en dessous du titre */
+  .cards.pc-only .upcoming-visits .date-navigation {
+    justify-content: center !important;
+    margin-top: 0 !important;
+    margin-bottom: 16px !important;
+    order: 1 !important; /* Placer la date après le titre */
+  }
+  
+  /* Ajuster l'espacement de l'en-tête des visites à venir */
+  .cards.pc-only .upcoming-visits .visites-header {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    margin-bottom: 20px !important;
+  }
+  
+  /* Style de la date centrée */
+  .cards.pc-only .upcoming-visits .current-date {
+    font-size: 1rem !important;
+    color: #fff !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    padding: 6px 12px !important;
+    border-radius: 20px !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  }
+  
+  /* Ajuster les flèches de navigation */
+  .cards.pc-only .upcoming-visits .nav-arrow {
+    margin: 0 8px !important;
+  }
+}
+
+/* Ajustement pour très grands écrans */
+@media (min-width: 1600px) {
+  .cards.pc-only .card {
+    min-height: 400px !important;
+    max-height: 600px !important;
+  }
+  
+  .cards.pc-only .card-list {
+    max-height: 300px !important;
+  }
+}
+
+/* === POSITIONNEMENT BARRE DE RECHERCHE SUR PC === */
+@media (min-width: 1367px) {
+  /* Ajuster l'espacement du titre pour éviter le chevauchement */
+  .dashboard-title {
+    margin-bottom: 25px !important;
+    z-index: 10 !important;
+    margin-left: 30px;
+  }
+  
+  /* Conteneur de recherche sur PC */
+  .search-container {
+    align-self: flex-start !important;
+    margin-left: 20px !important;
+    margin-right: auto !important;
+    margin-bottom: 20px !important;
+    width: auto !important;
+    max-width: 400px !important;
+    margin-top: 0 !important;
+    position: relative !important;
+    z-index: 5 !important;
+  }
+  
+  /* Barre de recherche sur PC */
+  .search-container .search-bar {
+    width: 100% !important;
+    max-width: 400px !important;
+    margin: 0 !important;
+    text-align: left !important;
+    position: relative !important;
+  }
+  
+  /* Boutons de filtres sur PC */
+  .filters {
+    justify-content: flex-start !important;
+    margin-left: 20px !important;
+    margin-right: auto !important;
+    width: auto !important;
+    max-width: 400px !important;
+    gap: 12px !important;
+    margin-top: 0 !important;
+  }
+  
+  /* Espacement entre la barre de recherche et les cartes */
+  .search-container + .filters {
+    margin-bottom: 20px !important;
+  }
+  
+  /* Ajuster la position du dashboard pour éviter les conflits */
+  .dashboard {
+    padding-top: 80px !important; /* Augmenter l'espace en haut pour le titre */
+  }
+}
+
+/* === MENU BOUTON + SUR PC === */
+@media (min-width: 1367px) {
+  /* Positionnement du menu sur la droite du bouton + */
+  .add-button-container .add-menu {
+    position: absolute !important;
+    top: 0 !important;
+    left: 100% !important;
+    right: auto !important;
+    margin-left: 8px !important;
+    margin-top: 0 !important;
+    min-width: 220px !important;
+    background: rgba(255, 255, 255, 0.18) !important;
+    border-radius: 12px !important;
+    padding: 8px !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    backdrop-filter: blur(10px) !important;
+    z-index: 1000 !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+    /* Réinitialiser les styles mobile/tablette */
+    transform: none !important;
+    margin-right: 0 !important;
+  }
+  
+  /* Flèche pointant vers le bouton sur PC */
+  .add-button-container .add-menu::before {
+    content: '' !important;
+    position: absolute !important;
+    left: -6px !important;
+    top: 20px !important;
+    width: 0 !important;
+    height: 0 !important;
+    border-top: 6px solid transparent !important;
+    border-bottom: 6px solid transparent !important;
+    border-right: 6px solid rgba(255, 255, 255, 0.18) !important;
+    /* Réinitialiser les styles mobile/tablette */
+    right: auto !important;
+    border-left: none !important;
+    border-bottom: none !important;
+    border-top: 6px solid transparent !important;
+  }
+  
+  /* Style des liens du menu sur PC */
+  .add-button-container .add-menu a {
+    display: block !important;
+    padding: 12px 16px !important;
+    color: white !important;
+    text-decoration: none !important;
+    border-radius: 8px !important;
+    transition: all 0.2s ease !important;
+    font-size: 0.95rem !important;
+    font-weight: 500 !important;
+  }
+  
+  .add-button-container .add-menu a:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    transform: translateX(4px) !important;
+  }
+  
+  /* Icônes dans le menu sur PC */
+  .add-button-container .add-menu i {
+    margin-right: 10px !important;
+    width: 16px !important;
+    text-align: center !important;
+  }
+  
+  /* Désactiver les classes mobile/tablette sur PC */
+  .add-button-container .add-menu.menu-right,
+  .add-button-container .add-menu.menu-above {
+    position: absolute !important;
+    top: 0 !important;
+    left: 100% !important;
+    right: auto !important;
+    margin-left: 8px !important;
+    margin-top: 0 !important;
+    margin-right: 0 !important;
+    margin-bottom: 0 !important;
+    transform: none !important;
+  }
+  
+  .add-button-container .add-menu.menu-right::before,
+  .add-button-container .add-menu.menu-above::before {
+    content: '' !important;
+    position: absolute !important;
+    left: -6px !important;
+    top: 20px !important;
+    width: 0 !important;
+    height: 0 !important;
+    border-top: 6px solid transparent !important;
+    border-bottom: 6px solid transparent !important;
+    border-right: 6px solid rgba(255, 255, 255, 0.18) !important;
+    right: auto !important;
+    border-left: none !important;
+    border-bottom: none !important;
+    border-top: 6px solid transparent !important;
+  }
+}
+
+/* === REPOSITIONNEMENT BOUTON + SUR MOBILE/TABLETTE === */
+@media (max-width: 1366px) {
+  /* Conteneur des filtres en mode mobile/tablette */
+  .filters {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 auto !important;
+    margin-top: 15px !important;
+  }
+  
+  /* Bouton filtre à gauche */
+  .filter-button {
+    order: 1 !important;
+    margin: 0 !important;
+    align-self: flex-start !important;
+  }
+  
+  /* Filtres actifs au centre (optionnel) */
+  #activeFiltersDashboard {
+    order: 2 !important;
+    margin: 0 auto !important;
+    flex: 1 !important;
+    text-align: center !important;
+  }
+  
+  /* Bouton + repositionné à droite, aligné verticalement avec le bouton filtre */
+  .add-button-container {
+    order: 3 !important;
+    align-self: flex-end !important;
+    margin: 0 !important;
+  }
+  
+  /* Style du bouton + sur mobile/tablette */
+  .add-button-container .add-button {
+    width: 50px !important;
+    height: 50px !important;
+    border-radius: 50% !important;
+    background: #e53935 !important;
+    color: white !important;
+    border: none !important;
+    font-size: 20px !important;
+    cursor: pointer !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  }
+  
+  .add-button-container .add-button:hover {
+    background: #cc2e2e !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  }
+  
+  /* Menu déroulant sur mobile/tablette (s'adapte automatiquement) */
+  .add-button-container .add-menu {
+    position: absolute !important;
+    top: 0 !important;
+    right: 100% !important;
+    left: auto !important;
+    transform: none !important;
+    margin-right: 8px !important;
+    margin-top: 0 !important;
+    min-width: 200px !important;
+    background: rgba(255, 255, 255, 0.18) !important;
+    border-radius: 12px !important;
+    padding: 8px !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    backdrop-filter: blur(10px) !important;
+    z-index: 1000 !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  /* Flèche pointant vers la droite (vers le bouton) sur mobile/tablette */
+  .add-button-container .add-menu::before {
+    content: '' !important;
+    position: absolute !important;
+    right: -6px !important;
+    top: 20px !important;
+    transform: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    border-top: 6px solid transparent !important;
+    border-bottom: 6px solid transparent !important;
+    border-left: 6px solid rgba(255, 255, 255, 0.18) !important;
+  }
+  
+  /* Adaptation automatique pour éviter les débordements d'écran */
+  @media (max-width: 768px) {
+    .add-button-container .add-menu {
+      /* Sur petit écran, s'ouvrir en dessous par défaut */
+      top: 100% !important;
+      right: auto !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      margin-right: 0 !important;
+      margin-top: 8px !important;
+    }
+    
+    .add-button-container .add-menu::before {
+      /* Flèche pointant vers le haut */
+      right: auto !important;
+      left: 50% !important;
+      top: -6px !important;
+      transform: translateX(-50%) !important;
+      border-left: none !important;
+      border-right: none !important;
+      border-bottom: 6px solid rgba(255, 255, 255, 0.18) !important;
+    }
+  }
+  
+  /* Sur tablette moyenne, essayer de s'ouvrir à gauche mais avec fallback */
+  @media (min-width: 769px) and (max-width: 1366px) {
+    .add-button-container .add-menu {
+      /* Essayer d'abord à gauche */
+      right: 100% !important;
+      left: auto !important;
+    }
+    
+    /* Si l'espace est insuffisant, JavaScript peut forcer l'ouverture à droite */
+    .add-button-container .add-menu.menu-right {
+      right: auto !important;
+      left: 100% !important;
+      margin-right: 0 !important;
+      margin-left: 8px !important;
+    }
+    
+    .add-button-container .add-menu.menu-right::before {
+      right: auto !important;
+      left: -6px !important;
+      border-left: none !important;
+      border-right: 6px solid rgba(255, 255, 255, 0.18) !important;
+    }
+    
+    /* Si l'espace en bas est insuffisant, ouvrir au-dessus */
+    .add-button-container .add-menu.menu-above {
+      top: auto !important;
+      bottom: 100% !important;
+      margin-top: 0 !important;
+      margin-bottom: 8px !important;
+    }
+    
+    .add-button-container .add-menu.menu-above::before {
+      top: auto !important;
+      bottom: -6px !important;
+      border-left: none !important;
+      border-right: none !important;
+      border-top: 6px solid rgba(255, 255, 255, 0.18) !important;
+    }
+  }
+  
+  /* Style des liens du menu sur mobile/tablette */
+  .add-button-container .add-menu a {
+    display: block !important;
+    padding: 12px 16px !important;
+    color: white !important;
+    text-decoration: none !important;
+    border-radius: 8px !important;
+    transition: all 0.2s ease !important;
+    font-size: 0.95rem !important;
+    font-weight: 500 !important;
+    text-align: center !important;
+  }
+  
+  .add-button-container .add-menu a:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    transform: translateY(-2px) !important;
+  }
+  
+  /* Icônes dans le menu mobile/tablette */
+  .add-button-container .add-menu i {
+    margin-right: 10px !important;
+    width: 16px !important;
+    text-align: center !important;
+  }
+}
+
+/* === TITRE DASHBOARD SUR MOBILE/TABLETTE === */
+@media (max-width: 1366px) {
+  .dashboard-title {
+    text-align: left !important;
+    align-self: flex-start !important;
+    margin-left: 0 !important;
+    margin-right: auto !important;
+    width: 100% !important;
+    padding-left: 20px !important;
   }
 }

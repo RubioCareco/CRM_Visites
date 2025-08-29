@@ -48,6 +48,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'front.middleware.SessionTimeoutMiddleware',
 ]
 
 ROOT_URLCONF = 'crm_visites.urls'
@@ -145,3 +146,8 @@ EMAIL_HOST_USER = 'bznjamin.gillens@gmail.com'
 EMAIL_HOST_PASSWORD = 'hhwz rtgp qntz gdah'
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = 'bznjamin.gillens@gmail.com'
+
+# Configuration des sessions pour la sécurité
+SESSION_COOKIE_AGE = 1800  # 30 minutes en secondes
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Session expire à la fermeture du navigateur
+SESSION_SAVE_EVERY_REQUEST = True  # Sauvegarde la session à chaque requête

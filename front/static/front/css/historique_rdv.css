@@ -1,48 +1,63 @@
+/* ===== STYLES DE BASE - MODE PC ===== */
 .tab-btn {
-    padding:10px 24px;
-    border:none;
-    background:rgba(250,250,250,0.219);
-    color:#fff;
-    font-size:1.1rem;
-    cursor:pointer;
-    border-radius:0;
-    margin-left:0;
-    margin-right:0;
-    flex:1 1 0;
-    width:100%;
-    border-right:1px solid #fff2;
-    transition:background 0.2s, color 0.2s;
-    box-shadow:none;
-  }
+  padding: 10px 24px;
+  border: none;
+  background: rgba(250,250,250,0.219);
+  color: #fff;
+  font-size: 1.1rem;
+  cursor: pointer;
+  border-radius: 0;
+  margin-left: 0;
+  margin-right: 0;
+  flex: 1 1 0;
+  width: 100%;
+  border-right: 1px solid #fff2;
+  transition: background 0.2s, color 0.2s;
+  box-shadow: none;
+}
+
   .tab-btn.active {
-    background:#e53935;
-    color:#fff;
-    z-index:2;
-  }
+  background: #e53935;
+  color: #fff;
+  z-index: 2;
+}
+
   .tab-btn:first-child {
-    border-top-left-radius:12px;
-  }
+  border-top-left-radius: 12px;
+}
+
+.tab-btn:last-child {
+  border-top-right-radius: 12px;
+}
+
   .tab-btn:last-child {
-    border-top-right-radius:12px;
+  border-right: none;
   }
-  .tab-btn:last-child {border-right:none;}
+
   .tabs-container {
-    display:flex;
-    width:100%;
-    margin-bottom:18px;
-    justify-content:stretch;
-    align-items:stretch;
-    gap:0;
-    margin-top:0;
-    margin-left:0;
-    margin-right:0;
-    background:transparent;
-    border-radius:0;
-    box-shadow:none;
-    padding:0;
-  }
-  .tab-content {display:none;}
-  .tab-content.active {display:block;}
+  display: flex;
+  width: 100%;
+  margin-bottom: 18px;
+  justify-content: stretch;
+  align-items: stretch;
+  gap: 0;
+  margin-top: 0;
+  margin-left: 0;
+  margin-right: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
   .visit-entry, .reminder-entry {
     width: 99.5%;
     min-width: 340px;
@@ -61,6 +76,7 @@
     gap: 0 38px;
     font-size: 1.05rem;
   }
+
   .client-name {
     min-width: 200px;
     padding-right: 20px;
@@ -68,6 +84,7 @@
     flex-direction: column;
     gap: 4px;
   }
+
   .client-name strong {
     font-size: 1.08rem;
     font-weight: 600;
@@ -76,6 +93,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
   .client-name .infos-adresse {
     font-size: 0.9rem;
     color: #ccc;
@@ -84,17 +102,20 @@
     text-overflow: ellipsis;
     margin: 0;
   }
+
   .status-container {
     min-width: 120px;
     display: flex;
     align-items: center;
     align-self: center;
   }
+
   .info-container {
     flex: 1;
     min-width: 300px;
     align-self: center;
   }
+
   .visit-entry p, .reminder-entry p {
     margin: 0;
     padding: 0;
@@ -103,6 +124,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
   .status.validée, .status-à-rappeler {
     min-width: 110px;
     text-align: left;
@@ -110,11 +132,13 @@
     white-space: nowrap;
     margin: 0;
   }
+
   .visit-date, .visit-date-passed {
     font-size: 0.98rem;
     color: #ccc;
     white-space: nowrap;
   }
+
   .info-container .infos-adresse {
     font-size: 0.98rem;
     color: #ccc;
@@ -125,11 +149,13 @@
     align-items: center;
     gap: 10px;
   }
+
   .infos-adresse span {
     display: inline-flex;
     align-items: center;
     white-space: nowrap;
   }
+
   .tabs-content-scroll {
     max-height: 68vh;
     overflow-y: auto;
@@ -139,163 +165,979 @@
     border-radius: 0;
     background: transparent;
   }
+
   .tabs-content-scroll::-webkit-scrollbar {
     width: 6px;
   }
+
   .tabs-content-scroll::-webkit-scrollbar-thumb {
     background-color: rgba(255, 255, 255, 0.2);
     border-radius: 5px;
   }
+
   .visit-entry:hover, .upcoming-entry:hover, .reminder-entry:hover {
     transform: scale(1.015);
     box-shadow: 0 6px 24px rgba(229,57,53,0.10), 0 1.5px 8px rgba(0,0,0,0.13);
     z-index: 2;
   }
-  /* --- STYLE MODALE FILTRE HISTORIQUE --- */
-  #filterPopoverHistorique {
-    background: rgba(0, 0, 0, 0.829) !important;
-    color: #222 !important;
-    border-radius: 28px !important;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.13);
-    padding: 32px 32px 24px 32px;
-    min-width: 340px;
-    max-width: 95vw;
-    font-family: inherit;
-    font-size: 1.13rem;
+
+/* ===== NOUVELLES CLASSES POUR REMPLACER LES STYLES INLINE ===== */
+.search-bar {
+  position: relative;
+  margin-top: 60px;
+  margin-bottom: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-icon {
+  font-size: 1.4rem;
+  margin-right: 15px;
+  color: #666;
+}
+
+.autocomplete-results {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 38px;
+  z-index: 10;
+  background: rgba(30,30,30,0.95);
+  color: #fff;
+  border-radius: 0 0 8px 8px;
+  max-height: 180px;
+  overflow-y: auto;
+  display: none;
+}
+
+.filter-button {
+  margin-left: 10px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #e53935;
+  color: #fff;
     border: none;
-    backdrop-filter: blur(6px);
-    position: relative;
-    z-index: 2000;
-  }
-  #filterPopoverHistorique .filter-type-btn {
-    background: #f3f3f3 !important;
-    color: #222 !important;
-    border: 1.5px solid #e0e0e0 !important;
-    border-radius: 10px !important;
-    font-size: 1.04rem;
-    font-weight: 500;
-    margin-bottom: 0;
-    box-shadow: none;
-    transition: background 0.18s, color 0.18s, border 0.18s;
-    padding: 7px 18px;
-  }
-  #filterPopoverHistorique .filter-type-btn.active, #filterPopoverHistorique .filter-type-btn:active {
-    background: #e53935 !important;
-    color: #fff !important;
-    border: 1.5px solid #e53935 !important;
-  }
-  #filterPopoverHistorique .filter-type-btn:hover {
-    background: #e0e0e0 !important;
-    color: #222 !important;
-  }
-  #filterPopoverHistorique input[type="date"],
-  #filterPopoverHistorique input[type="week"],
-  #filterPopoverHistorique input[type="month"],
-  #filterPopoverHistorique select {
-    background: #fff;
-    color: #222;
-    border: 1.5px solid #e0e0e0;
-    border-radius: 10px;
-    padding: 8px 12px;
-    font-size: 1.08rem;
-    margin-bottom: 12px;
-    width: 90%;
-    max-width: 320px;
-    box-shadow: none;
-    outline: none;
-    transition: border 0.18s, background 0.18s;
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-  }
-  #filterPopoverHistorique input:focus, #filterPopoverHistorique select:focus {
-    border: 1.5px solid #e53935;
-    background: #fafafa;
-  }
-  #filterPopoverHistorique input::-webkit-input-placeholder { color: #888; opacity: 1; }
-  #filterPopoverHistorique input:-ms-input-placeholder { color: #888; opacity: 1; }
-  #filterPopoverHistorique input::placeholder { color: #888; opacity: 1; }
-  #filterPopoverHistorique #applyFilterHistorique {
-    background: #4caf50 !important;
-    color: #fff !important;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.filter-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #444;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 16px;
+  margin-left: 10px;
+  font-size: 1rem;
+}
+
+.filter-badge-close {
+  color: #ff5a5a;
+  margin-left: 8px;
+  font-weight: bold;
+  text-decoration: none;
+  font-size: 1.1em;
+}
+
+.filter-popover {
+  display: none;
+  position: absolute;
+  top: 48px;
+  right: 0;
+  z-index: 1001;
+  color: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  padding: 24px 28px 18px 28px;
+  min-width: 260px;
+  background: rgba(0, 0, 0, 0.829);
+}
+
+.filter-popover-title {
+  font-size: 1.15rem;
+  font-weight: bold;
+  margin-bottom: 14px;
+  color: #fff;
+}
+
+.filter-type-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.filter-type-btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #333;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.filter-type-btn:hover {
+  background: #555;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+  justify-content: flex-end;
+}
+
+.filter-apply-btn {
+  background: #4caf50;
+  color: #fff;
+  padding: 7px 18px;
+  border-radius: 8px;
     border: none;
-    font-weight: 600;
-    font-size: 1.07rem;
-    border-radius: 10px;
-    box-shadow: none;
-    padding: 10px 28px;
-    margin-right: 8px;
-    transition: background 0.18s;
-  }
-  #filterPopoverHistorique #applyFilterHistorique:hover {
-    background: #388e3c !important;
-  }
-  #filterPopoverHistorique #resetFilterHistorique {
-    background: none !important;
-    color: #3fd0f7 !important;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.filter-apply-btn:hover {
+  background: #388e3c;
+}
+
+.filter-reset-btn {
+  background: #e53935;
+  color: #fff;
+  padding: 7px 18px;
+  border-radius: 8px;
     border: none;
-    font-weight: 500;
-    font-size: 1.01rem;
-    border-radius: 0;
-    box-shadow: none;
-    padding: 0 0 0 0;
-    margin-left: auto;
-    margin-right: 0;
-    transition: color 0.18s, text-decoration 0.18s;
-    text-align: right;
-    display: block;
-    text-decoration: none;
-  }
-  #filterPopoverHistorique #resetFilterHistorique:hover {
-    color: #00bcd4 !important;
-    text-decoration: underline;
-  }
-  #filterPopoverHistorique #closeFilterPopoverHistorique {
-    color: #888 !important;
-    font-size: 1.5rem;
-    font-weight: bold;
-    opacity: 0.7;
-    transition: opacity 0.18s, color 0.18s;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.filter-reset-btn:hover {
+  background: #c62828;
+}
+
+.filter-close-btn {
     position: absolute;
     top: 10px;
     right: 14px;
     background: none;
     border: none;
+  color: #fff;
+  font-size: 1.3rem;
     cursor: pointer;
-  }
-  #filterPopoverHistorique #closeFilterPopoverHistorique:hover {
-    opacity: 1;
-    color: #e53935 !important;
-  }
-  #filterInputsHistorique {
+  transition: color 0.2s;
+}
+
+.filter-close-btn:hover {
+  color: #e53935;
+}
+
+.cards {
+  margin-top: 10px;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.card {
+  width: 100%;
+  max-width: 1500px;
+  margin: auto;
+  min-height: 750px;
+  padding-top: 0;
+  padding-left: 0;
+  padding-right: 0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.status-valid {
+  color: #6ee77a;
+}
+
+.status-annule {
+  color: #ff5a5a;
+}
+
+.separator {
+  color: #ccc;
+  margin-left: 24px;
+  font-weight: 400;
+}
+
+.last-visit {
+  color: #ccc;
+  margin-left: 12px;
+}
+
+.no-appointments {
+  color: #aaa;
+  text-align: center;
+  font-size: 1.2rem;
+  margin: 40px 0;
+}
+
+/* ===== BOUTON RETOUR - MODE PC (FIXE) ===== */
+.back-login {
+  position: fixed;
+  left: 24px;
+  bottom: 20px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 1.15rem;
+  padding: 8px 22px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(6px);
+  border: none;
+  text-decoration: none;
+  background: rgba(255,255,255,0.18);
+  transition: transform 0.18s cubic-bezier(.7,.2,.2,1);
+}
+
+.back-login:hover {
+  transform: scale(1.08);
+}
+
+/* ===== BOUTON RETOUR SPÉCIFIQUE À HISTORIQUE_RDV ===== */
+.historique-back-btn {
+  position: fixed;
+  left: 24px;
+  bottom: 20px;
+  z-index: 9999;
     display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 1.15rem;
+  padding: 8px 22px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(6px);
+  border: none;
+  text-decoration: none;
+  background: rgba(255,255,255,0.18);
+  transition: transform 0.18s cubic-bezier(.7,.2,.2,1);
+}
+
+.historique-back-btn:hover {
+  transform: scale(1.08);
+}
+
+/* ===== CONTENEUR DU BOUTON RETOUR ===== */
+.back-button-container {
+  padding: 20px;
+  text-align: left;
+}
+
+/* ===== MODALE CLIENT ===== */
+.modal-client-rdv {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(20,20,20,0.85);
+  display: none;
+  align-items: center;
     justify-content: center;
+  z-index: 2000;
+}
+
+.modal-content-client-rdv {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border-radius: 18px;
+  padding: 32px 36px 28px 36px;
+  min-width: 420px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  position: relative;
+}
+
+.modal-content-client-rdv h2 {
+  margin-bottom: 18px;
+  text-align: center;
+  padding-bottom: 10px;
+}
+
+.close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  color: #e53935;
+  font-size: 16px;
+  display: flex;
     align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  box-sizing: border-box;
+  padding: 0;
+  z-index: 10;
+  border: none;
+}
+
+.close-btn:hover {
+  background-color: rgba(229, 57, 53, 0.1);
+}
+
+.table-modal-rdv {
     width: 100%;
-    margin-bottom: 12px;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.table-modal-rdv th, .table-modal-rdv td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #333;
+  text-align: left;
+}
+
+.table-modal-rdv th {
+  background: #e53935;
+  color: #fff;
+  font-weight: 600;
+}
+
+.statut-valide {
+  color: #6ee77a;
+  font-weight: bold;
+}
+
+.statut-annule {
+  color: #ff5a5a;
+  font-weight: bold;
+}
+
+.statut-autre {
+  color: #ffa500;
+  font-weight: bold;
+}
+
+.no-rdv-message {
+  color: #ccc;
+  text-align: center;
+  font-style: italic;
+}
+
+/* ===== RESPONSIVE DESIGN - TABLETTE/SMARTPHONE ===== */
+@media (max-width: 1366px) {
+  /* RENDRE LE TABLEAU BEAUCOUP PLUS LARGE sur tablette/smartphone */
+  .card {
+    width: 98% !important;
+    max-width: none !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    border-radius: 15px !important;
+    min-height: auto !important;
+    overflow: visible !important;
   }
-  .pdf-download-icon {
-    display: inline-flex;
-    align-items: center;
-    margin-left: 40px;
-    padding: 0;
-    opacity: 0.9;
-    transition: all 0.3s ease;
+  
+  /* Forcer la largeur du conteneur principal */
+  .cards {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 10px !important;
   }
-  .pdf-download-icon:hover {
-    opacity: 1;
-    transform: scale(1.05);
-    filter: brightness(1.15);
+  
+  .tabs-content-scroll {
+    width: 100% !important;
+    padding: 15px 10px !important; /* Réduit de 20px 15px à 15px 10px */
+    margin: 0 !important;
+    max-width: none !important;
   }
+  
+  .tabs-content {
+    width: 100% !important;
+    padding: 0 !important;
+    max-width: none !important;
+  }
+  
+  /* AGRANDIR LE TITRE PRINCIPAL */
+  .dashboard-title {
+    font-size: 2.5rem !important;
+    margin: 20px 0 40px 0 !important; /* Réduit de 40px 0 80px 0 à 20px 0 40px 0 */
+    text-align: center !important;
+  }
+  
+  /* AGRANDIR LA BARRE DE RECHERCHE */
+  .search-bar {
+    margin: 40px 0 25px 0 !important; /* Réduit de 80px 0 50px 0 à 40px 0 25px 0 */
+    padding: 20px !important; /* Réduit de 25px à 20px */
+    border-radius: 15px !important;
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 15px !important;
+  }
+  
+  .search-bar input {
+    font-size: 1.3rem !important;
+    padding: 12px 18px 12px 45px !important; /* Réduit de 15px 20px 15px 50px à 12px 18px 12px 45px */
+    height: 45px !important; /* Réduit de 50px à 45px */
+    flex: 1 !important;
+    border-radius: 12px !important;
+  }
+  
+  .search-icon {
+    font-size: 1.4rem !important;
+    position: absolute !important;
+    left: 30px !important; /* Réduit de 35px à 30px */
+    z-index: 10 !important;
+    color: #666 !important;
+  }
+  
+  /* AGRANDIR LE BOUTON FILTRES - MÊME PADDING QUE LA BARRE */
+  .filter-button {
+    font-size: 1.3rem !important;
+    padding: 12px 20px !important; /* Réduit de 15px 25px à 12px 20px */
+    height: 45px !important; /* Réduit de 50px à 45px */
+    border-radius: 12px !important;
+    margin-left: 15px !important;
+  }
+  
+  /* Harmoniser le bouton filtre avec la barre de recherche */
+  #filterBtnHistorique {
+    padding: 20px 20px !important; /* Réduit de 40px 25px à 20px 20px */
+    height: 45px !important; /* Réduit de 50px à 45px */
+    border-radius: 12px !important;
+    margin-left: 15px !important;
+    font-size: 1.3rem !important;
+  }
+  
+  /* AGRANDIR LES ONGLETS */
+  .tabs-container {
+    margin-bottom: 15px !important; /* Réduit de 25px à 15px */
+    padding: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+  }
+  
+  .tab-btn {
+    padding: 15px 25px !important; /* Réduit de 18px 30px à 15px 25px */
+    font-size: 1.4rem !important;
+    border-radius: 12px !important;
+    margin: 0 !important;
+    flex: 1 1 0 !important;
+    width: 100% !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
+  }
+  
+  .tab-btn:first-child {
+    border-top-left-radius: 12px !important;
+    border-bottom-left-radius: 12px !important;
+  }
+  
+  .tab-btn:last-child {
+    border-top-right-radius: 12px !important;
+    border-bottom-right-radius: 12px !important;
+    border-right: none !important;
+  }
+  
+  /* AGRANDIR LES ENTREES DE VISITE */
+  .visit-entry, .reminder-entry {
+    width: 100% !important;
+    min-width: auto !important;
+    margin: 15px 0 !important; /* Réduit de 25px 0 à 15px 0 */
+    padding: 25px 30px !important; /* Réduit de 35px 40px à 25px 30px */
+    grid-template-columns: 1fr !important;
+    gap: 20px !important; /* Réduit de 30px à 20px */
+    font-size: 1.5rem !important;
+    max-width: none !important;
+    box-sizing: border-box !important;
+    border-radius: 15px !important;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2) !important;
+  }
+  
+  /* Forcer la largeur des conteneurs de texte */
+  .client-name, .status-container, .info-container {
+    width: 100% !important;
+    max-width: none !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* AGRANDIR LES NOMS DE CLIENTS */
+  .client-name {
+    min-width: auto !important;
+    padding-right: 0 !important;
+    text-align: center !important;
+    margin-bottom: 15px !important; /* Réduit de 20px à 15px */
+  }
+  
+  .client-name strong {
+    font-size: 1.8rem !important;
+    text-align: center !important;
+    line-height: 1.4 !important;
+    display: block !important;
+    margin-bottom: 10px !important; /* Réduit de 15px à 10px */
+  }
+  
+  .client-name .infos-adresse {
+    text-align: center !important;
+    font-size: 1.4rem !important;
+    line-height: 1.5 !important;
+  }
+  
+  /* AGRANDIR LES CONTENEURS DE STATUT ET INFO */
+  .status-container, .info-container {
+    min-width: auto !important;
+    text-align: center !important;
+    justify-content: center !important;
+    margin-bottom: 15px !important; /* Réduit de 20px à 15px */
+  }
+  
+  .status.validée, .status-à-rappeler {
+    min-width: auto !important;
+    text-align: center !important;
+    font-size: 1.6rem !important;
+    padding: 10px 20px !important; /* Réduit de 12px 25px à 10px 20px */
+    border-radius: 12px !important;
+    display: inline-block !important;
+    margin-bottom: 10px !important; /* Réduit de 15px à 10px */
+  }
+  
+  .visit-date, .visit-date-passed {
+    text-align: center !important;
+    font-size: 1.4rem !important;
+    line-height: 1.6 !important;
+    margin-bottom: 10px !important; /* Réduit de 15px à 10px */
+  }
+  
+  .info-container .infos-adresse {
+    justify-content: center !important;
+    text-align: center !important;
+    font-size: 1.4rem !important;
+    line-height: 1.6 !important;
+    margin-bottom: 10px !important; /* Réduit de 15px à 10px */
+  }
+  
+  /* AGRANDIR LA MODALE DE FILTRE */
+  .filter-popover {
+    min-width: 90vw !important;
+    max-width: 95vw !important;
+    padding: 25px 25px 20px 25px !important; /* Réduit de 35px 35px 30px 35px à 25px 25px 20px 25px */
+    font-size: 1.4rem !important;
+    border-radius: 20px !important;
+  }
+  
+  .filter-type-btn {
+    font-size: 1.3rem !important;
+    padding: 15px 25px !important;
+    margin-bottom: 20px !important;
+    border-radius: 12px !important;
+  }
+  
+  .filter-popover input[type="date"],
+  .filter-popover input[type="week"],
+  .filter-popover input[type="month"],
+  .filter-popover select {
+    width: 95% !important;
+    max-width: none !important;
+    font-size: 1.3rem !important;
+    padding: 18px 20px !important;
+    margin-bottom: 20px !important;
+    border-radius: 12px !important;
+    height: 55px !important;
+  }
+  
+  .filter-apply-btn {
+    font-size: 1.3rem !important;
+    padding: 18px 30px !important;
+    border-radius: 12px !important;
+    height: 55px !important;
+  }
+  
+  /* BOUTON RETOUR SUR TABLETTE - SOUS LE TABLEAU */
+  .historique-back-btn {
+    left: auto !important;
+    bottom: 600px;
+    z-index: auto !important;
+  }
+  
+  .back-button-container {
+    padding: 25px 20px !important;
+    margin-top: 20px !important;
+    margin-bottom: 50px;
+  }
+}
+
+@media (max-width: 1366px) {
+  /* Forcer le bouton à rester dans le flux (ne pas suivre le scroll) */
+  .historique-back-btn {
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: 600px;
+    z-index: auto !important;
+    transform: none !important;
+    margin-bottom: 50px;
+  }
+  .back-button-container {
+    position: relative !important;
+    padding-left: 20px !important;
+  }
+}
+
+/* Mode smartphone uniquement */
+@media (max-width: 480px) {
+  /* RENDRE LE TABLEAU ENCORE PLUS LARGE sur smartphone */
+  .card {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    min-height: auto !important;
+    overflow: visible !important;
+  }
+  
+  /* Forcer la largeur du conteneur principal sur smartphone */
+  .cards {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 5px !important;
+  }
+  
+  .tabs-content-scroll {
+    width: 100% !important;
+    padding: 30px 25px !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+  
+  .tabs-content {
+    width: 100% !important;
+    padding: 0 !important;
+    max-width: none !important;
+  }
+  
+  /* AGRANDIR ENCORE PLUS LE TITRE PRINCIPAL sur smartphone */
+  .dashboard-title {
+    font-size: 3rem !important;
+    margin: 25px 0 40px 0 !important; /* Réduit de 50px 0 100px 0 à 25px 0 40px 0 */
+    text-align: center !important;
+  }
+  
+  /* AGRANDIR ENCORE PLUS LA BARRE DE RECHERCHE sur smartphone */
+  .search-bar {
+    margin: 40px 0 25px 0 !important; /* Réduit de 100px 0 60px 0 à 40px 0 25px 0 */
+    padding: 20px !important; /* Réduit de 30px à 20px */
+    border-radius: 20px !important;
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 20px !important;
+  }
+  
+  .search-bar input {
+    font-size: 1.6rem !important;
+    padding: 15px 20px 15px 45px !important; /* Réduit de 20px 25px 20px 60px à 15px 20px 15px 45px */
+    height: 50px !important; /* Réduit de 60px à 50px */
+    flex: 1 !important;
+    border-radius: 15px !important;
+  }
+  
+  .search-icon {
+    font-size: 1.8rem !important;
+    position: absolute !important;
+    left: 30px !important; /* Réduit de 40px à 30px */
+    z-index: 10 !important;
+    color: #666 !important;
+  }
+  
+  /* AGRANDIR ENCORE PLUS LE BOUTON FILTRES sur smartphone - MÊME PADDING */
+  .filter-button {
+    font-size: 1.6rem !important;
+    padding: 15px 25px !important; /* Réduit de 20px 30px à 15px 25px */
+    height: 50px !important; /* Réduit de 60px à 50px */
+    border-radius: 15px !important;
+    margin-left: 20px !important;
+  }
+  
+  /* Harmoniser le bouton filtre avec la barre de recherche sur smartphone */
+  #filterBtnHistorique {
+    padding: 15px 25px !important; /* Réduit de 20px 30px à 15px 25px */
+    height: 50px !important; /* Réduit de 60px à 50px */
+    border-radius: 15px !important;
+    margin-left: 20px !important;
+    font-size: 1.6rem !important;
+  }
+  
+  /* AGRANDIR ENCORE PLUS LES ONGLETS sur smartphone */
+  .tabs-container {
+    margin-bottom: 20px !important; /* Réduit de 35px à 20px */
+    padding: 0 15px !important;
+  }
+  
+  .tab-btn {
+    padding: 20px 30px !important; /* Réduit de 25px 40px à 20px 30px */
+    font-size: 1.8rem !important;
+    border-radius: 15px !important;
+    margin: 0 10px !important;
+  }
+  
+  /* AGRANDIR ENCORE PLUS LES ENTREES DE VISITE sur smartphone */
+  .visit-entry, .reminder-entry {
+    width: 100% !important;
+    margin: 20px 0 !important; /* Réduit de 30px 0 à 20px 0 */
+    padding: 40px 30px !important; /* Réduit de 70px 50px à 40px 30px */
+    gap: 30px !important; /* Réduit de 50px à 30px */
+    font-size: 2.2rem !important;
+    border-radius: 0 !important;
+    box-shadow: 0 12px 35px rgba(0,0,0,0.3) !important;
+    max-width: none !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* AGRANDIR ENCORE PLUS LES NOMS DE CLIENTS sur smartphone */
+  .client-name strong {
+    font-size: 2.5rem !important;
+    line-height: 1.4 !important;
+    margin-bottom: 15px !important; /* Réduit de 25px à 15px */
+  }
+  
+  .client-name .infos-adresse {
+    font-size: 2rem !important;
+    line-height: 1.6 !important;
+    margin-bottom: 15px !important; /* Réduit de 25px à 15px */
+  }
+  
+  /* AGRANDIR ENCORE PLUS LES STATUTS sur smartphone */
+  .status.validée, .status-à-rappeler {
+    font-size: 2.2rem !important;
+    padding: 15px 25px !important; /* Réduit de 20px 35px à 15px 25px */
+    border-radius: 15px !important;
+    margin-bottom: 15px !important; /* Réduit de 25px à 15px */
+  }
+  
+  /* AGRANDIR ENCORE PLUS LES DATES sur smartphone */
+  .visit-date, .visit-date-passed {
+    font-size: 2rem !important;
+    line-height: 1.7 !important;
+    margin-bottom: 25px !important;
+  }
+  
+  /* AGRANDIR ENCORE PLUS LES INFOS sur smartphone */
+  .info-container .infos-adresse {
+    font-size: 2rem !important;
+    line-height: 1.7 !important;
+    margin-bottom: 25px !important;
+  }
+  
+  /* AGRANDIR ENCORE PLUS LES ICONES sur smartphone */
+  .status.validée i,
+  .status-à-rappeler i {
+    font-size: 2.2rem !important;
+    margin-right: 20px !important;
+  }
+  
+  /* AGRANDIR ENCORE PLUS LES SEPARATEURS sur smartphone */
+  .separator {
+    margin: 0 25px !important;
+    font-size: 2rem !important;
+  }
+  
+  /* AGRANDIR ENCORE PLUS L'ICONE PDF sur smartphone */
   .pdf-download-icon img {
-    vertical-align: middle;
-    height: 36px;
-    width: auto;
-    transition: inherit;
+    height: 45px !important;
+    width: auto !important;
   }
-  #backDashboardBtn {
+  
+  /* Bouton retour sur smartphone */
+  .historique-back-btn {
+    position: static !important;
+    left: auto !important;
+    bottom: auto !important;
+    margin: 0 !important;
+    z-index: auto !important;
+  }
+  
+  .back-button-container {
+    padding: 30px 25px !important;
+    margin-top: 25px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Forcer le bouton à rester dans le flux (ne pas suivre le scroll) */
+  .historique-back-btn {
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    z-index: auto !important;
+    transform: none !important;
+  }
+  .back-button-container {
+    position: relative !important;
+    padding-left: 25px !important;
+  }
+}
+
+/* ===== RESPONSIVE MODALE ===== */
+@media (max-width: 700px) {
+  .modal-content-client-rdv {
+    min-width: 0;
+    padding: 12px 6px;
+  }
+  
+  .table-modal-rdv th, .table-modal-rdv td {
+    font-size: 0.95em;
+    padding: 5px 4px;
+  }
+  }
+
+/* Spécifique à l'interface historique_rdv: titre */
+.historique-title {
+  position: absolute;
+  top: 5px;
+  left: 20px;
+  color: white;
+  font-size: 34px;
+  font-weight: bold;
+  margin-bottom: 30px;
+}
+
+@media (max-width: 1366px) {
+  .historique-title {
+    /* conserver vos overrides responsives déjà en place */
+    font-size: 2.5rem !important;
+    text-align: left !important;
+    left: 0 !important;
+    right: auto !important;
+    margin: 20px 0 30px 0 !important; /* Réduit de 40px 0 80px 0 à 20px 0 30px 0 */
+    position: relative !important;
+    padding-left: 20px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .historique-title {
+    font-size: 3rem !important;
+    text-align: left !important;
+    left: 0 !important;
+    right: auto !important;
+    margin: 25px 0 40px 0 !important; /* Réduit de 50px 0 100px 0 à 25px 0 40px 0 */
+    position: relative !important;
+    padding-left: 25px !important;
+  }
+  }
+
+/* ===== Bouton retour reconstruit pour historique_rdv ===== */
+.histo-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 1.15rem;
+  padding: 8px 22px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(6px);
+  border: none;
+  text-decoration: none;
+  background: rgba(255,255,255,0.18);
     transition: transform 0.18s cubic-bezier(.7,.2,.2,1);
+  position: fixed; /* PC: position fixe */
+  left: 24px;
+  bottom: 20px;
+  z-index: 9999;
+}
+.histo-back-btn:hover { transform: scale(1.08); }
+
+/* Conteneur aligné sur la carte (même largeur/max-width) */
+.back-button-container {
+  max-width: 1500px;
+  width: 100%;
+  margin: 20px auto 16px auto; /* espace sous le bouton avant le footer */
+  padding-left: 20px; /* léger décalage gauche */
+  box-sizing: border-box;
+}
+
+/* Tablette: statique sous le tableau, ne gêne pas le scroll */
+@media (max-width: 1366px) {
+  .histo-back-btn {
+    position: static !important; /* Position statique sous le tableau */
+    left: auto !important;
+    bottom: auto !important;
+    z-index: auto !important;
   }
-  #backDashboardBtn:hover {
-    transform: scale(1.08);
+  
+  .back-button-container { 
+    padding: 15px 20px !important; /* Réduit de 25px 20px à 15px 20px */
+    max-width: none !important; 
+    padding-bottom: 20px !important; /* Réduit de 28px à 20px */
+    margin-top: 8px !important; /* Espace réduit juste sous le tableau */
+    margin-bottom: 0 !important; 
   }
+  
+  /* Réduire l'espacement du conteneur principal */
+  .dashboard-container {
+    padding: 15px 16px !important; /* Réduit de 20px 16px à 15px 16px */
+    margin: 15px auto !important; /* Réduit de 20px auto à 15px auto */
+  }
+  
+  /* Supprimer la hauteur minimale fixe qui cause le scrolling */
+  .card {
+    min-height: auto !important; /* Supprime la min-height: 750px */
+  }
+  
+  /* Réduire les marges de la barre de recherche */
+  .search-bar {
+    margin-top: 20px !important; /* Réduit de 60px à 20px */
+    margin-bottom: 20px !important; /* Réduit de 48px à 20px */
+  }
+}
+
+/* Smartphone: idem tablette, léger padding */
+@media (max-width: 480px) {
+  .histo-back-btn {
+    position: static !important; /* Position statique sous le tableau */
+    left: auto !important;
+    bottom: auto !important;
+    z-index: auto !important;
+  }
+  
+  .back-button-container { 
+    padding: 20px 25px !important; /* Réduit de 30px 25px à 20px 25px */
+    padding-bottom: 18px !important; /* Réduit de 24px à 18px */
+    margin-top: 8px !important; /* Espace réduit juste sous le tableau */
+    margin-bottom: 0 !important; 
+  }
+  
+  /* Réduire l'espacement du conteneur principal */
+  .dashboard-container {
+    padding: 12px 16px !important; /* Réduit de 20px 16px à 12px 16px */
+    margin: 12px auto !important; /* Réduit de 20px auto à 12px auto */
+  }
+  
+  /* Supprimer la hauteur minimale fixe qui cause le scrolling */
+  .card {
+    min-height: auto !important; /* Supprime la min-height: 750px */
+  }
+  
+  /* Réduire les marges de la barre de recherche */
+  .search-bar {
+    margin-top: 15px !important; /* Réduit de 60px à 15px */
+    margin-bottom: 15px !important; /* Réduit de 48px à 15px */
+  }
+}
+
+/* Ajustement: bouton directement sous la carte */
+.cards { margin-bottom: 0 !important; }
+.card { margin-bottom: 0 !important; }

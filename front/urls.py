@@ -49,4 +49,5 @@ urlpatterns = [
     path('api/route-optimisee/<str:date>/', views.api_route_optimisee, name='api_route_optimisee'),
     path('geocoder-adresses/', views.geocoder_adresses, name='geocoder_adresses'),
     path('api/search-rdv-historique/', views.api_search_rdv_historique, name='api_search_rdv_historique'),
+    path('extend-session/', views.extend_session, name='extend_session'),
 ]

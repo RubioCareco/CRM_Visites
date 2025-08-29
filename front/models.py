@@ -208,6 +208,7 @@ class FrontClient(models.Model):
     commercial_id = models.BigIntegerField(null=True, blank=True)
     commentaires = models.TextField(null=True, blank=True)
     commercial = models.CharField(max_length=100, blank=True, null=True)
+    classement_client = models.CharField(max_length=50, blank=True, null=True, help_text="Type de client (A, B, C) pour déterminer l'objectif annuel de visites")
 
     class Meta:
         db_table = 'front_client'
@@ -228,3 +229,29 @@ class Adresse(models.Model):
 
     def __str__(self):
         return f"{self.adresse}, {self.code_postal} {self.ville}"
+
+class ClientVisitStats(models.Model):
+    """Statistiques annuelles de visites par client et commercial"""
+    client = models.ForeignKey('FrontClient', on_delete=models.CASCADE, related_name='stats_visites')
+    commercial = models.ForeignKey(Commercial, on_delete=models.CASCADE, related_name='stats_visites')
+    annee = models.IntegerField()
+    visites_valides = models.IntegerField(default=0, help_text="Nombre de visites validées cette année")
+    objectif = models.IntegerField(help_text="Objectif annuel de visites (A=10, B=5, C=1, défaut=1)")
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['client', 'commercial', 'annee']
+        verbose_name = "Statistique de visite client"
+        verbose_name_plural = "Statistiques de visites clients"
+        indexes = [
+            models.Index(fields=['client', 'annee']),
+            models.Index(fields=['commercial', 'annee']),
+        ]
+    
+    def __str__(self):
+        return f"{self.client} - {self.commercial} - {self.annee} ({self.visites_valides}/{self.objectif})"
+    
+    @property
+    def ratio(self):
+        """Retourne le ratio sous forme 'X/Y'"""
+        return f"{self.visites_valides}/{self.objectif}"

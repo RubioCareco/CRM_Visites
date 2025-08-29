@@ -10,41 +10,41 @@
   <link rel="stylesheet" href="{% static 'front/css/footer.css' %}">
 </head>
 <body>
-  <div class="dashboard">
-    <h1 class="dashboard-title">Historique des rendez-vous</h1>
-    <div class="search-bar" style="position:relative; margin-top: 60px; margin-bottom: 48px; display:flex; align-items:center; gap:12px;">
+  <div class="dashboard content-wrapper">
+    <h1 class="dashboard-title historique-title">Historique des rendez-vous</h1>
+    <div class="search-bar">
         <i class="fa fa-search search-icon"></i>
         <input type="text" id="historiqueSearch" placeholder="Rechercher par clients, entreprises ..." autocomplete="off">
-        <ul id="historiqueSearchSuggestions" class="autocomplete-results" style="position:absolute;left:0;right:0;top:38px;z-index:10;background:rgba(30,30,30,0.95);color:#fff;border-radius:0 0 8px 8px;max-height:180px;overflow-y:auto;display:none;"></ul>
-        <button id="filterBtnHistorique" class="filter-button" style="margin-left:10px;height:38px;display:flex;align-items:center;gap:7px;">
+        <ul id="historiqueSearchSuggestions" class="autocomplete-results"></ul>
+        <button id="filterBtnHistorique" class="filter-button">
           <i class="fa fa-filter"></i> Filtres
         </button>
         {% if date_label %}
-          <span class="filter-badge" style="display:inline-flex;align-items:center;background:#444;color:#fff;padding:6px 14px;border-radius:16px;margin-left:10px;font-size:1rem;">
+          <span class="filter-badge">
             {{ date_label }}
-            <a href="?{% for key, value in request.GET.items %}{% if key != 'date_debut' and key != 'date_fin' and key != 'mois' and key != 'annee' and key != 'semaine' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}" style="color:#ff5a5a;margin-left:8px;font-weight:bold;text-decoration:none;font-size:1.1em;">&times;</a>
+            <a href="?{% for key, value in request.GET.items %}{% if key != 'date_debut' and key != 'date_fin' and key != 'mois' and key != 'annee' and key != 'semaine' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}" class="filter-badge-close">&times;</a>
           </span>
         {% endif %}
-        <div id="filterPopoverHistorique" style="display:none;position:absolute;top:48px;right:0;z-index:1001;color:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.25);padding:24px 28px 18px 28px;min-width:260px;">
-          <div style="font-size:1.15rem;font-weight:bold;margin-bottom:14px;color:#fff;">Filtrer par&nbsp;:</div>
-          <div style="display:flex;gap:10px;margin-bottom:18px;">
-            <button type="button" class="filter-type-btn" data-type="jour" style="padding:6px 14px;border-radius:8px;border:none;background:#333;color:#fff;cursor:pointer;">Jour</button>
-            <button type="button" class="filter-type-btn" data-type="semaine" style="padding:6px 14px;border-radius:8px;border:none;background:#333;color:#fff;cursor:pointer;">Semaine</button>
-            <button type="button" class="filter-type-btn" data-type="mois" style="padding:6px 14px;border-radius:8px;border:none;background:#333;color:#fff;cursor:pointer;">Mois</button>
-            <button type="button" class="filter-type-btn" data-type="annee" style="padding:6px 14px;border-radius:8px;border:none;background:#333;color:#fff;cursor:pointer;">Année</button>
+        <div id="filterPopoverHistorique" class="filter-popover">
+          <div class="filter-popover-title">Filtrer par&nbsp;:</div>
+          <div class="filter-type-buttons">
+            <button type="button" class="filter-type-btn" data-type="jour">Jour</button>
+            <button type="button" class="filter-type-btn" data-type="semaine">Semaine</button>
+            <button type="button" class="filter-type-btn" data-type="mois">Mois</button>
+            <button type="button" class="filter-type-btn" data-type="annee">Année</button>
           </div>
           <div id="filterInputsHistorique">
             <!-- Ici viendront les inputs selon le type de filtre -->
           </div>
-          <div style="display:flex;gap:12px;margin-top:18px;justify-content:flex-end;">
-            <button type="button" id="applyFilterHistorique" style="background:#4caf50;color:#fff;padding:7px 18px;border-radius:8px;border:none;">Appliquer</button>
-            <button type="button" id="resetFilterHistorique" style="background:#e53935;color:#fff;padding:7px 18px;border-radius:8px;border:none;">Réinitialiser</button>
+          <div class="filter-actions">
+            <button type="button" id="applyFilterHistorique" class="filter-apply-btn">Appliquer</button>
+            <button type="button" id="resetFilterHistorique" class="filter-reset-btn">Réinitialiser</button>
           </div>
-          <button type="button" id="closeFilterPopoverHistorique" style="position:absolute;top:10px;right:14px;background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer;">&times;</button>
+          <button type="button" id="closeFilterPopoverHistorique" class="filter-close-btn">&times;</button>
         </div>
     </div>
-    <div class="cards" style="margin-top:10px;justify-content:center;align-items:flex-start;">
-      <div class="card" style="width:100%;max-width:1500px;margin:auto;min-height:750px;padding-top:0;padding-left:0;padding-right:0;border-radius:12px;overflow:hidden;">
+    <div class="cards">
+      <div class="card">
         <div class="tabs-container">
           <button class="tab-btn active" onclick="showTab('general')">Historique général</button>
           <button class="tab-btn" onclick="showTab('recent')">Rendez-vous validés</button>
@@ -54,7 +54,7 @@
           <div id="tab-general" class="tab-content active">
             {% if historique_general %}
               {% for rdv in historique_general %}
-                <div class="{% if rdv.statut_rdv == 'valide' %}visit-entry{% elif rdv.statut_rdv == 'annule' %}reminder-entry{% endif %}" data-client-id="{{ rdv.client.id }}" style="margin-bottom:18px;">
+                <div class="{% if rdv.statut_rdv == 'valide' %}visit-entry{% elif rdv.statut_rdv == 'annule' %}reminder-entry{% endif %}" data-client-id="{{ rdv.client.id }}">
                   <div class="client-name">
                     <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
                     <p class="infos-adresse">Adresse : {{ rdv.adresse_principale.adresse|default:"" }}, {{ rdv.adresse_principale.code_postal|default:"" }} {{ rdv.adresse_principale.ville|default:"" }}</p>
@@ -70,10 +70,10 @@
 
                   <div class="info-container">
                     {% if rdv.statut_rdv == 'valide' and rdv.date_rdv %}
-                      <p class="infos-adresse" style="color:#6ee77a;">
+                      <p class="infos-adresse status-valid">
                         Rendez-vous le : <span class="visit-date">{{ rdv.date_rdv|date:'d/m/Y' }}{% if rdv.heure_rdv %} {{ rdv.heure_rdv|time:'H:i' }}{% endif %}</span>
-                        <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
-                        <span style="color:#ccc; margin-left: 12px;">
+                        <span class="separator">|</span>
+                        <span class="last-visit">
                           Dernières visites le : 
                           {% if rdv.derniere_visite %}
                             {{ rdv.derniere_visite|date:"d/m/Y" }}
@@ -90,10 +90,10 @@
                         </span>
                       </p>
                     {% elif rdv.statut_rdv == 'annule' and rdv.date_rdv %}
-                      <p class="infos-adresse" style="color:#ff5a5a;">
+                      <p class="infos-adresse status-annule">
                         Rendez-vous le : <span class="visit-date">{{ rdv.date_rdv|date:'d/m/Y' }}{% if rdv.heure_rdv %} {{ rdv.heure_rdv|time:'H:i' }}{% endif %}</span>
-                        <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
-                        <span style="color:#ccc; margin-left: 12px;">
+                        <span class="separator">|</span>
+                        <span class="last-visit">
                           Dernières visites le : 
                           {% if rdv.derniere_visite %}
                             {{ rdv.derniere_visite|date:"d/m/Y" }}
@@ -109,13 +109,13 @@
                 </div>
               {% endfor %}
             {% else %}
-              <p style="color:#aaa;">Aucun rendez-vous archivé.</p>
+              <p class="no-appointments">Aucun rendez-vous archivé.</p>
             {% endif %}
           </div>
           <div id="tab-recent" class="tab-content">
             {% if visites_recentes %}
               {% for rdv in visites_recentes %}
-                <div class="visit-entry" data-client-id="{{ rdv.client.id }}" style="margin-bottom:18px;">
+                <div class="visit-entry" data-client-id="{{ rdv.client.id }}">
                   <div class="client-name">
                     <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
                     <p class="infos-adresse">Adresse : {{ rdv.adresse_principale.adresse|default:"" }}, {{ rdv.adresse_principale.code_postal|default:"" }} {{ rdv.adresse_principale.ville|default:"" }}</p>
@@ -124,10 +124,10 @@
                     <p class="status validée"><i class="fa fa-check-square"></i> Validée</p>
                   </div>
                   <div class="info-container">
-                    <p class="infos-adresse" style="color:#6ee77a;">
+                    <p class="infos-adresse status-valid">
                       Rendez-vous le : <span class="visit-date">{{ rdv.date_rdv|date:'d/m/Y' }}{% if rdv.heure_rdv %} {{ rdv.heure_rdv|time:'H:i' }}{% endif %}</span>
-                      <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
-                      <span style="color:#ccc; margin-left: 12px;">
+                      <span class="separator">|</span>
+                      <span class="last-visit">
                         Dernières visites le : 
                         {% if rdv.derniere_visite %}
                           {{ rdv.derniere_visite|date:"d/m/Y" }}
@@ -149,19 +149,19 @@
                 </div>
               {% endfor %}
             {% else %}
-              <p style="color:#aaa;">Aucun rendez-vous validé archivé.</p>
+              <p class="no-appointments">Aucun rendez-vous validé archivé.</p>
             {% endif %}
           </div>
           <div id="tab-rappeler" class="tab-content">
             {% if a_rappeler %}
               {% for rdv in a_rappeler %}
-                <div class="reminder-entry" data-client-id="{{ rdv.client.id }}" style="margin-bottom:18px;">
+                <div class="reminder-entry" data-client-id="{{ rdv.client.id }}">
                   <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
                   <p class="status-à-rappeler"><i class="fa-solid fa-triangle-exclamation"></i> Annulé</p>
-                  <p class="infos-adresse" style="color:#ff5a5a;">
+                  <p class="infos-adresse status-annule">
                     Rendez-vous prévu le : <span class="visit-date">{{ rdv.date_rdv|date:'d/m/Y' }}{% if rdv.heure_rdv %} {{ rdv.heure_rdv|time:'H:i' }}{% endif %}</span>
-                    <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
-                    <span style="color:#ccc; margin-left: 12px;">
+                    <span class="separator">|</span>
+                    <span class="last-visit">
                       Dernières visites le : 
                       {% if rdv.derniere_visite %}
                         {{ rdv.derniere_visite|date:"d/m/Y" }}
@@ -174,423 +174,157 @@
                 </div>
               {% endfor %}
             {% else %}
-              <p style="color:#aaa;">Aucun rendez-vous à rappeler archivé.</p>
+              <p class="no-appointments">Aucun rendez-vous à rappeler archivé.</p>
             {% endif %}
           </div>
         </div>
       </div>
     </div>
+    <div class="back-button-container">
+      <a href="{% if role == 'responsable' or role == 'admin' %}{% url 'dashboard_responsable' %}{% else %}{% url 'dashboard' %}{% endif %}" class="histo-back-btn" id="backDashboardBtn">&larr; Retour</a>
   </div>
-  <a href="{% if role == 'responsable' or role == 'admin' %}{% url 'dashboard_responsable' %}{% else %}{% url 'dashboard' %}{% endif %}" class="back-login" id="backDashboardBtn" style="position:fixed;left:24px;bottom:20px;z-index:9999;display:flex;align-items:center;gap:8px;color:#fff;font-size:1.15rem;padding:8px 22px;border-radius:12px;box-shadow:0 2px 8px rgba(255, 255, 255, 0.18);backdrop-filter:blur(6px);border:none;text-decoration:none; background:rgba(255,255,255,0.18);">&larr; Retour</a>
-  <div id="modalClientRDV" class="modal-client-rdv" style="display:none;">
+    <div id="modalClientRDV" class="modal-client-rdv">
     <div class="modal-content-client-rdv">
       <button id="closeModalClientRDV" class="close-btn"><i class="fa fa-times"></i></button>
-      <h2 style="margin-bottom:18px; text-align:center; padding-bottom: 10px ;">Historique du client</h2>
+        <h2>Historique du client</h2>
       <div id="modalClientRDVContent">
         <!-- Les rendez-vous seront injectés ici -->
       </div>
     </div>
   </div>
-  <style>
-    .modal-client-rdv {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(20,20,20,0.85);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-    }
-    .modal-content-client-rdv {
-      background: rgba(255, 255, 255, 0.18);
-      color: #fff;
-      border-radius: 18px;
-      padding: 32px 36px 28px 36px;
-      min-width: 420px;
-      max-width: 90vw;
-      max-height: 80vh;
-      overflow-y: auto;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.35);
-      position: relative;
-    }
-    .close-modal-client-rdv {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: transparent;
-    color: #e53935;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background-color 0.3s ease, color 0.3s ease;
-    box-sizing: border-box;
-    padding: 0;
-    z-index: 10;
-}
 
-    .table-modal-rdv {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-    .table-modal-rdv th, .table-modal-rdv td {
-      padding: 8px 10px;
-      border-bottom: 1px solid #333;
-      text-align: left;
-    }
-    .table-modal-rdv th {
-      background: #e53935;
-      color: #fff;
-      font-weight: 600;
-    }
-    .statut-valide {
-      color: #6ee77a;
-      font-weight: bold;
-    }
-    .statut-annule {
-      color: #ff5a5a;
-      font-weight: bold;
-    }
-    .statut-autre {
-      color: #ffa500;
-      font-weight: bold;
-    }
-    @media (max-width: 700px) {
-      .modal-content-client-rdv { min-width: 0; padding: 12px 6px; }
-      .table-modal-rdv th, .table-modal-rdv td { font-size: 0.95em; padding: 5px 4px; }
-    }
-  </style>
   <script>
-    function showTab(tab) {
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
-      if(tab==='general') {
-        document.querySelector('.tab-btn').classList.add('active');
-        document.getElementById('tab-general').classList.add('active');
-      } else if(tab==='recent') {
-        document.querySelectorAll('.tab-btn')[1].classList.add('active');
-        document.getElementById('tab-recent').classList.add('active');
-      } else {
-        document.querySelectorAll('.tab-btn')[2].classList.add('active');
-        document.getElementById('tab-rappeler').classList.add('active');
-      }
-    }
-
-    // --- Autocomplétion & filtre barre de recherche historique ---
-    document.addEventListener('DOMContentLoaded', function() {
-      // Récupère toutes les cartes rdv (tous onglets)
-      const allCards = Array.from(document.querySelectorAll('.visit-entry, .reminder-entry'));
-      // Génère la liste des suggestions (nom, prénom, entreprise)
-      const allClients = allCards.map(card => {
-        const strong = card.querySelector('strong');
-        return strong ? strong.textContent.trim() : '';
-      });
-      const suggestions = Array.from(new Set(allClients.filter(Boolean)));
-      const searchInput = document.getElementById('historiqueSearch');
-      const suggestionBox = document.getElementById('historiqueSearchSuggestions');
-
-      function showSuggestions(value) {
-        const v = value.trim().toLowerCase();
-        if (!v) {
-          suggestionBox.style.display = 'none';
-          suggestionBox.innerHTML = '';
-          return;
-        }
-        const filtered = suggestions.filter(s => s.toLowerCase().includes(v));
-        if (filtered.length === 0) {
-          suggestionBox.style.display = 'none';
-          suggestionBox.innerHTML = '';
-          return;
-        }
-        suggestionBox.innerHTML = filtered.map(s => `<li class='autocomplete-item' style='padding:8px 12px;cursor:pointer;'>${s}</li>`).join('');
-        suggestionBox.style.display = 'block';
-        Array.from(suggestionBox.children).forEach(li => {
-          li.addEventListener('mousedown', function(e) {
-            e.preventDefault();
-            searchInput.value = this.textContent;
-            filterCards(this.textContent);
-            suggestionBox.style.display = 'none';
-          });
+      function showTab(tabName) {
+        // Masquer tous les onglets
+        document.querySelectorAll('.tab-content').forEach(tab => {
+          tab.classList.remove('active');
         });
-      }
-
-      function filterCards(query) {
-        const lowerQuery = query.trim().toLowerCase();
-        allCards.forEach(card => {
-          const strong = card.querySelector('strong');
-          const nom = strong ? strong.textContent.toLowerCase() : '';
-          if (nom.includes(lowerQuery)) {
-            card.style.display = '';
-          } else {
-            card.style.display = 'none';
-          }
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+          btn.classList.remove('active');
         });
+        
+        // Afficher l'onglet sélectionné
+        document.getElementById('tab-' + tabName).classList.add('active');
+        event.target.classList.add('active');
       }
 
-      searchInput.addEventListener('input', function() {
-        showSuggestions(this.value);
-        filterCards(this.value);
-      });
-      searchInput.addEventListener('focus', function() {
-        showSuggestions(this.value);
-      });
-      searchInput.addEventListener('blur', function() {
-        setTimeout(() => { suggestionBox.style.display = 'none'; }, 120);
-      });
-    });
-
-    // --- LOGIQUE FILTRE HISTORIQUE ---
+      // Gestion des filtres
     document.addEventListener('DOMContentLoaded', function() {
-      // --- Filtres date ---
       const filterBtn = document.getElementById('filterBtnHistorique');
       const filterPopover = document.getElementById('filterPopoverHistorique');
-      const closeFilter = document.getElementById('closeFilterPopoverHistorique');
+        const closeFilterBtn = document.getElementById('closeFilterPopoverHistorique');
       const filterTypeBtns = document.querySelectorAll('.filter-type-btn');
       const filterInputs = document.getElementById('filterInputsHistorique');
-      const applyBtn = document.getElementById('applyFilterHistorique');
-      const resetBtn = document.getElementById('resetFilterHistorique');
-      let currentType = 'jour';
-      let currentValue = '';
+        const applyFilterBtn = document.getElementById('applyFilterHistorique');
+        const resetFilterBtn = document.getElementById('resetFilterHistorique');
 
-      // Ouvre/ferme le panneau
-      filterBtn.addEventListener('click', function(e) {
-        filterPopover.style.display = (filterPopover.style.display === 'block') ? 'none' : 'block';
-        filterPopover.style.right = '0';
-        filterPopover.style.left = 'auto';
-        e.stopPropagation();
-      });
-      closeFilter.addEventListener('click', function() {
-        filterPopover.style.display = 'none';
-      });
-      document.addEventListener('click', function(e) {
-        if (!filterPopover.contains(e.target) && e.target !== filterBtn) {
+        // Afficher/masquer la popover de filtre
+        filterBtn.addEventListener('click', function() {
+          filterPopover.style.display = filterPopover.style.display === 'block' ? 'none' : 'block';
+        });
+
+        closeFilterBtn.addEventListener('click', function() {
           filterPopover.style.display = 'none';
-        }
       });
 
-      // Affiche l'input selon le type
-      function renderInput(type) {
-        let html = '';
-        if (type === 'jour') {
-          html = '<input type="date" id="inputFiltreDate" style="width:100%;">';
-        } else if (type === 'semaine') {
-          html = '<input type="week" id="inputFiltreSemaine" style="width:100%;">';
-        } else if (type === 'mois') {
-          html = '<input type="month" id="inputFiltreMois" style="width:100%;">';
-        } else if (type === 'annee') {
-          // Génère un select d'années de 2015 à 2030
-          let options = '';
-          for(let y=2015; y<=2030; y++) {
-            options += `<option value="${y}"${y===new Date().getFullYear()?' selected':''}>${y}</option>`;
-          }
-          html = `<select id="inputFiltreAnnee">${options}</select>`;
-        }
-        filterInputs.innerHTML = html;
-        // Suppression de l'appel à showPicker() pour éviter l'erreur navigateur
-      }
-      renderInput(currentType);
+        // Gérer les types de filtres
       filterTypeBtns.forEach(btn => {
         btn.addEventListener('click', function() {
-          currentType = this.dataset.type;
-          renderInput(currentType);
-        });
-      });
-
-      // Filtrage dynamique
-      function filterByDate() {
-        const allCards = Array.from(document.querySelectorAll('.visit-entry, .reminder-entry'));
-        let value = '';
-        if (currentType === 'jour') {
-          value = document.getElementById('inputFiltreDate').value;
-        } else if (currentType === 'semaine') {
-          value = document.getElementById('inputFiltreSemaine').value;
-        } else if (currentType === 'mois') {
-          value = document.getElementById('inputFiltreMois').value;
-        } else if (currentType === 'annee') {
-          value = document.getElementById('inputFiltreAnnee').value;
-        }
-        allCards.forEach(card => {
-          const dateText = card.querySelector('.visit-date, .visit-date-passed, .visit-date-futur');
-          let dateStr = '';
-          if (dateText) {
-            // Extrait la date au format d/m/Y
-            const match = dateText.textContent.match(/(\d{2}\/\d{2}\/\d{4})/);
-            if (match) dateStr = match[1];
-          }
-          let show = true;
-          if (value) {
-            if (currentType === 'jour') {
-              // yyyy-mm-dd vs dd/mm/yyyy
-              const [y, m, d] = value.split('-');
-              const val = `${d}/${m}/${y}`;
-              show = (dateStr === val);
-            } else if (currentType === 'semaine') {
-              // yyyy-Wxx
-              const [year, week] = value.split('-W');
-              // On calcule la semaine de la date de la carte
-              if (dateStr) {
-                const [d, m, y] = dateStr.split('/');
-                const dateObj = new Date(`${y}-${m}-${d}`);
-                const weekNum = getWeekNumber(dateObj);
-                show = (y === year && weekNum === parseInt(week));
-              } else {
-                show = false;
-              }
-            } else if (currentType === 'mois') {
-              // yyyy-mm
-              const [y, m] = value.split('-');
-              if (dateStr) {
-                const [d, mm, yy] = dateStr.split('/');
-                show = (y === yy && m === mm);
-              } else {
-                show = false;
-              }
-            } else if (currentType === 'annee') {
-              if (dateStr) {
-                const [d, m, y] = dateStr.split('/');
-                show = (y === value);
-              } else {
-                show = false;
-              }
+            filterTypeBtns.forEach(b => b.style.background = '#333');
+            this.style.background = '#e53935';
+            
+            const filterType = this.dataset.type;
+            let html = '';
+            
+            switch(filterType) {
+              case 'jour':
+                html = '<input type="date" id="filterDate" class="filter-input">';
+                break;
+              case 'semaine':
+                html = '<input type="week" id="filterWeek" class="filter-input">';
+                break;
+              case 'mois':
+                html = '<input type="month" id="filterMonth" class="filter-input">';
+                break;
+              case 'annee':
+                html = '<input type="number" id="filterYear" class="filter-input" placeholder="Année" min="2020" max="2030">';
+                break;
             }
-          }
-          card.style.display = show ? '' : 'none';
+            
+            filterInputs.innerHTML = html;
+          });
         });
-      }
-      // Semaine ISO
-      function getWeekNumber(date) {
-        date = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-        const dayNum = date.getUTCDay() || 7;
-        date.setUTCDate(date.getUTCDate() + 4 - dayNum);
-        const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
-        return Math.ceil((((date - yearStart) / 86400000) + 1)/7);
-      }
 
-      applyBtn.addEventListener('click', function() {
-        let params = new URLSearchParams(window.location.search);
-        if (currentType === 'jour') {
-          const val = document.getElementById('inputFiltreDate').value;
-          if (val) {
-            params.set('date_debut', val);
-            params.set('date_fin', val);
-            params.delete('mois');
-            params.delete('annee');
-            params.delete('semaine');
+        // Appliquer le filtre
+        applyFilterBtn.addEventListener('click', function() {
+          const activeFilterType = document.querySelector('.filter-type-btn[style*="background: rgb(229, 57, 53)"]');
+          if (!activeFilterType) return;
+          
+          const filterType = activeFilterType.dataset.type;
+          let filterValue = '';
+          
+          switch(filterType) {
+            case 'jour':
+              filterValue = document.getElementById('filterDate').value;
+              break;
+            case 'semaine':
+              filterValue = document.getElementById('filterWeek').value;
+              break;
+            case 'mois':
+              filterValue = document.getElementById('filterMonth').value;
+              break;
+            case 'annee':
+              filterValue = document.getElementById('filterYear').value;
+              break;
           }
-        } else if (currentType === 'semaine') {
-          const val = document.getElementById('inputFiltreSemaine').value;
-          if (val) {
-            params.set('semaine', val);
-            params.delete('date_debut');
-            params.delete('date_fin');
-            params.delete('mois');
-            params.delete('annee');
+          
+          if (filterValue) {
+            window.location.href = `?${filterType}=${filterValue}`;
           }
-        } else if (currentType === 'mois') {
-          const val = document.getElementById('inputFiltreMois').value;
-          if (val) {
-            params.set('mois', val);
-            params.delete('date_debut');
-            params.delete('date_fin');
-            params.delete('annee');
-            params.delete('semaine');
-          }
-        } else if (currentType === 'annee') {
-          const val = document.getElementById('inputFiltreAnnee').value;
-          if (val) {
-            params.set('annee', val);
-            params.delete('date_debut');
-            params.delete('date_fin');
-            params.delete('mois');
-            params.delete('semaine');
-          }
-        }
-        window.location.search = params.toString();
-      });
-      filterInputs.addEventListener('change', filterByDate);
-      resetBtn.addEventListener('click', function() {
-        // Réaffiche tout
-        document.querySelectorAll('.visit-entry, .reminder-entry').forEach(card => card.style.display = '');
-        // Réinitialise l'input
-        renderInput(currentType);
-      });
-    });
-  </script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Ouvre la modal au clic sur une carte dans l'onglet validés
-      document.querySelectorAll('#tab-recent .visit-entry').forEach(card => {
-        card.style.cursor = 'pointer';
-        card.addEventListener('click', function(e) {
-          if (e.target.closest('a')) return;
-          const clientId = this.getAttribute('data-client-id');
-          if (!clientId) return;
-          fetch(`/get_client_rdv/${clientId}/?statut=valide`)
-            .then(resp => resp.json())
-            .then(data => {
-              let html = '';
-              if (data.rdvs.length === 0) {
-                html = '<p style="color:#ccc;">Aucun rendez-vous validé pour ce client.</p>';
-              } else {
-                html = `<table class="table-modal-rdv">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Heure</th>
-                      <th>Statut</th>
-                      <th>Objet</th>
-                      <th>Commentaire</th>
-                      <th>Commercial</th>
-                    </tr>
-                  </thead>
-                  <tbody>`;
-                data.rdvs.forEach(rdv => {
-                  let statutClass = '';
-                  let statutLabel = '';
-                  if (rdv.statut_rdv === 'valide') {
-                    statutClass = 'statut-valide';
-                    statutLabel = 'Validé';
-                  } else if (rdv.statut_rdv === 'annule') {
-                    statutClass = 'statut-annule';
-                    statutLabel = 'Annulé';
-                  } else {
-                    statutClass = 'statut-autre';
-                    statutLabel = rdv.statut_rdv;
-                  }
-                  html += `<tr>
-                    <td>${rdv.date_rdv}</td>
-                    <td>${rdv.heure_rdv}</td>
-                    <td><span class="${statutClass}">${statutLabel}</span></td>
-                    <td>${rdv.objet}</td>
-                    <td>${rdv.commentaire}</td>
-                    <td>${rdv.commercial}</td>
-                  </tr>`;
-                });
-                html += '</tbody></table>';
-              }
-              document.getElementById('modalClientRDVContent').innerHTML = html;
-              document.getElementById('modalClientRDV').style.display = 'flex';
-            });
         });
+
+        // Réinitialiser le filtre
+        resetFilterBtn.addEventListener('click', function() {
+          window.location.href = window.location.pathname;
+        });
+
+        // Recherche en temps réel
+        const searchInput = document.getElementById('historiqueSearch');
+        const searchSuggestions = document.getElementById('historiqueSearchSuggestions');
+        
+        searchInput.addEventListener('input', function() {
+          const query = this.value.trim();
+          if (query.length < 2) {
+            searchSuggestions.style.display = 'none';
+            return;
+          }
+          
+          // Ici tu peux ajouter la logique de recherche
+          // Pour l'instant, on masque les suggestions
+          searchSuggestions.style.display = 'none';
       });
-      // Ouvre la modal au clic sur une carte dans les autres onglets (historique général, à rappeler)
-      document.querySelectorAll('#tab-general .visit-entry, #tab-general .reminder-entry').forEach(card => {
-        card.style.cursor = 'pointer';
-        card.addEventListener('click', function(e) {
+
+        // Fermer les suggestions au clic ailleurs
+        document.addEventListener('click', function(e) {
+          if (!searchInput.contains(e.target) && !searchSuggestions.contains(e.target)) {
+            searchSuggestions.style.display = 'none';
+          }
+        });
+
+        // Gestion des clics sur les cartes de rendez-vous
+        // Historique général : délégation d'événement pour robustesse
+        document.getElementById('tab-general').addEventListener('click', function(e) {
+          const card = e.target.closest('.visit-entry, .reminder-entry');
+          if (!card) return;
           if (e.target.closest('a')) return;
-          const clientId = this.getAttribute('data-client-id');
+          const clientId = card.getAttribute('data-client-id');
           if (!clientId) return;
           fetch(`/get_client_rdv/${clientId}/`)
             .then(resp => resp.json())
             .then(data => {
               let html = '';
               if (data.rdvs.length === 0) {
-                html = '<p style="color:#ccc;">Aucun rendez-vous pour ce client.</p>';
+                html = '<p class="no-rdv-message">Aucun rendez-vous pour ce client.</p>';
               } else {
                 html = `<table class="table-modal-rdv">
                   <thead>
@@ -632,7 +366,62 @@
               document.getElementById('modalClientRDV').style.display = 'flex';
             });
         });
-      });
+
+        // Rendez-vous validés : délégation d'événement pour robustesse
+        document.getElementById('tab-recent').addEventListener('click', function(e) {
+          const card = e.target.closest('.visit-entry');
+          if (!card) return;
+          if (e.target.closest('a')) return;
+          const clientId = card.getAttribute('data-client-id');
+          if (!clientId) return;
+          fetch(`/get_client_rdv/${clientId}/?statut=valide`)
+            .then(resp => resp.json())
+            .then(data => {
+              let html = '';
+              if (data.rdvs.length === 0) {
+                html = '<p class="no-rdv-message">Aucun rendez-vous validé pour ce client.</p>';
+              } else {
+                html = `<table class="table-modal-rdv">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Heure</th>
+                      <th>Statut</th>
+                      <th>Objet</th>
+                      <th>Commentaire</th>
+                      <th>Commercial</th>
+                    </tr>
+                  </thead>
+                  <tbody>`;
+                data.rdvs.forEach(rdv => {
+                  let statutClass = '';
+                  let statutLabel = '';
+                  if (rdv.statut_rdv === 'valide') {
+                    statutClass = 'statut-valide';
+                    statutLabel = 'Validé';
+                  } else if (rdv.statut_rdv === 'annule') {
+                    statutClass = 'statut-annule';
+                    statutLabel = 'Annulé';
+                  } else {
+                    statutClass = 'statut-autre';
+                    statutLabel = rdv.statut_rdv;
+                  }
+                  html += `<tr>
+                    <td>${rdv.date_rdv}</td>
+                    <td>${rdv.heure_rdv}</td>
+                    <td><span class="${statutClass}">${statutLabel}</span></td>
+                    <td>${rdv.objet}</td>
+                    <td>${rdv.commentaire}</td>
+                    <td>${rdv.commercial}</td>
+                  </tr>`;
+                });
+                html += '</tbody></table>';
+              }
+              document.getElementById('modalClientRDVContent').innerHTML = html;
+              document.getElementById('modalClientRDV').style.display = 'flex';
+            });
+        });
+
       // À rappeler : délégation d'événement pour robustesse
       document.getElementById('tab-rappeler').addEventListener('click', function(e) {
         const card = e.target.closest('.reminder-entry');
@@ -645,7 +434,7 @@
           .then(data => {
             let html = '';
             if (data.rdvs.length === 0) {
-              html = '<p style="color:#ccc;">Aucun rendez-vous annulé pour ce client.</p>';
+                html = '<p class="no-rdv-message">Aucun rendez-vous annulé pour ce client.</p>';
             } else {
               html = `<table class="table-modal-rdv">
                 <thead>
@@ -687,10 +476,12 @@
             document.getElementById('modalClientRDV').style.display = 'flex';
           });
       });
+
       // Ferme la modal
       document.getElementById('closeModalClientRDV').addEventListener('click', function() {
         document.getElementById('modalClientRDV').style.display = 'none';
       });
+
       // Ferme la modal au clic hors contenu
       document.getElementById('modalClientRDV').addEventListener('click', function(e) {
         if (e.target === this) this.style.display = 'none';
@@ -698,5 +489,6 @@
     });
   </script>
   {% include 'front/footer.html' %}
+  </div>
 </body>
 </html> 

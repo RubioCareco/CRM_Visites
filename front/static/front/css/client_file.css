@@ -288,6 +288,45 @@ table.client-table tr.client-card td {
   scrollbar-color: rgba(255,255,255,0.2) transparent !important;
   padding-right: 8px; /* Décale le contenu pour laisser la place à la scrollbar */
 }
+
+/* Agrandir le tableau en mode mobile/tablette */
+@media (max-width: 1024px) {
+  .table-container {
+    max-height: 800px !important;
+    min-height: 600px !important;
+  }
+  
+  /* Ajuster l'espacement des lignes pour une meilleure lisibilité sur mobile */
+  table.client-table tr.client-card td {
+    padding: 12px 16px !important;
+  }
+  
+  /* Augmenter légèrement la taille de police sur mobile pour une meilleure lisibilité */
+  table.client-table {
+    font-size: 1.05rem;
+  }
+}
+
+/* Mode mobile spécifique */
+@media (max-width: 768px) {
+  .table-container {
+    max-height: 900px !important;
+    min-height: 700px !important;
+  }
+  
+  /* Ajuster les marges et paddings pour mobile */
+  .table-container {
+    margin-top: 20px !important;
+    padding: 0 12px 8px 8px !important;
+  }
+  
+  /* Optimiser l'affichage des colonnes sur mobile */
+  table.client-table th,
+  table.client-table td {
+    padding: 10px 12px !important;
+    font-size: 1rem !important;
+  }
+}
 .table-container::-webkit-scrollbar {
   width: 8px !important;
   background: transparent;
@@ -302,11 +341,15 @@ table.client-table tr.client-card td {
 .filter-panel-overlay {
   position: fixed;
   inset: 0;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   background: rgba(0,0,0,0.5);
   z-index: 1000;
+}
+
+.filter-panel-overlay.active {
+  display: flex;
 }
 
 #filterPanelClient {
@@ -455,6 +498,91 @@ body.dashboard {
   min-height: 100vh;
   height: 100vh;
   display: block;
+}
+
+/* Optimisations pour mobile/tablette */
+@media (max-width: 1024px) {
+  body.dashboard {
+    height: auto !important;
+    min-height: 100vh !important;
+  }
+  
+  /* Ajuster le conteneur principal pour mobile */
+  .dashboard-container {
+    padding: 20px 16px !important;
+    margin: 20px auto !important;
+  }
+  
+  /* Optimiser l'espacement des filtres sur mobile */
+  .filters-bar {
+    flex-direction: column !important;
+    gap: 16px !important;
+    align-items: stretch !important;
+  }
+  
+  .filters-bar .back-login {
+    align-self: center !important;
+    margin: 0 !important;
+  }
+  
+  /* Centrer la modal des filtres sur mobile/tablette */
+  .filter-panel-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(0,0,0,0.5) !important;
+    z-index: 1000 !important;
+  }
+  
+  .filter-panel-overlay.active {
+    display: flex !important;
+  }
+  
+  #filterPanelClient {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 10000 !important;
+    background: rgba(0,0,0,0.5) !important;
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  #filterPanelClient.active {
+    display: flex !important;
+  }
+  
+  #clientFilterForm {
+    margin: 0 auto !important;
+    padding: 25px 35px !important;
+    background: #222 !important;
+    border-radius: 20px !important;
+    width: 90% !important;
+    max-width: 480px !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
+    color: #eee !important;
+    display: block !important;
+    position: static !important;
+  }
+  
+  .filter-panel {
+    background: #222 !important;
+    border-radius: 20px !important;
+    width: 90% !important;
+    max-width: 480px !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
+    color: #eee !important;
+    padding: 25px 35px !important;
+    margin: 0 auto !important;
+  }
 } 
 
 /* Badges de filtres actifs à côté du bouton Filtres */
@@ -515,4 +643,86 @@ body.dashboard {
 #clientComments {
   scrollbar-width: thin;
   scrollbar-color: rgba(255,255,255,0.18) transparent;
+} 
+
+/* === CENTRAGE DE LA MODAL FILTRE SUR MOBILE/TABLETTE === */
+@media (max-width: 1366px) {
+  /* Centrer la modal des filtres sur mobile/tablette */
+  .filter-panel-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(0,0,0,0.5) !important;
+    z-index: 1000 !important;
+  }
+  
+  .filter-panel-overlay.active {
+    display: flex !important;
+  }
+  
+  #filterPanelClient {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 10000 !important;
+    background: rgba(0,0,0,0.5) !important;
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  #filterPanelClient.active {
+    display: flex !important;
+  }
+  
+  #clientFilterForm {
+    margin: 0 auto !important;
+    padding: 25px 35px !important;
+    background: #222 !important;
+    border-radius: 20px !important;
+    width: 90% !important;
+    max-width: 480px !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
+    color: #eee !important;
+    display: block !important;
+    position: static !important;
+  }
+  
+  .filter-panel {
+    background: #222 !important;
+    border-radius: 20px !important;
+    width: 90% !important;
+    max-width: 480px !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
+    color: #eee !important;
+    padding: 25px 35px !important;
+    margin: 0 auto !important;
+  }
+  
+  /* Assurer que la modal est bien centrée horizontalement et verticalement */
+  .filter-panel-overlay.active,
+  #filterPanelClient.active {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  /* Centrer le formulaire de filtre */
+  .filter-panel-overlay .filter-panel,
+  #filterPanelClient .filter-panel {
+    margin: 0 auto !important;
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+  }
 } 

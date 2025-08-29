@@ -117,13 +117,9 @@ def calculate_comprehensive_satisfaction_score(satisfaction_obj):
         score = 10.0 if satisfaction_obj.satisfaction_qualite_pieces == 'oui' else 0.0
         scores.append(score)
     
-    # Q2: Note qualité pièces (1-5)
+        # Q2: Note qualité pièces (1-5)
     if satisfaction_obj.note_qualite_pieces:
-        # Gérer le cas où la note pourrait être déjà sur 10
-        if satisfaction_obj.note_qualite_pieces <= 5:
-            score = (satisfaction_obj.note_qualite_pieces * 2)  # 1-5 -> 2-10
-        else:
-            score = satisfaction_obj.note_qualite_pieces  # Déjà sur 10
+        score = (satisfaction_obj.note_qualite_pieces * 2) if satisfaction_obj.note_qualite_pieces <= 5 else satisfaction_obj.note_qualite_pieces
         scores.append(score)
     
     # Q3: Problème qualité pièce (Oui/Non) - INVERSE
@@ -175,11 +171,7 @@ def calculate_comprehensive_satisfaction_score(satisfaction_obj):
     
     # Q10: Note SAV (1-5)
     if satisfaction_obj.note_sav:
-        # Gérer le cas où la note pourrait être déjà sur 10
-        if satisfaction_obj.note_sav <= 5:
-            score = (satisfaction_obj.note_sav * 2)  # 1-5 -> 2-10
-        else:
-            score = satisfaction_obj.note_sav  # Déjà sur 10
+        score = (satisfaction_obj.note_sav * 2) if satisfaction_obj.note_sav <= 5 else satisfaction_obj.note_sav
         scores.append(score)
     
     # Q11: Pièces non disponibles (texte)
@@ -197,11 +189,7 @@ def calculate_comprehensive_satisfaction_score(satisfaction_obj):
     
     # Q14: Note accueil (1-5)
     if satisfaction_obj.note_accueil:
-        # Gérer le cas où la note pourrait être déjà sur 10
-        if satisfaction_obj.note_accueil <= 5:
-            score = (satisfaction_obj.note_accueil * 2)  # 1-5 -> 2-10
-        else:
-            score = satisfaction_obj.note_accueil  # Déjà sur 10
+        score = (satisfaction_obj.note_accueil * 2) if satisfaction_obj.note_accueil <= 5 else satisfaction_obj.note_accueil
         scores.append(score)
     
     # Q15: Commande simple (Oui/Non)
@@ -433,4 +421,70 @@ def generer_rendezvous_automatiques(date_cible=None):
                 rs_nom=client_obj.rs_nom
             )
             rdv_crees += 1
+    return rdv_crees 
+
+def generer_rendezvous_simples(date_cible=None, commercial=None):
+    """
+    Génère 7 RDV simples pour un commercial donné à une date donnée.
+    Version simplifiée sans optimisation géographique.
+    """
+    if date_cible is None:
+        date_cible = date.today()
+    
+    if date_cible.weekday() >= 5 or is_jour_ferie_france(date_cible):
+        return 0  # Ne rien faire le week-end ou les jours fériés
+
+    creneaux = [time(8,0), time(8,35), time(9,10), time(9,45), time(10,20), time(10,55), time(11,30)]
+    rdv_crees = 0
+    
+    # Si un commercial spécifique est fourni, on ne traite que celui-ci
+    if commercial:
+        commerciaux = [commercial]
+    else:
+        commerciaux = Commercial.objects.filter(role='commercial')
+
+    for commercial_obj in commerciaux:
+        # Vérifier s'il y a déjà des RDV pour ce jour
+        rdv_existants = Rendezvous.objects.filter(
+            commercial=commercial_obj,
+            date_rdv=date_cible,
+            statut_rdv='a_venir'
+        ).count()
+        
+        if rdv_existants > 0:
+            continue  # Passer au commercial suivant si des RDV existent déjà
+        
+        # Récupérer les clients de ce commercial
+        clients_commercial = FrontClient.objects.filter(commercial_id=commercial_obj.id)
+        
+        if not clients_commercial.exists():
+            continue
+        
+        # Prendre les 7 premiers clients disponibles
+        clients_selectionnes = list(clients_commercial)[:7]
+        
+        # Créer les RDV
+        for idx, client_obj in enumerate(clients_selectionnes):
+            if idx >= len(creneaux):
+                break
+                
+            # Vérifier qu'il n'y a pas déjà un RDV pour ce client à cette date
+            rdv_existe = Rendezvous.objects.filter(
+                client=client_obj,
+                commercial=commercial_obj,
+                date_rdv=date_cible
+            ).exists()
+            
+            if not rdv_existe:
+                Rendezvous.objects.create(
+                    client=client_obj,
+                    commercial=commercial_obj,
+                    date_rdv=date_cible,
+                    heure_rdv=creneaux[idx],
+                    objet="Visite commerciale automatique",
+                    statut_rdv='a_venir',
+                    rs_nom=client_obj.rs_nom
+                )
+                rdv_crees += 1
+    
     return rdv_crees 

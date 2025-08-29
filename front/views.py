@@ -24,6 +24,7 @@ from django.db.models import Avg, Count, Q
 from django.db.models.functions import Coalesce, TruncDay, TruncWeek, TruncMonth, TruncYear
 from .models import Adresse
 from front.utils import generer_rendezvous_automatiques
+from django.db import connection
 
 def nettoyer_rdv_anciens_automatiquement():
     """
@@ -185,6 +186,100 @@ def dashboard(request):
     commercial = Commercial.objects.get(id=commercial_id)
     now = timezone.now()
 
+    def enrichir_compteurs_annuels(rdv: Rendezvous) -> None:
+        """Ajoute rdv.obj_annuel, rdv.rdv_realises_annuel et rdv.rdv_ratio (texte X/Y) en utilisant les stats pré-calculées."""
+        if not rdv.client:
+            rdv.obj_annuel = 1
+            rdv.rdv_realises_annuel = 0
+            rdv.rdv_ratio = "0/1"
+            return
+        
+        # Utiliser les statistiques pré-calculées si disponibles
+        try:
+            from .models import ClientVisitStats
+            annee = timezone.now().year
+            stats = ClientVisitStats.objects.filter(
+                client=rdv.client,
+                commercial=rdv.commercial,
+                annee=annee
+            ).first()
+            
+            if stats:
+                rdv.obj_annuel = stats.objectif
+                rdv.rdv_realises_annuel = stats.visites_valides
+                rdv.rdv_ratio = f"{stats.visites_valides}/{stats.objectif}"
+            else:
+                # Fallback si pas de stats (calcul à la volée)
+                from django.db import connection
+                try:
+                    with connection.cursor() as cursor:
+                        cursor.execute("SELECT classement_client FROM front_client WHERE id = %s", [rdv.client.id])
+                        row = cursor.fetchone()
+                        lettre = (row[0] if row else None)
+                        if not lettre:
+                            obj = 1
+                        else:
+                            lettre = str(lettre).strip().upper()
+                            if lettre == 'A':
+                                obj = 10
+                            elif lettre == 'B':
+                                obj = 5
+                            elif lettre == 'C':
+                                obj = 1
+                            else:
+                                obj = 1
+                        
+                        tries = Rendezvous.objects.filter(
+                            client=rdv.client,
+                            commercial=rdv.commercial,
+                            statut_rdv='valide',
+                            date_rdv__year=annee,
+                        ).count()
+                        
+                        rdv.obj_annuel = obj
+                        rdv.rdv_realises_annuel = tries
+                        rdv.rdv_ratio = f"{tries}/{obj}"
+                except Exception:
+                    rdv.obj_annuel = 1
+                    rdv.rdv_realises_annuel = 0
+                    rdv.rdv_ratio = "0/1"
+        except ImportError:
+            # Si le modèle n'existe pas encore, utiliser le calcul à la volée
+            from django.db import connection
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT classement_client FROM front_client WHERE id = %s", [rdv.client.id])
+                    row = cursor.fetchone()
+                    lettre = (row[0] if row else None)
+                    if not lettre:
+                        obj = 1
+                    else:
+                        lettre = str(lettre).strip().upper()
+                        if lettre == 'A':
+                            obj = 10
+                        elif lettre == 'B':
+                            obj = 5
+                        elif lettre == 'C':
+                            obj = 1
+                        else:
+                            obj = 1
+                    
+                    annee = timezone.now().year
+                    tries = Rendezvous.objects.filter(
+                        client=rdv.client,
+                        commercial=rdv.commercial,
+                        statut_rdv='valide',
+                        date_rdv__year=annee,
+                    ).count()
+                    
+                    rdv.obj_annuel = obj
+                    rdv.rdv_realises_annuel = tries
+                    rdv.rdv_ratio = f"{tries}/{obj}"
+            except Exception:
+                rdv.obj_annuel = 1
+                rdv.rdv_realises_annuel = 0
+                rdv.rdv_ratio = "0/1"
+
     visites_recentes = []
     a_venir = []
     a_rappeler = []
@@ -215,6 +310,8 @@ def dashboard(request):
             commercial=rdv.commercial,
             statut_rdv='valide'
         ).count()
+        # Compteurs annuels (ne s'affichent pas ici mais prêts si besoin)
+        enrichir_compteurs_annuels(rdv)
         
     for rdv in a_rappeler:
         last_rdv = Rendezvous.objects.filter(
@@ -231,6 +328,8 @@ def dashboard(request):
             commercial=rdv.commercial,
             statut_rdv='valide'
         ).count()
+        # Compteurs annuels (ne s'affichent pas ici mais prêts si besoin)
+        enrichir_compteurs_annuels(rdv)
 
     # Préparation des données client de manière robuste
     def prepare_client_data(rdv):
@@ -249,6 +348,24 @@ def dashboard(request):
                 "ville": getattr(rdv.client, 'ville', ''),
             }
             rdv.client_type = "fallback"
+
+        # S'assurer que tous les champs nécessaires sont présents
+        if not hasattr(rdv.client_data, 'email') or not rdv.client_data.email:
+            rdv.client_data.email = getattr(rdv.client_data, 'e_mail', '')
+        if not hasattr(rdv.client_data, 'civilite'):
+            rdv.client_data.civilite = getattr(rdv.client_data, 'civilite', '')
+        if not hasattr(rdv.client_data, 'statut'):
+            rdv.client_data.statut = getattr(rdv.client_data, 'statut', '')
+        if not hasattr(rdv.client_data, 'code_comptable'):
+            rdv.client_data.code_comptable = getattr(rdv.client_data, 'code_comptable', '')
+        if not hasattr(rdv.client_data, 'telephone'):
+            rdv.client_data.telephone = getattr(rdv.client_data, 'telephone', '')
+        if not hasattr(rdv.client_data, 'rs_nom'):
+            rdv.client_data.rs_nom = getattr(rdv.client_data, 'rs_nom', '')
+        if not hasattr(rdv.client_data, 'nom'):
+            rdv.client_data.nom = getattr(rdv.client_data, 'nom', '')
+        if not hasattr(rdv.client_data, 'prenom'):
+            rdv.client_data.prenom = getattr(rdv.client_data, 'prenom', '')
 
     for rdv in visites_recentes:
         prepare_client_data(rdv)
@@ -270,15 +387,74 @@ def dashboard(request):
             commercial=rdv.commercial,
             statut_rdv='valide'
         ).count()
+        # Objectif et ratio annuel (à afficher côté UI pour les "à venir")
+        enrichir_compteurs_annuels(rdv)
     for rdv in a_rappeler:
         prepare_client_data(rdv)
         rdv.adresse_principale = Adresse.objects.filter(client=rdv.client).first() if rdv.client else None
 
+    # === NOUVEAU : Pagination des RDV à venir par jour ===
+    # Récupérer la date demandée (par défaut aujourd'hui)
+    date_demandee = request.GET.get('date', today.isoformat())
+    try:
+        date_demandee = date.fromisoformat(date_demandee)
+    except ValueError:
+        date_demandee = today
+
+    # Récupérer les RDV à venir pour la date demandée (max 7)
+    rdvs_jour = Rendezvous.objects.filter(
+        commercial=commercial,
+        date_rdv=date_demandee,
+        statut_rdv='a_venir'
+    ).order_by('heure_rdv')[:7]
+
+    # Préparer les données pour ces RDV
+    for rdv in rdvs_jour:
+        prepare_client_data(rdv)
+        rdv.adresse_principale = Adresse.objects.filter(client=rdv.client).first() if rdv.client else None
+        if rdv.date_rdv and rdv.heure_rdv:
+            dt = datetime.combine(rdv.date_rdv, rdv.heure_rdv)
+            if timezone.is_naive(dt):
+                dt = timezone.make_aware(dt, timezone.get_current_timezone())
+            rdv.en_retard = dt < timezone.now()
+        else:
+            rdv.en_retard = False
+        rdv.nb_rdv_valides = Rendezvous.objects.filter(
+            client=rdv.client,
+            commercial=rdv.commercial,
+            statut_rdv='valide'
+        ).count()
+        # Objectif et ratio annuel (à afficher côté UI pour les "à venir")
+        enrichir_compteurs_annuels(rdv)
+
+    # Calculer les dates de navigation (précédent/suivant)
+    date_precedente = date_demandee - timedelta(days=1)
+    date_suivante = date_demandee + timedelta(days=1)
+    
+    # Vérifier s'il y a des RDV sur ces dates
+    has_rdv_precedent = Rendezvous.objects.filter(
+        commercial=commercial,
+        date_rdv=date_precedente,
+        statut_rdv='a_venir'
+    ).exists()
+    
+    has_rdv_suivant = Rendezvous.objects.filter(
+        commercial=commercial,
+        date_rdv=date_suivante,
+        statut_rdv='a_venir'
+    ).exists()
+
     return render(request, 'front/dashboard.html', {
         'commercial': commercial,
         'visites_recentes': visites_recentes,
-        'rdvs_a_venir': a_venir,
+        'rdvs_a_venir': a_venir,  # Garder pour compatibilité
+        'rdvs_jour': rdvs_jour,    # Nouveau : RDV du jour sélectionné
         'a_rappeler': a_rappeler,
+        'date_courante': date_demandee,
+        'date_precedente': date_precedente,
+        'date_suivante': date_suivante,
+        'has_rdv_precedent': has_rdv_precedent,
+        'has_rdv_suivant': has_rdv_suivant,
     })
 
 # ➕ Nouveau client
@@ -1072,12 +1248,24 @@ def update_client(request, client_id):
 		try:
 			data = json.loads(request.body)
 			client, adresse, client_type = get_client_and_adresse(client_id)
-			client.adresse = data.get("adresse", client.adresse)
-			client.code_postal = data.get("code_postal", client.code_postal)
-			client.ville = data.get("ville", client.ville)
+			
+			# Mettre à jour les champs du client
 			client.telephone = data.get("telephone", client.telephone)
-			client.e_mail = data.get("email", client.e_mail)
+			client.email = data.get("email", client.email)
+			client.classement_client = data.get("classement_client", client.classement_client)
 			client.save()
+			
+			# Mettre à jour l'adresse si elle existe
+			if adresse and client_type == "front":
+				# Chercher l'adresse principale du client
+				from .models import Adresse
+				adresse_obj = Adresse.objects.filter(client=client).first()
+				if adresse_obj:
+					adresse_obj.adresse = data.get("adresse", adresse_obj.adresse)
+					adresse_obj.code_postal = data.get("code_postal", adresse_obj.code_postal)
+					adresse_obj.ville = data.get("ville", adresse_obj.ville)
+					adresse_obj.save()
+			
 			return JsonResponse({"success": True})
 		except Exception as e:
 			return JsonResponse({"success": False, "error": str(e)})
@@ -1204,19 +1392,34 @@ def download_satisfaction_pdf(request, uuid):
 @require_GET
 @login_required
 def get_client_comments(request, client_id):
-	# On récupère tous les rendez-vous de ce client
-	rdvs = Rendezvous.objects.filter(client_id=client_id)
-	# On récupère tous les commentaires liés à ces rendez-vous
-	commentaires = CommentaireRdv.objects.filter(rdv__in=rdvs).order_by('-date_creation')
-	data = [
-		{
-			'texte': c.texte,
-			'date': c.date_creation.strftime('%d/%m/%Y %H:%M'),
-			'auteur': c.commercial.commercial if c.commercial else (c.auteur.username if c.auteur else 'Système')
-		}
-		for c in commentaires
-	]
-	return JsonResponse({'commentaires': data})
+	try:
+		# On récupère tous les rendez-vous de ce client
+		rdvs = Rendezvous.objects.filter(client_id=client_id)
+		# On récupère tous les commentaires liés à ces rendez-vous
+		commentaires = CommentaireRdv.objects.filter(rdv__in=rdvs).order_by('-date_creation')
+		data = []
+		
+		for c in commentaires:
+			try:
+				auteur = 'Système'
+				if c.commercial:
+					auteur = c.commercial.commercial
+				elif c.auteur:
+					auteur = c.auteur.username
+				
+				data.append({
+					'texte': c.texte,
+					'date': c.date_creation.strftime('%d/%m/%Y %H:%M'),
+					'auteur': auteur
+				})
+			except Exception as e:
+				print(f"Erreur lors du traitement du commentaire {c.id}: {e}")
+				continue
+		
+		return JsonResponse({'commentaires': data})
+	except Exception as e:
+		print(f"Erreur dans get_client_comments: {e}")
+		return JsonResponse({'commentaires': [], 'error': str(e)})
 
 @login_required
 def get_client_rdv(request, client_id):
@@ -1343,6 +1546,11 @@ def dashboard_responsable(request):
 			'satisfaction_percentage': 0,
 			'trend': 'neutral'
 		}
+		# Initialiser les notes normalisées pour éviter UnboundLocalError
+		avg_qualite_normalisee = 0
+		avg_sav_normalisee = 0
+		avg_accueil_normalisee = 0
+		avg_recommandation_normalisee = 0
 		moyenne_globale = 0
 
 	chart_data = {
@@ -1411,7 +1619,7 @@ def api_satisfaction_stats(request):
 		end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
 		queryset = queryset.filter(date_soumission__date__range=[start_date, end_date])
 
-			# Si aucun filtre de période n'est appliqué, retourner le format initial
+	# Si aucun filtre de période n'est appliqué, retourner le format initial
 	if not start_date_str and not end_date_str and not period:
 		# Calculer les moyennes globales
 		if queryset.exists():
@@ -1951,6 +2159,19 @@ def get_client_and_adresse(client_id):
 			"ville": adresse_obj.ville if adresse_obj else "",
 		}
 		client_type = "front"
+		
+		# Enrichir le client avec les informations manquantes
+		if not hasattr(client, 'email') or not client.email:
+			client.email = getattr(client, 'email', '')
+		if not hasattr(client, 'civilite'):
+			client.civilite = ''
+		if not hasattr(client, 'statut'):
+			client.statut = ''
+		if not hasattr(client, 'code_comptable'):
+			client.code_comptable = ''
+		if not hasattr(client, 'classement_client'):
+			client.classement_client = ''
+			
 	except FrontClient.DoesNotExist:
 		# Fallback temporaire
 		client = ImportClientCorrected.objects.get(id=client_id)
@@ -1960,6 +2181,19 @@ def get_client_and_adresse(client_id):
 			"ville": client.ville,
 		}
 		client_type = "import"
+		
+		# Enrichir le client import avec les informations manquantes
+		if not hasattr(client, 'email') or not client.email:
+			client.email = getattr(client, 'e_mail', '')
+		if not hasattr(client, 'civilite'):
+			client.civilite = ''
+		if not hasattr(client, 'statut'):
+			client.statut = ''
+		if not hasattr(client, 'code_comptable'):
+			client.code_comptable = ''
+		if not hasattr(client, 'classement_client'):
+			client.classement_client = ''
+			
 	return client, adresse, client_type
 
 # === Remplacement dans les vues ===
@@ -2096,3 +2330,23 @@ def api_search_rdv_historique(request):
 			if len(results) >= 10:
 				break
 	return JsonResponse({'results': results})
+
+@csrf_exempt
+def extend_session(request):
+    """Vue pour prolonger la session utilisateur"""
+    if request.method == 'POST':
+        if 'commercial_id' in request.session:
+            # Mettre à jour le timestamp de dernière activité
+            request.session['last_activity'] = timezone.now().isoformat()
+            
+            # Supprimer les flags d'alerte
+            if 'show_timeout_warning' in request.session:
+                del request.session['show_timeout_warning']
+            if 'timeout_warning_minutes' in request.session:
+                del request.session['timeout_warning_minutes']
+            
+            return JsonResponse({'success': True, 'message': 'Session prolongée'})
+        else:
+            return JsonResponse({'success': False, 'message': 'Utilisateur non connecté'}, status=401)
+    
+    return JsonResponse({'success': False, 'message': 'Méthode non autorisée'}, status=405)

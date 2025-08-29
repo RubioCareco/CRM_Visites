@@ -134,7 +134,7 @@
   </div>
 
   <div class="cards" style="display:flex;justify-content:center;align-items:flex-start;min-height:10vh;">
-    <div class="card" style="width:95%;max-width:1600px;margin-top:40px;min-height:750px;">
+    <div class="card" style="width:95%;max-width:1600px;margin-top:40px;min-height:1000px;">
       <h2 style="text-align:center;margin-bottom:24px;">
         Liste des clients
       </h2>
@@ -208,7 +208,7 @@
           </div>
         </form>
       </div>
-      <div class="table-container" style="max-height: 650px; overflow-y: auto; padding-right: 8px; margin-top: 16px;">
+      <div class="table-container" style="max-height: 850px; overflow-y: auto; padding-right: 8px; margin-top: 16px;">
         <table class="client-table" style="width: 100%; table-layout: fixed;">
           <thead>
             <tr style="background:transparent;">
@@ -234,6 +234,7 @@
                 data-client-email="{{ client.email|escapejs }}"
                 data-client-statut="{{ client.statut|escapejs }}"
                 data-client-code-comptable="{{ client.code_comptable|escapejs }}"
+                                    data-client-classement="{{ client.classement_client|default:'N/A'|escapejs }}"
                 style="cursor:pointer;">
               <td>{{ client.civilite|default:" " }}</td>
               <td>{{ client.rs_nom|default:" " }}</td>
@@ -282,6 +283,7 @@
           <div class="input-icon-group"><b>Email :</b> <input type="email" id="inputEmail" name="email" disabled></div>
           <div class="input-icon-group"><b>Statut :</b> <input type="text" id="inputStatut" name="statut" disabled></div>
           <div class="input-icon-group"><b>Code comptable :</b> <input type="text" id="inputCodeComptable" name="code_comptable" disabled></div>
+          <div class="input-icon-group"><b>Type :</b> <input type="text" id="inputClassement" name="classement_client" disabled></div>
         </div>
         <div id="clientComments" style="margin-top:18px;text-align:left;"></div>
         <div class="modal-buttons" style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:20px;">
@@ -326,8 +328,9 @@ document.addEventListener("DOMContentLoaded", function () {
       const statut = this.getAttribute('data-client-statut') || '';
       const id = this.getAttribute('data-client-id') || '';
       const code_comptable = this.getAttribute('data-client-code-comptable') || '';
+      const classement = this.getAttribute('data-client-classement') || '';
       
-      openClientModal(rs_nom, prenom, civilite, adresse, code_postal, ville, telephone, email, statut, id, code_comptable);
+      openClientModal(rs_nom, prenom, civilite, adresse, code_postal, ville, telephone, email, statut, id, code_comptable, classement);
     });
   });
   
@@ -534,7 +537,8 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById('inputCP'),
     document.getElementById('inputVille'),
     document.getElementById('inputTel'),
-    document.getElementById('inputEmail')
+    document.getElementById('inputEmail'),
+    document.getElementById('inputClassement')
   ];
   let oldValues = {};
 
@@ -563,7 +567,8 @@ document.addEventListener("DOMContentLoaded", function () {
       code_postal: document.getElementById('inputCP').value,
       ville: document.getElementById('inputVille').value,
       telephone: document.getElementById('inputTel').value,
-      email: document.getElementById('inputEmail').value
+      email: document.getElementById('inputEmail').value,
+      classement_client: document.getElementById('inputClassement').value
     };
     fetch(`/update-client/${clientId}/`, {
       method: 'POST',
@@ -603,7 +608,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // --- Remplissage de la modale client ---
-  window.openClientModal = function(nom, prenom, civilite, adresse, code_postal, ville, telephone, email, statut, clientId, code_comptable) {
+  window.openClientModal = function(nom, prenom, civilite, adresse, code_postal, ville, telephone, email, statut, clientId, code_comptable, classement) {
     document.getElementById('clientModal').style.display = 'flex';
     document.getElementById('clientModal').setAttribute('data-client-id', clientId);
     document.getElementById('modalClientName').textContent = (civilite ? civilite + ' ' : '') + (prenom ? prenom + ' ' : '') + nom;
@@ -614,6 +619,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById('inputEmail').value = email || '';
     document.getElementById('inputStatut').value = statut || '';
     document.getElementById('inputCodeComptable').value = code_comptable || '';
+    document.getElementById('inputClassement').value = classement || '';
     // Désactive tout par défaut
     editableFields.forEach(input => input.disabled = true);
     modifyBtn.style.display = 'inline-block';

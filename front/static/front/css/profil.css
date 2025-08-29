@@ -304,3 +304,107 @@ h2 {
   transform: translateX(24px);
   background: #fff;
 }
+
+/* ===== RESPONSIVE DESIGN - TABLETTE/SMARTPHONE ===== */
+/* Mode tablette et smartphone uniquement */
+@media (max-width: 1366px) {
+  .profile-box {
+    width: 90% !important;
+    max-width: 500px !important;
+    padding: 30px 25px !important;
+    margin: 20px !important;
+    box-sizing: border-box !important;
+  }
+  
+  .profile-field {
+    width: 100% !important;
+    max-width: none !important;
+    margin-bottom: 18px !important;
+  }
+  
+  .edit-button {
+    width: 100% !important;
+    max-width: none !important;
+    margin-top: 20px !important;
+  }
+  
+  .switch-absent {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 1.5em auto !important;
+    padding: 1em 1.5em !important;
+    box-sizing: border-box !important;
+  }
+  
+  .switch-absent label {
+    font-size: 1.2em !important;
+  }
+  
+  .profile-avatar {
+    width: 70px !important;
+    height: 70px !important;
+    font-size: 20px !important;
+  }
+  
+  h2 {
+    font-size: 1.5em !important;
+    margin-bottom: 25px !important;
+  }
+}
+
+/* Mode smartphone uniquement */
+@media (max-width: 480px) {
+  .profile-box {
+    width: 95% !important;
+    padding: 25px 20px !important;
+    margin: 15px !important;
+  }
+  
+  .profile-field {
+    margin-bottom: 16px !important;
+  }
+  
+  .profile-field input {
+    padding: 12px 16px 12px 40px !important;
+    font-size: 15px !important;
+  }
+  
+  .profile-field i {
+    font-size: 16px !important;
+    left: 14px !important;
+  }
+  
+  .edit-button {
+    padding: 14px !important;
+    font-size: 15px !important;
+    margin-top: 18px !important;
+  }
+  
+  .switch-absent {
+    padding: 0.8em 1.2em !important;
+    margin: 1.2em auto !important;
+  }
+  
+  .switch-absent label {
+    font-size: 1.1em !important;
+  }
+  
+  .profile-avatar {
+    width: 60px !important;
+    height: 60px !important;
+    font-size: 18px !important;
+  }
+  
+  h2 {
+    font-size: 1.3em !important;
+    margin-bottom: 20px !important;
+  }
+  
+  .close-button {
+    top: 12px !important;
+    right: 12px !important;
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 14px !important;
+  }
+}

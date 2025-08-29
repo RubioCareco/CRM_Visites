@@ -40,6 +40,22 @@
         {% if erreur %}
           <p style="color: red; margin-top: 10px;">Email ou mot de passe incorrect.</p>
         {% endif %}
+        
+        {% if messages %}
+          {% for message in messages %}
+            <div class="message {% if message.tags %}{{ message.tags }}{% endif %}" style="margin-top: 10px; padding: 10px; border-radius: 5px; text-align: center;">
+              {% if message.tags == 'warning' %}
+                <i class="fas fa-exclamation-triangle" style="color: #f39c12; margin-right: 8px;"></i>
+                <span style="color: #e67e22;">{{ message }}</span>
+              {% elif message.tags == 'success' %}
+                <i class="fas fa-check-circle" style="color: #27ae60; margin-right: 8px;"></i>
+                <span style="color: #27ae60;">{{ message }}</span>
+              {% else %}
+                <span style="color: #333;">{{ message }}</span>
+              {% endif %}
+            </div>
+          {% endfor %}
+        {% endif %}
       </form>
     </div>
   </div>

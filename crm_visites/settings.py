@@ -146,6 +146,8 @@ EMAIL_HOST_USER = 'bznjamin.gillens@gmail.com'
 EMAIL_HOST_PASSWORD = 'hhwz rtgp qntz gdah'
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = 'bznjamin.gillens@gmail.com'
+# Base URL utilisée pour générer des liens absolus dans les emails
+SITE_BASE_URL = 'http://127.0.0.1:8000'
 
 # Configuration des sessions pour la sécurité
 SESSION_COOKIE_AGE = 1800  # 30 minutes en secondes

@@ -582,10 +582,12 @@ document.addEventListener("DOMContentLoaded", function () {
     .then(res => {
       if (res.success) {
         alert('Modifications enregistrées !');
-        editableFields.forEach(input => input.disabled = true);
-        modifyBtn.style.display = 'inline-block';
-        saveBtn.style.display = 'none';
-        cancelBtn.style.display = 'none';
+        // Fermer la modal et rafraîchir la page pour afficher les nouvelles données
+        closeClientModal();
+        // Attendre un peu que l'utilisateur voie le message, puis rafraîchir
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
       } else {
         alert('Erreur : ' + (res.error || 'Impossible de sauvegarder'));
       }

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modification Client</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #222;">
+    <div style="max-width: 480px; margin: auto; background: #fafafa; border-radius: 12px; padding: 24px; border: 1px solid #eee;">
+        <div style="text-align:center; margin-bottom:12px;">
+            <img src="cid:rubio-logo" alt="Rubio" style="height:120px; max-height:120px; width:auto; display:inline-block;" />
+        </div>
+        <h2 style="color: #e53935; margin-top: 0;">Modification Client</h2>
+        
+        <div style="background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 20px; border: 1px solid #eee;">
+            <h3 style="color: #e53935; margin-top: 0; font-size: 1.1em;">{{ client.rs_nom|default:client.nom|default:"Client sans nom" }}</h3>
+            <div style="font-size: 0.9em; color: #666;">
+                <div><strong>ID Client :</strong> #{{ client.id }}</div>
+                <div><strong>Raison Sociale :</strong> {{ client.rs_nom|default:"N/A" }}</div>
+            </div>
+        </div>
+        
+        {% if modifications %}
+        <div style="margin-bottom: 20px;">
+            <h4 style="color: #e53935; margin-top: 0; font-size: 1em;">📋 Informations Modifiées</h4>
+            <div style="background: #fff; border-radius: 6px; padding: 12px; border: 1px solid #eee;">
+                {% for field, value in modifications.items %}
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                    <span style="font-weight: bold; color: #333;">{{ field|title }}</span>
+                    <span style="color: #e53935; font-weight: 500;">{{ value|default:"N/A" }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 12px; margin: 20px 0; text-align: center; font-size: 0.9em;">
+            <span style="color: #f39c12;">ℹ️</span>
+            <strong>Aucune action requise</strong> - Information uniquement
+        </div>
+        
+        <div style="text-align: center; font-size: 0.9em; color: #888; margin: 20px 0; padding: 12px; background: #f8f9fa; border-radius: 6px;">
+            <strong>Modifié le :</strong> {{ date_modification|date:"d/m/Y à H:i" }}
+        </div>
+        
+        <p style="font-size: 0.9em; color: #888; text-align: center; margin-top: 24px;">
+            — L'équipe Rubio
+        </p>
+    </div>
+</body>
+</html> 

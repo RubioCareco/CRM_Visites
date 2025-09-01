@@ -186,7 +186,6 @@ body {
 .cards {
   display: flex;
   gap: 32px;
-  height: 80vh;
   align-items: stretch;
 }
 
@@ -1985,6 +1984,7 @@ html, body {
     order: 3 !important;
     align-self: flex-end !important;
     margin: 0 !important;
+    position: relative !important;
   }
   
   /* Style du bouton + sur mobile/tablette */
@@ -2010,7 +2010,7 @@ html, body {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
   }
   
-  /* Menu déroulant sur mobile/tablette (s'adapte automatiquement) */
+  /* MENU ADAPTATIF - S'OUVRE À GAUCHE DU BOUTON SUR MOBILE/TABLETTE */
   .add-button-container .add-menu {
     position: absolute !important;
     top: 0 !important;
@@ -2019,14 +2019,62 @@ html, body {
     transform: none !important;
     margin-right: 8px !important;
     margin-top: 0 !important;
-    min-width: 200px !important;
+    min-width: 220px !important;
+    max-width: calc(100vw - 40px) !important;
     background: rgba(255, 255, 255, 0.18) !important;
     border-radius: 12px !important;
     padding: 8px !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
     backdrop-filter: blur(10px) !important;
-    z-index: 1000 !important;
+    z-index: 9999 !important;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+    overflow: visible !important;
+  }
+  
+  /* SOLUTION SIMPLE POUR MOBILE/TABLETTE - Menu à gauche du bouton */
+  @media (max-width: 1366px) {
+    .add-button-container .add-menu {
+      /* Positionnement simple - à gauche du bouton */
+      position: absolute !important;
+      top: 0 !important;
+      right: 100% !important;
+      left: auto !important;
+      transform: none !important;
+      margin-right: 8px !important;
+      margin-top: 0 !important;
+      
+      /* Largeur adaptative */
+      width: auto !important;
+      min-width: 200px !important;
+      max-width: calc(100vw - 100px) !important;
+      
+      /* S'assurer que le menu ne déborde pas */
+      box-sizing: border-box !important;
+    }
+    
+    /* Sur très petits écrans */
+    @media (max-width: 480px) {
+      .add-button-container .add-menu {
+        max-width: calc(100vw - 80px) !important;
+        min-width: 180px !important;
+      }
+    }
+    
+    /* Sur tablettes moyennes */
+    @media (min-width: 481px) and (max-width: 768px) {
+      .add-button-container .add-menu {
+        max-width: calc(100vw - 100px) !important;
+        min-width: 200px !important;
+      }
+    }
+    
+    /* Sur grandes tablettes */
+    @media (min-width: 769px) and (max-width: 1366px) {
+      .add-button-container .add-menu {
+        max-width: calc(100vw - 120px) !important;
+        min-width: 220px !important;
+      }
+    }
   }
   
   /* Flèche pointant vers la droite (vers le bouton) sur mobile/tablette */
@@ -2043,68 +2091,18 @@ html, body {
     border-left: 6px solid rgba(255, 255, 255, 0.18) !important;
   }
   
-  /* Adaptation automatique pour éviter les débordements d'écran */
-  @media (max-width: 768px) {
-    .add-button-container .add-menu {
-      /* Sur petit écran, s'ouvrir en dessous par défaut */
-      top: 100% !important;
-      right: auto !important;
-      left: 50% !important;
-      transform: translateX(-50%) !important;
-      margin-right: 0 !important;
-      margin-top: 8px !important;
-    }
-    
-    .add-button-container .add-menu::before {
-      /* Flèche pointant vers le haut */
-      right: auto !important;
-      left: 50% !important;
-      top: -6px !important;
-      transform: translateX(-50%) !important;
-      border-left: none !important;
-      border-right: none !important;
-      border-bottom: 6px solid rgba(255, 255, 255, 0.18) !important;
-    }
-  }
-  
-  /* Sur tablette moyenne, essayer de s'ouvrir à gauche mais avec fallback */
-  @media (min-width: 769px) and (max-width: 1366px) {
-    .add-button-container .add-menu {
-      /* Essayer d'abord à gauche */
-      right: 100% !important;
-      left: auto !important;
-    }
-    
-    /* Si l'espace est insuffisant, JavaScript peut forcer l'ouverture à droite */
-    .add-button-container .add-menu.menu-right {
-      right: auto !important;
-      left: 100% !important;
-      margin-right: 0 !important;
-      margin-left: 8px !important;
-    }
-    
-    .add-button-container .add-menu.menu-right::before {
-      right: auto !important;
-      left: -6px !important;
-      border-left: none !important;
-      border-right: 6px solid rgba(255, 255, 255, 0.18) !important;
-    }
-    
-    /* Si l'espace en bas est insuffisant, ouvrir au-dessus */
-    .add-button-container .add-menu.menu-above {
-      top: auto !important;
-      bottom: 100% !important;
-      margin-top: 0 !important;
-      margin-bottom: 8px !important;
-    }
-    
-    .add-button-container .add-menu.menu-above::before {
-      top: auto !important;
-      bottom: -6px !important;
-      border-left: none !important;
-      border-right: none !important;
-      border-top: 6px solid rgba(255, 255, 255, 0.18) !important;
-    }
+  /* Flèche quand le menu est à droite (fallback) */
+  .add-button-container .add-menu.menu-right::before {
+    content: '' !important;
+    position: absolute !important;
+    left: -6px !important;
+    top: 20px !important;
+    transform: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    border-top: 6px solid transparent !important;
+    border-bottom: 6px solid transparent !important;
+    border-right: 6px solid rgba(255, 255, 255, 0.18) !important;
   }
   
   /* Style des liens du menu sur mobile/tablette */
@@ -2118,6 +2116,10 @@ html, body {
     font-size: 0.95rem !important;
     font-weight: 500 !important;
     text-align: center !important;
+    /* S'assurer que le texte est lisible */
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
   
   .add-button-container .add-menu a:hover {

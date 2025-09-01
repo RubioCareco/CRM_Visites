@@ -358,12 +358,10 @@ def generer_rendezvous_automatiques(date_cible=None):
             date_rdv=date_cible
         ).delete()
         
-        # Correspondance insensible à la casse et aux espaces
-        nom_commercial_normalise = commercial_obj.commercial.replace(' ', '').upper()
-        clients = FrontClient.objects.filter(
-            commercial__isnull=False
-        )
-        clients = [c for c in clients if c.commercial and c.commercial.replace(' ', '').upper() == nom_commercial_normalise]
+        # Récupérer les clients de ce commercial (logique simple qui marche)
+        clients = FrontClient.objects.filter(commercial=commercial_obj.commercial)
+        
+        # NOUVEAU : Récupérer TOUS les clients du commercial (pas de limite de 50)
         points_a_visiter = []
         for client in clients:
             for adresse in client.adresses.all():
@@ -374,9 +372,37 @@ def generer_rendezvous_automatiques(date_cible=None):
                         'adresse': adresse.adresse,
                         'coords': [float(adresse.longitude), float(adresse.latitude)]
                     })
-        # Limiter à 50 pour la performance
-        points_haversine = points_a_visiter[:50]
-        # --- NOUVEAU : point de départ = dernier client visité la veille ---
+        
+        # NOUVEAU : Système de rotation - exclure les clients visités récemment (7 derniers jours)
+        date_limite = date_cible - timedelta(days=7)
+        clients_recemment_visites = set(
+            Rendezvous.objects.filter(
+                commercial=commercial_obj,
+                date_rdv__gte=date_limite,
+                statut_rdv__in=['valide', 'a_venir', 'en_retard']
+            ).values_list('client_id', flat=True)
+        )
+        
+        # Filtrer les clients non visités récemment
+        points_disponibles = [p for p in points_a_visiter if p['client_id'] not in clients_recemment_visites]
+        
+        # Si pas assez de clients disponibles, réduire la période d'exclusion
+        if len(points_disponibles) < 7:
+            date_limite = date_cible - timedelta(days=3)
+            clients_recemment_visites = set(
+                Rendezvous.objects.filter(
+                    commercial=commercial_obj,
+                    date_rdv__gte=date_limite,
+                    statut_rdv__in=['valide', 'a_venir', 'en_retard']
+                ).values_list('client_id', flat=True)
+            )
+            points_disponibles = [p for p in points_a_visiter if p['client_id'] not in clients_recemment_visites]
+        
+        # Si toujours pas assez, prendre tous les clients disponibles
+        if len(points_disponibles) < 7:
+            points_disponibles = points_a_visiter
+        
+        # Point de départ = dernier client visité la veille
         hier = date_cible - timedelta(days=1)
         dernier_rdv = Rendezvous.objects.filter(
             commercial=commercial_obj,
@@ -392,18 +418,19 @@ def generer_rendezvous_automatiques(date_cible=None):
         else:
             lon0, lat0 = point_depart
 
-        # --- NOUVEAU : exclure les clients déjà planifiés/visités la veille ---
-        clients_hier_ids = set(
-            Rendezvous.objects.filter(commercial=commercial_obj, date_rdv=hier)
-            .values_list('client_id', flat=True)
-        )
-        points_haversine = [p for p in points_haversine if p['client_id'] not in clients_hier_ids]
-
-        for p in points_haversine:
+        # Calculer les distances et trier par proximité
+        for p in points_disponibles:
             lon, lat = p['coords']
             p['distance_from_start'] = haversine_distance(lon0, lat0, lon, lat)
-        points_haversine.sort(key=lambda x: x['distance_from_start'])
-        tournee = points_haversine[:7]
+        
+        # NOUVEAU : Ajouter un facteur aléatoire pour éviter la répétition exacte
+        import random
+        random.shuffle(points_disponibles)
+        points_disponibles.sort(key=lambda x: x['distance_from_start'])
+        
+        # Prendre les 7 premiers clients disponibles
+        tournee = points_disponibles[:7]
+        
         for idx, rdv in enumerate(tournee):
             if idx >= len(creneaux):
                 break
@@ -416,7 +443,7 @@ def generer_rendezvous_automatiques(date_cible=None):
                 commercial=commercial_obj,
                 date_rdv=date_cible,
                 heure_rdv=creneaux[idx],
-                objet="Visite commerciale automatique",
+                objet="",
                 statut_rdv='a_venir',
                 rs_nom=client_obj.rs_nom
             )
@@ -454,14 +481,47 @@ def generer_rendezvous_simples(date_cible=None, commercial=None):
         if rdv_existants > 0:
             continue  # Passer au commercial suivant si des RDV existent déjà
         
-        # Récupérer les clients de ce commercial
+        # Récupérer TOUS les clients de ce commercial
         clients_commercial = FrontClient.objects.filter(commercial_id=commercial_obj.id)
         
         if not clients_commercial.exists():
             continue
         
+        # NOUVEAU : Système de rotation - exclure les clients visités récemment (7 derniers jours)
+        date_limite = date_cible - timedelta(days=7)
+        clients_recemment_visites = set(
+            Rendezvous.objects.filter(
+                commercial=commercial_obj,
+                date_rdv__gte=date_limite,
+                statut_rdv__in=['valide', 'a_venir', 'en_retard']
+            ).values_list('client_id', flat=True)
+        )
+        
+        # Filtrer les clients non visités récemment
+        clients_disponibles = [c for c in clients_commercial if c.id not in clients_recemment_visites]
+        
+        # Si pas assez de clients disponibles, réduire la période d'exclusion
+        if len(clients_disponibles) < 7:
+            date_limite = date_cible - timedelta(days=3)
+            clients_recemment_visites = set(
+                Rendezvous.objects.filter(
+                    commercial=commercial_obj,
+                    date_rdv__gte=date_limite,
+                    statut_rdv__in=['valide', 'a_venir', 'en_retard']
+                ).values_list('client_id', flat=True)
+            )
+            clients_disponibles = [c for c in clients_commercial if c.id not in clients_recemment_visites]
+        
+        # Si toujours pas assez, prendre tous les clients disponibles
+        if len(clients_disponibles) < 7:
+            clients_disponibles = list(clients_commercial)
+        
+        # NOUVEAU : Ajouter un facteur aléatoire pour éviter la répétition exacte
+        import random
+        random.shuffle(clients_disponibles)
+        
         # Prendre les 7 premiers clients disponibles
-        clients_selectionnes = list(clients_commercial)[:7]
+        clients_selectionnes = clients_disponibles[:7]
         
         # Créer les RDV
         for idx, client_obj in enumerate(clients_selectionnes):
@@ -481,7 +541,7 @@ def generer_rendezvous_simples(date_cible=None, commercial=None):
                     commercial=commercial_obj,
                     date_rdv=date_cible,
                     heure_rdv=creneaux[idx],
-                    objet="Visite commerciale automatique",
+                    objet="",
                     statut_rdv='a_venir',
                     rs_nom=client_obj.rs_nom
                 )

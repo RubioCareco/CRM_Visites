@@ -173,7 +173,9 @@ def dashboard(request):
         from front.models import Rendezvous
         deja_genere = Rendezvous.objects.filter(date_rdv=today, statut_rdv='a_venir').exists()
         if not deja_genere:
-            generer_rendezvous_automatiques(today)
+            from front.utils import generer_rendezvous_simples
+            for commercial in Commercial.objects.filter(role='commercial'):
+                generer_rendezvous_simples(today, commercial)
     # --- Fin génération automatique ---
     
     # --- Nettoyage automatique des RDV anciens ---
@@ -682,6 +684,10 @@ def profil(request, commercial_id=None):
 		commercial.prenom = request.POST.get('prenom') or commercial.prenom
 		commercial.email = request.POST.get('email') or commercial.email
 		commercial.telephone = request.POST.get('telephone') or commercial.telephone
+		# Mise à jour du site de rattachement
+		site_post = request.POST.get('site')
+		if site_post is not None:
+			commercial.site_rattachement = site_post
 		# Gestion du switch absent
 		was_absent = commercial.is_absent
 		is_absent_now = bool(request.POST.get('is_absent'))
@@ -1000,10 +1006,54 @@ def client_file(request):
 def historique_rdv(request):
 	commercial_id = request.session.get('commercial_id')
 	commercial = Commercial.objects.get(id=commercial_id)
+	
+	# Récupérer tous les RDV du commercial
 	rdvs_archives = Rendezvous.objects.filter(commercial=commercial).order_by('-date_rdv', '-heure_rdv')
+	
+	# Appliquer les filtres de date si présents
+	date_label = None
+	if 'jour' in request.GET:
+		# Filtre par jour spécifique
+		jour = request.GET['jour']
+		rdvs_archives = rdvs_archives.filter(date_rdv=jour)
+		date_label = f"Jour : {jour}"
+	elif 'semaine' in request.GET:
+		# Filtre par semaine
+		semaine = request.GET['semaine']
+		from datetime import date, timedelta
+		# Convertir la semaine ISO en dates de début et fin
+		annee, semaine_num = map(int, semaine.split('-W'))
+		# Premier jour de la semaine (lundi)
+		premier_jour = date(annee, 1, 1) + timedelta(weeks=semaine_num-1, days=-premier_jour.weekday())
+		dernier_jour = premier_jour + timedelta(days=6)
+		rdvs_archives = rdvs_archives.filter(date_rdv__gte=premier_jour, date_rdv__lte=dernier_jour)
+		date_label = f"Semaine : {semaine}"
+	elif 'mois' in request.GET:
+		# Filtre par mois
+		mois = request.GET['mois']
+		annee, mois_num = map(int, mois.split('-'))
+		from datetime import date, timedelta
+		premier_jour = date(annee, mois_num, 1)
+		if mois_num == 12:
+			dernier_jour = date(annee + 1, 1, 1) - timedelta(days=1)
+		else:
+			dernier_jour = date(annee, mois_num + 1, 1) - timedelta(days=1)
+		rdvs_archives = rdvs_archives.filter(date_rdv__gte=premier_jour, date_rdv__lte=dernier_jour)
+		date_label = f"Mois : {mois}"
+	elif 'annee' in request.GET:
+		# Filtre par année
+		annee = request.GET['annee']
+		from datetime import date
+		premier_jour = date(int(annee), 1, 1)
+		dernier_jour = date(int(annee), 12, 31)
+		rdvs_archives = rdvs_archives.filter(date_rdv__gte=premier_jour, date_rdv__lte=dernier_jour)
+		date_label = f"Année : {annee}"
+	
+	# Traiter les RDV filtrés
 	visites_recentes = []
 	a_rappeler = []
 	historique_general = []
+	
 	for rdv in rdvs_archives:
 		# Utilisation du champ statut_rdv
 		if rdv.statut_rdv == 'valide':
@@ -1017,6 +1067,7 @@ def historique_rdv(request):
 			rdv.adresse_principale = Adresse.objects.filter(client=rdv.client).first()
 		else:
 			rdv.adresse_principale = None
+	
 	# On trie l'historique général par date décroissante (déjà fait par la requête)
 	for rdv in visites_recentes:
 		last_rdv = Rendezvous.objects.filter(
@@ -1042,19 +1093,7 @@ def historique_rdv(request):
 			date_rdv__lt=rdv.date_rdv
 		).order_by('-date_rdv', '-heure_rdv').first()
 		rdv.derniere_visite = last_rdv.date_rdv if last_rdv else None
-	# --- Détection filtre date actif pour badge ---
-	date_label = None
-	if 'date_debut' in request.GET and 'date_fin' in request.GET:
-		if request.GET['date_debut'] == request.GET['date_fin']:
-			date_label = f"Jour : {request.GET['date_debut']}"
-		else:
-			date_label = f"Période : {request.GET['date_debut']} au {request.GET['date_fin']}"
-	elif 'mois' in request.GET:
-		date_label = f"Mois : {request.GET['mois']}"
-	elif 'annee' in request.GET:
-		date_label = f"Année : {request.GET['annee']}"
-	elif 'semaine' in request.GET:
-		date_label = f"Semaine : {request.GET['semaine']}"
+	
 	return render(request, 'front/historique_rdv.html', {
 		'commercial': commercial,
 		'visites_recentes': visites_recentes,
@@ -1359,8 +1398,15 @@ def satisfaction_b2b(request):
 def check_satisfaction_exists(request, uuid):
 	from .models import SatisfactionB2B, Rendezvous
 	rdv = Rendezvous.objects.filter(uuid=uuid).first()
-	if rdv and not (request.user.is_superuser or (rdv.commercial and rdv.commercial.id == request.session.get('commercial_id'))):
-		raise PermissionDenied("Vous n'avez pas le droit d'accéder à ce rendez-vous.")
+	# Aligner les permissions avec download_satisfaction_pdf
+	role = request.session.get('role')
+	if rdv and not (
+		request.user.is_superuser or
+		(rdv.commercial and rdv.commercial.id == request.session.get('commercial_id')) or
+		(role in ['responsable', 'admin'])
+	):
+		# Renvoyer un JSON 403 pour éviter une page HTML (<!DOCTYPE ...>) côté front
+		return JsonResponse({'error': 'forbidden'}, status=403)
 	exists = False
 	satisfaction_uuid = None
 	if rdv:
@@ -1932,13 +1978,40 @@ def fiche_commercial_view(request, commercial_id):
 	total_avenir = len(visites_a_venir)
 	total_annule = len(a_rappeler)
 
-	# Ajout du compteur de rendez-vous validés pour chaque rdv (comme sur le dashboard)
-	for rdv in visites_recentes + a_rappeler:
+	# Ajout du compteur de rendez-vous validés et des objectifs annuels pour chaque rdv
+	for rdv in visites_recentes + a_rappeler + visites_a_venir:
+		# Compteur de RDV validés (comme sur le dashboard)
 		rdv.nb_rdv_valides = Rendezvous.objects.filter(
 			client=rdv.client,
 			commercial=rdv.commercial,
 			statut_rdv='valide'
 		).count()
+		
+		# Nombre de visites annuelles à effectuer par type de client
+		if hasattr(rdv.client, 'classement_client') and rdv.client.classement_client:
+			classement = rdv.client.classement_client.lower()
+			if 'a' in classement:
+				rdv.visites_annuelles = 10  # Client A : 10 visites/an
+			elif 'b' in classement:
+				rdv.visites_annuelles = 5   # Client B : 5 visites/an
+			elif 'c' in classement:
+				rdv.visites_annuelles = 2   # Client C : 2 visites/an
+			else:
+				rdv.visites_annuelles = 1   # Client D ou autre : 1 visite/an
+		else:
+			rdv.visites_annuelles = 1  # Par défaut : 1 visite/an
+		
+		# Calcul de l'objectif annuel : RDV réalisés cette année / Objectif total
+		annee_courante = timezone.now().year
+		rdv_realises_annee = Rendezvous.objects.filter(
+			client=rdv.client,
+			commercial=rdv.commercial,
+			statut_rdv='valide',
+			date_rdv__year=annee_courante
+		).count()
+		
+		rdv.objectif_annuel_realise = rdv_realises_annee
+		rdv.objectif_annuel_total = rdv.visites_annuelles
 
 	# Calcul des données de satisfaction client
 	satisfactions = SatisfactionB2B.objects.filter(commercial=commercial)
@@ -2100,12 +2173,28 @@ def search_clients(request):
 	if not q:
 		return JsonResponse({'results': []})
 	
-	# Optimisation : Utiliser only() pour récupérer seulement les champs nécessaires
-	qs = FrontClient.objects.filter(
+	# Récupérer le rôle et le commercial de l'utilisateur connecté
+	role = request.session.get('role')
+	commercial_nom = request.session.get('commercial_nom')
+	
+	# Construire la requête de base avec recherche
+	clients_qs = FrontClient.objects.filter(
 		Q(rs_nom__icontains=q) |
 		Q(prenom__icontains=q) |
 		Q(civilite__icontains=q)
-	).only('civilite', 'rs_nom', 'prenom')[:15]  # Limite à 15 résultats
+	).only('civilite', 'rs_nom', 'prenom')
+	
+	# Appliquer les filtres de commercial selon le rôle
+	if role not in ['responsable', 'admin']:
+		# Commercial normal : filtrer sur ses clients uniquement
+		if commercial_nom:
+			nom_normalise = commercial_nom.replace(' ', '').upper()
+			clients_qs = clients_qs.extra(
+				where=["REPLACE(UPPER(commercial), ' ', '') = %s"], params=[nom_normalise]
+			)
+	
+	# Limiter à 15 résultats pour les suggestions
+	clients = clients_qs[:15]
 	
 	results = [
 		{
@@ -2113,7 +2202,7 @@ def search_clients(request):
 			'rs_nom': c.rs_nom or '',
 			'prenom': c.prenom or ''
 		}
-		for c in qs
+		for c in clients
 	]
 	return JsonResponse({'results': results})
 
@@ -2123,24 +2212,46 @@ def search_clients_table(request):
 	if not q:
 		return JsonResponse({'results': []})
 	
-	# Optimisation : Utiliser select_related pour éviter les requêtes N+1
-	clients = FrontClient.objects.filter(
+	# Récupérer le rôle et le commercial de l'utilisateur connecté
+	role = request.session.get('role')
+	commercial_nom = request.session.get('commercial_nom')
+	
+	# Construire la requête de base avec recherche
+	clients_qs = FrontClient.objects.filter(
 		Q(rs_nom__icontains=q) |
 		Q(prenom__icontains=q) |
 		Q(civilite__icontains=q)
-	).prefetch_related('adresses')[:50]  # Limite à 50 résultats pour la performance
+	).prefetch_related('adresses')
+	
+	# Appliquer les filtres de commercial selon le rôle
+	if role not in ['responsable', 'admin']:
+		# Commercial normal : filtrer sur ses clients uniquement
+		if commercial_nom:
+			nom_normalise = commercial_nom.replace(' ', '').upper()
+			clients_qs = clients_qs.extra(
+				where=["REPLACE(UPPER(commercial), ' ', '') = %s"], params=[nom_normalise]
+			)
+	
+	# Récupérer tous les résultats (plus de limite de 50)
+	clients = clients_qs
 	
 	results = []
 	for c in clients:
 		adresse_obj = c.adresses.first()  # Utilise la relation préchargée
 		results.append({
+			'id': c.id,
 			'civilite': c.civilite or '',
 			'rs_nom': c.rs_nom or '',
 			'prenom': c.prenom or '',
 			'adresse': adresse_obj.adresse if adresse_obj else '',
 			'code_postal': adresse_obj.code_postal if adresse_obj else '',
-			'ville': adresse_obj.ville if adresse_obj else ''
+			'ville': adresse_obj.ville if adresse_obj else '',
+			'telephone': getattr(c, 'telephone', '') or '',
+			'email': getattr(c, 'email', '') or '',
+			'statut': getattr(c, 'statut', '') or '',
+			'code_comptable': getattr(c, 'code_comptable', '') or ''
 		})
+	
 	return JsonResponse({'results': results})
 
 # === Fonctions utilitaires safe pour la migration ===

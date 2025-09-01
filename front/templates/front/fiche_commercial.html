@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fiche Commercial - {{ commercial.prenom }} {{ commercial.nom }}</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'front/css/fiche_commercial.css' %}">
@@ -121,6 +122,9 @@
                             <i class="fa fa-check-square"></i> Validée
                         </div>
                         <div class="rdv-details">Dernières visites le : {{ rdv.date_rdv|date:"d/m/Y" }}</div>
+                        <div class="rdv-objectif-annuel">
+                            Objectif annuel: <span class="objectif-valeur">{{ rdv.objectif_annuel_realise }}/{{ rdv.objectif_annuel_total }}</span>
+                        </div>
                     </div>
                     {% endfor %}
                     <p class="no-rdv" {% if visites_recentes %}style="display: none;"{% endif %}>Aucune visite récente.</p>
@@ -135,6 +139,9 @@
                         <div class="rdv-objet" style="font-size:1.01rem;color:#fff;margin-bottom:4px;">{{ rdv.objet }}</div>
                         <div class="rdv-status-upcoming">
                             <i class="fa fa-calendar-alt"></i> RDV le {{ rdv.date_rdv|date:"d/m/Y" }}
+                        </div>
+                        <div class="rdv-objectif-annuel">
+                            Objectif annuel: <span class="objectif-valeur">{{ rdv.objectif_annuel_realise }}/{{ rdv.objectif_annuel_total }}</span>
                         </div>
                         <div class="rdv-details"></div>
                     </div>
@@ -158,6 +165,9 @@
                             <i class="fa-solid fa-triangle-exclamation"></i> Annulé
                         </div>
                         <div class="rdv-details">Dernière visite le {{ rdv.date_rdv|date:"d/m/Y" }}</div>
+                        <div class="rdv-objectif-annuel">
+                            <i class="fa fa-target"></i> Objectif annuel: {{ rdv.objectif_annuel_realise }}/{{ rdv.objectif_annuel_total }}
+                        </div>
                         <div class="rdv-details-icon"></div>
                     </div>
                     {% endfor %}

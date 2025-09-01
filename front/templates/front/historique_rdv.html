@@ -22,7 +22,7 @@
         {% if date_label %}
           <span class="filter-badge">
             {{ date_label }}
-            <a href="?{% for key, value in request.GET.items %}{% if key != 'date_debut' and key != 'date_fin' and key != 'mois' and key != 'annee' and key != 'semaine' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}" class="filter-badge-close">&times;</a>
+            <a href="?{% for key, value in request.GET.items %}{% if key != 'jour' and key != 'semaine' and key != 'mois' and key != 'annee' %}{{ key }}={{ value|urlencode }}{% if not forloop.last %}&{% endif %}{% endif %}{% endfor %}" class="filter-badge-close">&times;</a>
           </span>
         {% endif %}
         <div id="filterPopoverHistorique" class="filter-popover">
@@ -156,21 +156,27 @@
             {% if a_rappeler %}
               {% for rdv in a_rappeler %}
                 <div class="reminder-entry" data-client-id="{{ rdv.client.id }}">
-                  <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
-                  <p class="status-à-rappeler"><i class="fa-solid fa-triangle-exclamation"></i> Annulé</p>
-                  <p class="infos-adresse status-annule">
-                    Rendez-vous prévu le : <span class="visit-date">{{ rdv.date_rdv|date:'d/m/Y' }}{% if rdv.heure_rdv %} {{ rdv.heure_rdv|time:'H:i' }}{% endif %}</span>
-                    <span class="separator">|</span>
-                    <span class="last-visit">
-                      Dernières visites le : 
-                      {% if rdv.derniere_visite %}
-                        {{ rdv.derniere_visite|date:"d/m/Y" }}
-                      {% else %}
-                        Aucune visite
-                      {% endif %}
-                    </span>
-                  </p>
-                  <p class="infos-adresse">Adresse : {{ rdv.adresse_principale.adresse|default:"" }}, {{ rdv.adresse_principale.code_postal|default:"" }} {{ rdv.adresse_principale.ville|default:"" }}</p>
+                  <div class="client-name">
+                    <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
+                    <p class="infos-adresse">Adresse : {{ rdv.adresse_principale.adresse|default:"" }}, {{ rdv.adresse_principale.code_postal|default:"" }} {{ rdv.adresse_principale.ville|default:"" }}</p>
+                  </div>
+                  <div class="status-container">
+                    <p class="status-à-rappeler"><i class="fa-solid fa-triangle-exclamation"></i> Annulé</p>
+                  </div>
+                  <div class="info-container">
+                    <p class="infos-adresse status-annule">
+                      Rendez-vous prévu le : <span class="visit-date">{{ rdv.date_rdv|date:'d/m/Y' }}{% if rdv.heure_rdv %} {{ rdv.heure_rdv|time:'H:i' }}{% endif %}</span>
+                      <span class="separator">|</span>
+                      <span class="last-visit">
+                        Dernières visites le : 
+                        {% if rdv.derniere_visite %}
+                          {{ rdv.derniere_visite|date:"d/m/Y" }}
+                        {% else %}
+                          Aucune visite
+                        {% endif %}
+                      </span>
+                    </p>
+                  </div>
                 </div>
               {% endfor %}
             {% else %}
@@ -186,7 +192,7 @@
     <div id="modalClientRDV" class="modal-client-rdv">
     <div class="modal-content-client-rdv">
       <button id="closeModalClientRDV" class="close-btn"><i class="fa fa-times"></i></button>
-        <h2>Historique du client</h2>
+        <h2 id="modalClientTitle">Historique du client</h2>
       <div id="modalClientRDVContent">
         <!-- Les rendez-vous seront injectés ici -->
       </div>
@@ -238,7 +244,7 @@
             
             switch(filterType) {
               case 'jour':
-                html = '<input type="date" id="filterDate" class="filter-input">';
+                html = '<input type="date" id="filterDate" class="filter-input" value="' + new Date().toISOString().split("T")[0] + '">';
                 break;
               case 'semaine':
                 html = '<input type="week" id="filterWeek" class="filter-input">';
@@ -247,7 +253,7 @@
                 html = '<input type="month" id="filterMonth" class="filter-input">';
                 break;
               case 'annee':
-                html = '<input type="number" id="filterYear" class="filter-input" placeholder="Année" min="2020" max="2030">';
+                html = '<input type="number" id="filterYear" class="filter-input" placeholder="Année" min="2020" max="2030" value="' + new Date().getFullYear() + '">';
                 break;
             }
             
@@ -292,17 +298,77 @@
         const searchInput = document.getElementById('historiqueSearch');
         const searchSuggestions = document.getElementById('historiqueSearchSuggestions');
         
-        searchInput.addEventListener('input', function() {
-          const query = this.value.trim();
-          if (query.length < 2) {
+        // Récupérer tous les clients pour la recherche
+        const allClientCards = document.querySelectorAll('.visit-entry, .reminder-entry');
+        
+        // Créer la liste des suggestions
+        const suggestions = Array.from(allClientCards).flatMap(card => [
+          card.querySelector('.client-name strong')?.textContent.trim(),
+          card.querySelector('.infos-adresse')?.textContent.replace('Adresse : ', '').split(',')[0]?.trim()
+        ].filter(Boolean));
+        
+        // Afficher les suggestions filtrées
+        function showSuggestions(value) {
+          const v = value.trim().toLowerCase();
+          if (!v) {
             searchSuggestions.style.display = 'none';
+            searchSuggestions.innerHTML = '';
             return;
           }
-          
-          // Ici tu peux ajouter la logique de recherche
-          // Pour l'instant, on masque les suggestions
-          searchSuggestions.style.display = 'none';
-      });
+          const filtered = suggestions.filter(s => s.toLowerCase().includes(v));
+          if (filtered.length === 0) {
+            searchSuggestions.style.display = 'none';
+            searchSuggestions.innerHTML = '';
+            return;
+          }
+          searchSuggestions.innerHTML = filtered.map(s => `<li class='autocomplete-item' style='padding:8px 12px;cursor:pointer;'>${s}</li>`).join('');
+          searchSuggestions.style.display = 'block';
+          Array.from(searchSuggestions.children).forEach(li => {
+            li.addEventListener('mousedown', function(e) {
+              e.preventDefault();
+              searchInput.value = this.textContent;
+              filterClientCards(this.textContent);
+              searchSuggestions.style.display = 'none';
+            });
+          });
+        }
+        
+        // Filtrer les cartes clients
+        function filterClientCards(query) {
+          const lowerQuery = query.trim().toLowerCase();
+          allClientCards.forEach(card => {
+            const clientName = card.querySelector('.client-name strong')?.textContent.toLowerCase() || '';
+            const address = card.querySelector('.infos-adresse')?.textContent.toLowerCase() || '';
+            
+            if (clientName.includes(lowerQuery) || address.includes(lowerQuery)) {
+              card.style.display = '';
+            } else {
+              card.style.display = 'none';
+            }
+          });
+        }
+        
+        searchInput.addEventListener('input', function() {
+          showSuggestions(this.value);
+          filterClientCards(this.value);
+        });
+        
+        searchInput.addEventListener('focus', function() {
+          showSuggestions(this.value);
+        });
+        
+        searchInput.addEventListener('blur', function() {
+          setTimeout(() => { searchSuggestions.style.display = 'none'; }, 120);
+        });
+        
+        // Réinitialiser la recherche avec la touche Escape
+        searchInput.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape') {
+            this.value = '';
+            filterClientCards('');
+            searchSuggestions.style.display = 'none';
+          }
+        });
 
         // Fermer les suggestions au clic ailleurs
         document.addEventListener('click', function(e) {
@@ -319,103 +385,125 @@
           if (e.target.closest('a')) return;
           const clientId = card.getAttribute('data-client-id');
           if (!clientId) return;
+          
+          // Récupérer les informations du client pour le titre
+          const clientName = card.querySelector('.client-name strong').textContent.trim();
+          
           fetch(`/get_client_rdv/${clientId}/`)
             .then(resp => resp.json())
             .then(data => {
+              // Mettre à jour le titre de la modal
+              document.getElementById('modalClientTitle').textContent = clientName;
+              
               let html = '';
               if (data.rdvs.length === 0) {
                 html = '<p class="no-rdv-message">Aucun rendez-vous pour ce client.</p>';
               } else {
-                html = `<table class="table-modal-rdv">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Heure</th>
-                      <th>Statut</th>
-                      <th>Objet</th>
-                      <th>Commentaire</th>
-                      <th>Commercial</th>
-                    </tr>
-                  </thead>
-                  <tbody>`;
-                data.rdvs.forEach(rdv => {
-                  let statutClass = '';
-                  let statutLabel = '';
-                  if (rdv.statut_rdv === 'valide') {
-                    statutClass = 'statut-valide';
-                    statutLabel = 'Validé';
-                  } else if (rdv.statut_rdv === 'annule') {
-                    statutClass = 'statut-annule';
-                    statutLabel = 'Annulé';
-                  } else {
-                    statutClass = 'statut-autre';
-                    statutLabel = rdv.statut_rdv;
-                  }
-                  html += `<tr>
-                    <td>${rdv.date_rdv}</td>
-                    <td>${rdv.heure_rdv}</td>
-                    <td><span class="${statutClass}">${statutLabel}</span></td>
-                    <td>${rdv.objet}</td>
-                    <td>${rdv.commentaire}</td>
-                    <td>${rdv.commercial}</td>
-                  </tr>`;
-                });
-                html += '</tbody></table>';
+                // Filtrer uniquement les statuts "Validé" et "Annulé"
+                const rdvsFiltres = data.rdvs.filter(rdv => rdv.statut_rdv === 'valide' || rdv.statut_rdv === 'annule');
+                
+                if (rdvsFiltres.length === 0) {
+                  html = '<p class="no-rdv-message">Aucun rendez-vous validé ou annulé pour ce client.</p>';
+                } else {
+                  html = `<table class="table-modal-rdv">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Heure</th>
+                        <th>Statut</th>
+                        <th>Objet</th>
+                        <th>Commentaire</th>
+                        <th>Commercial</th>
+                      </tr>
+                    </thead>
+                    <tbody>`;
+                  rdvsFiltres.forEach(rdv => {
+                    let statutClass = '';
+                    let statutLabel = '';
+                    if (rdv.statut_rdv === 'valide') {
+                      statutClass = 'statut-valide';
+                      statutLabel = 'Validé';
+                    } else if (rdv.statut_rdv === 'annule') {
+                      statutClass = 'statut-annule';
+                      statutLabel = 'Annulé';
+                    }
+                    html += `<tr>
+                      <td>${rdv.date_rdv}</td>
+                      <td>${rdv.heure_rdv}</td>
+                      <td><span class="${statutClass}">${statutLabel}</span></td>
+                      <td>${rdv.objet}</td>
+                      <td>${rdv.commentaire}</td>
+                      <td>${rdv.commercial}</td>
+                    </tr>`;
+                  });
+                  html += '</tbody></table>';
+                }
               }
               document.getElementById('modalClientRDVContent').innerHTML = html;
               document.getElementById('modalClientRDV').style.display = 'flex';
             });
         });
 
-        // Rendez-vous validés : délégation d'événement pour robustesse
+                // Rendez-vous validés : délégation d'événement pour robustesse
         document.getElementById('tab-recent').addEventListener('click', function(e) {
           const card = e.target.closest('.visit-entry');
           if (!card) return;
           if (e.target.closest('a')) return;
           const clientId = card.getAttribute('data-client-id');
           if (!clientId) return;
+          
+          // Récupérer les informations du client pour le titre
+          const clientName = card.querySelector('.client-name strong').textContent.trim();
+          
           fetch(`/get_client_rdv/${clientId}/?statut=valide`)
             .then(resp => resp.json())
             .then(data => {
+              // Mettre à jour le titre de la modal
+              document.getElementById('modalClientTitle').textContent = clientName;
+              
               let html = '';
               if (data.rdvs.length === 0) {
                 html = '<p class="no-rdv-message">Aucun rendez-vous validé pour ce client.</p>';
               } else {
-                html = `<table class="table-modal-rdv">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Heure</th>
-                      <th>Statut</th>
-                      <th>Objet</th>
-                      <th>Commentaire</th>
-                      <th>Commercial</th>
-                    </tr>
-                  </thead>
-                  <tbody>`;
-                data.rdvs.forEach(rdv => {
-                  let statutClass = '';
-                  let statutLabel = '';
-                  if (rdv.statut_rdv === 'valide') {
-                    statutClass = 'statut-valide';
-                    statutLabel = 'Validé';
-                  } else if (rdv.statut_rdv === 'annule') {
-                    statutClass = 'statut-annule';
-                    statutLabel = 'Annulé';
-                  } else {
-                    statutClass = 'statut-autre';
-                    statutLabel = rdv.statut_rdv;
-                  }
-                  html += `<tr>
-                    <td>${rdv.date_rdv}</td>
-                    <td>${rdv.heure_rdv}</td>
-                    <td><span class="${statutClass}">${statutLabel}</span></td>
-                    <td>${rdv.objet}</td>
-                    <td>${rdv.commentaire}</td>
-                    <td>${rdv.commercial}</td>
-                  </tr>`;
-                });
-                html += '</tbody></table>';
+                // Filtrer uniquement les statuts "Validé" et "Annulé"
+                const rdvsFiltres = data.rdvs.filter(rdv => rdv.statut_rdv === 'valide' || rdv.statut_rdv === 'annule');
+                
+                if (rdvsFiltres.length === 0) {
+                  html = '<p class="no-rdv-message">Aucun rendez-vous validé ou annulé pour ce client.</p>';
+                } else {
+                  html = `<table class="table-modal-rdv">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Heure</th>
+                        <th>Statut</th>
+                        <th>Objet</th>
+                        <th>Commentaire</th>
+                        <th>Commercial</th>
+                      </tr>
+                    </thead>
+                    <tbody>`;
+                  rdvsFiltres.forEach(rdv => {
+                    let statutClass = '';
+                    let statutLabel = '';
+                    if (rdv.statut_rdv === 'valide') {
+                      statutClass = 'statut-valide';
+                      statutLabel = 'Validé';
+                    } else if (rdv.statut_rdv === 'annule') {
+                      statutClass = 'statut-annule';
+                      statutLabel = 'Annulé';
+                    }
+                    html += `<tr>
+                      <td>${rdv.date_rdv}</td>
+                      <td>${rdv.heure_rdv}</td>
+                      <td><span class="${statutClass}">${statutLabel}</td>
+                      <td>${rdv.objet}</td>
+                      <td>${rdv.commentaire}</td>
+                      <td>${rdv.commercial}</td>
+                    </tr>`;
+                  });
+                  html += '</tbody></table>';
+                }
               }
               document.getElementById('modalClientRDVContent').innerHTML = html;
               document.getElementById('modalClientRDV').style.display = 'flex';
@@ -429,48 +517,59 @@
         if (e.target.closest('a')) return;
         const clientId = card.getAttribute('data-client-id');
         if (!clientId) return;
+        
+        // Récupérer les informations du client pour le titre
+        const clientName = card.querySelector('.client-name strong').textContent.trim();
+        
         fetch(`/get_client_rdv/${clientId}/?statut=annule`)
           .then(resp => resp.json())
           .then(data => {
+            // Mettre à jour le titre de la modal
+            document.getElementById('modalClientTitle').textContent = clientName;
+            
             let html = '';
             if (data.rdvs.length === 0) {
                 html = '<p class="no-rdv-message">Aucun rendez-vous annulé pour ce client.</p>';
             } else {
-              html = `<table class="table-modal-rdv">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Heure</th>
-                    <th>Statut</th>
-                    <th>Objet</th>
-                    <th>Commentaire</th>
-                    <th>Commercial</th>
-                  </tr>
-                </thead>
-                <tbody>`;
-              data.rdvs.forEach(rdv => {
-                let statutClass = '';
-                let statutLabel = '';
-                if (rdv.statut_rdv === 'valide') {
-                  statutClass = 'statut-valide';
-                  statutLabel = 'Validé';
-                } else if (rdv.statut_rdv === 'annule') {
-                  statutClass = 'statut-annule';
-                  statutLabel = 'Annulé';
-                } else {
-                  statutClass = 'statut-autre';
-                  statutLabel = rdv.statut_rdv;
-                }
-                html += `<tr>
-                  <td>${rdv.date_rdv}</td>
-                  <td>${rdv.heure_rdv}</td>
-                  <td><span class="${statutClass}">${statutLabel}</span></td>
-                  <td>${rdv.objet}</td>
-                  <td>${rdv.commentaire}</td>
-                  <td>${rdv.commercial}</td>
-                </tr>`;
-              });
-              html += '</tbody></table>';
+              // Filtrer uniquement les statuts "Validé" et "Annulé"
+              const rdvsFiltres = data.rdvs.filter(rdv => rdv.statut_rdv === 'valide' || rdv.statut_rdv === 'annule');
+              
+              if (rdvsFiltres.length === 0) {
+                html = '<p class="no-rdv-message">Aucun rendez-vous validé ou annulé pour ce client.</p>';
+              } else {
+                html = `<table class="table-modal-rdv">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Heure</th>
+                      <th>Statut</th>
+                      <th>Objet</th>
+                      <th>Commentaire</th>
+                      <th>Commercial</th>
+                    </tr>
+                  </thead>
+                  <tbody>`;
+                rdvsFiltres.forEach(rdv => {
+                  let statutClass = '';
+                  let statutLabel = '';
+                  if (rdv.statut_rdv === 'valide') {
+                    statutClass = 'statut-valide';
+                    statutLabel = 'Validé';
+                  } else if (rdv.statut_rdv === 'annule') {
+                    statutClass = 'statut-annule';
+                    statutLabel = 'Annulé';
+                  }
+                  html += `<tr>
+                    <td>${rdv.date_rdv}</td>
+                    <td>${rdv.heure_rdv}</td>
+                    <td><span class="${statutClass}">${statutLabel}</span></td>
+                    <td>${rdv.objet}</td>
+                    <td>${rdv.commentaire}</td>
+                    <td>${rdv.commercial}</td>
+                  </tr>`;
+                });
+                html += '</tbody></table>';
+              }
             }
             document.getElementById('modalClientRDVContent').innerHTML = html;
             document.getElementById('modalClientRDV').style.display = 'flex';

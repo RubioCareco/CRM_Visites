@@ -122,7 +122,7 @@ class Command(BaseCommand):
                 commercial=commercial_obj,
                 date_rdv=today,
                 heure_rdv=creneaux[idx],
-                objet="Visite commerciale automatique",
+                objet="",
                 statut_rdv='a_venir',
                 rs_nom=client_obj.rs_nom
             )

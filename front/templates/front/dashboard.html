@@ -1639,86 +1639,75 @@
 
       // Gestion du menu du bouton +
       if (addButton && addMenu) {
+        console.log("Menu du bouton + initialisé", { addButton, addMenu });
+        
         addButton.addEventListener("click", (e) => {
           e.preventDefault();
           e.stopPropagation();
           
+          console.log("Clic sur le bouton +", { 
+            windowWidth: window.innerWidth, 
+            currentDisplay: addMenu.style.display 
+          });
+          
           // Vérifier si on est sur mobile/tablette
           if (window.innerWidth <= 1366) {
+            console.log("Mode mobile/tablette détecté");
+            
             // Si le menu est déjà ouvert, le fermer
             if (addMenu.style.display === "block") {
+              console.log("Fermeture du menu");
               addMenu.style.display = "none";
-              addMenu.classList.remove("menu-right", "menu-above");
               return;
             }
             
-            // Détecter si le menu déborde à gauche ou en bas
+            // Ouvrir le menu
+            console.log("Ouverture du menu en mode mobile/tablette");
             addMenu.style.display = "block";
-            addMenu.style.right = "100%";
-            addMenu.style.left = "auto";
-            addMenu.style.top = "0";
-            addMenu.style.bottom = "auto";
             
-            // Attendre que le menu soit rendu pour mesurer
+            // Vérifier si le menu déborde à gauche et ajuster si nécessaire
             setTimeout(() => {
-              const menuRect = addMenu.getBoundingClientRect();
               const buttonRect = addButton.getBoundingClientRect();
-              const viewportHeight = window.innerHeight;
+              const menuRect = addMenu.getBoundingClientRect();
+              const viewportWidth = window.innerWidth;
               
-              // Vérifier le débordement à gauche
-              let shouldOpenRight = false;
-              if (menuRect.left < 10) {
-                shouldOpenRight = true;
-              }
+              console.log("Vérification du débordement gauche", {
+                buttonRect,
+                menuRect,
+                viewportWidth
+              });
               
-              // Vérifier le débordement en bas
-              let shouldOpenAbove = false;
-              if (menuRect.bottom > viewportHeight - 20) {
-                shouldOpenAbove = true;
-              }
-              
-              // Appliquer les ajustements
-              if (shouldOpenRight) {
-                addMenu.classList.add("menu-right");
+              // Si le menu déborde à gauche, l'ouvrir à droite du bouton
+              if (buttonRect.left - menuRect.width - 8 < 20) {
+                console.log("Menu déborde à gauche, repositionnement à droite");
                 addMenu.style.right = "auto";
                 addMenu.style.left = "100%";
                 addMenu.style.marginRight = "0";
                 addMenu.style.marginLeft = "8px";
+                addMenu.classList.add("menu-right");
               } else {
+                console.log("Menu positionné à gauche (position par défaut)");
+                // Position par défaut (à gauche) - déjà géré par CSS
                 addMenu.classList.remove("menu-right");
-                addMenu.style.right = "100%";
-                addMenu.style.left = "auto";
-                addMenu.style.marginRight = "8px";
-                addMenu.style.marginLeft = "0";
-              }
-              
-              if (shouldOpenAbove) {
-                addMenu.classList.add("menu-above");
-                addMenu.style.top = "auto";
-                addMenu.style.bottom = "100%";
-                addMenu.style.marginTop = "0";
-                addMenu.style.marginBottom = "8px";
-              } else {
-                addMenu.classList.remove("menu-above");
-                addMenu.style.top = "0";
-                addMenu.style.bottom = "auto";
-                addMenu.style.marginTop = "0";
-                addMenu.style.marginBottom = "0";
               }
             }, 10);
           } else {
+            console.log("Mode PC détecté");
             // Mode PC : comportement normal (toggle)
             addMenu.style.display = addMenu.style.display === "block" ? "none" : "block";
+            console.log("Nouveau display du menu:", addMenu.style.display);
           }
         });
 
         // Fermer le menu si on clique ailleurs
         document.addEventListener("click", (e) => {
           if (!addButton.contains(e.target) && !addMenu.contains(e.target)) {
+            console.log("Fermeture du menu (clic ailleurs)");
             addMenu.style.display = "none";
-            addMenu.classList.remove("menu-right", "menu-above");
           }
         });
+      } else {
+        console.error("Éléments du menu du bouton + non trouvés", { addButton, addMenu });
       }
 
       // Gestion de l'ancien menu flottant (pour compatibilité)
@@ -1781,7 +1770,8 @@
       const allClients = allCards.map(card => ({
         nom: card.getAttribute('data-nom') || '',
         prenom: card.getAttribute('data-prenom') || '',
-        entreprise: card.getAttribute('data-entreprise') || ''
+        entreprise: card.getAttribute('data-entreprise') || '',
+        rs_nom: card.getAttribute('data-rs_nom') || ''
       }));
 
       // Génère une liste unique de suggestions (nom complet et entreprise)
@@ -1789,7 +1779,8 @@
         allClients.flatMap(c => [
           c.nom + ' ' + c.prenom,
           c.prenom + ' ' + c.nom,
-          c.entreprise
+          c.entreprise,
+          c.rs_nom
         ].filter(Boolean))
       ));
 
@@ -1829,10 +1820,12 @@
           const nom = (card.getAttribute('data-nom') || '').toLowerCase();
           const prenom = (card.getAttribute('data-prenom') || '').toLowerCase();
           const entreprise = (card.getAttribute('data-entreprise') || '').toLowerCase();
+          const rsNom = (card.getAttribute('data-rs_nom') || '').toLowerCase();
           if (
             nom.includes(lowerQuery) ||
             prenom.includes(lowerQuery) ||
             entreprise.includes(lowerQuery) ||
+            rsNom.includes(lowerQuery) ||
             (prenom + ' ' + nom).includes(lowerQuery) ||
             (nom + ' ' + prenom).includes(lowerQuery)
           ) {
@@ -1909,11 +1902,29 @@
       const clientFilterEl = document.getElementById('clientFilter');
       const rdvAValiderEl = document.getElementById('rdvAValider');
 
-      filterBtn.addEventListener('click', function() {
-        filterPanel.style.display = 'block';
+      // Ouverture/fermeture sécurisée de la modale Filtres
+      const toggleFilter = () => {
+        filterPanel.style.display = (filterPanel.style.display === 'block') ? 'none' : 'block';
+      };
+
+      filterBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleFilter();
       });
       closeFilterPanel.addEventListener('click', function() {
         filterPanel.style.display = 'none';
+      });
+      // Fermer au clic en dehors
+      document.addEventListener('click', function(e) {
+        if (filterPanel.style.display === 'block' && !filterPanel.contains(e.target) && e.target !== filterBtn) {
+          filterPanel.style.display = 'none';
+        }
+      });
+      // Fermer avec Échap
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          filterPanel.style.display = 'none';
+        }
       });
       resetFilters.addEventListener('click', function(e) {
         e.preventDefault();
@@ -1954,8 +1965,9 @@
           const nom = (card.getAttribute('data-nom') || '').toLowerCase();
           const prenom = (card.getAttribute('data-prenom') || '').toLowerCase();
           const entreprise = (card.getAttribute('data-entreprise') || '').toLowerCase();
+          const rsNom = (card.getAttribute('data-rs_nom') || '').toLowerCase();
           if (searchQuery &&
-              !(nom.includes(searchQuery) || prenom.includes(searchQuery) || entreprise.includes(searchQuery) ||
+              !(nom.includes(searchQuery) || prenom.includes(searchQuery) || entreprise.includes(searchQuery) || rsNom.includes(searchQuery) ||
                 (prenom + ' ' + nom).includes(searchQuery) || (nom + ' ' + prenom).includes(searchQuery))) {
             show = false;
           }

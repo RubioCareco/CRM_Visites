@@ -62,10 +62,10 @@
     width: 99.5%;
     min-width: 340px;
     max-width: 100%;
-    margin: 6px auto;
+    margin: 8px auto;
     margin-left: 13px;
     border-radius: 10px;
-    padding: 12px 18px;
+    padding: 20px 25px;
     box-sizing: border-box;
     box-shadow: none;
     background: rgba(250, 250, 250, 0.219);
@@ -75,6 +75,7 @@
     align-items: start;
     gap: 0 38px;
     font-size: 1.05rem;
+    min-height: 120px;
   }
 
   .client-name {
@@ -82,7 +83,8 @@
     padding-right: 20px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
+    text-align: left;
   }
 
   .client-name strong {
@@ -108,12 +110,14 @@
     display: flex;
     align-items: center;
     align-self: center;
+    text-align: left;
   }
 
   .info-container {
     flex: 1;
     min-width: 300px;
     align-self: center;
+    text-align: left;
   }
 
   .visit-entry p, .reminder-entry p {
@@ -123,6 +127,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: left;
   }
 
   .status.validée, .status-à-rappeler {
@@ -148,12 +153,15 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    text-align: left;
+    flex-wrap: nowrap;
   }
 
   .infos-adresse span {
     display: inline-flex;
     align-items: center;
     white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .tabs-content-scroll {
@@ -185,7 +193,7 @@
 .search-bar {
   position: relative;
   margin-top: 60px;
-  margin-bottom: 48px;
+  margin-bottom: 6px !important;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -256,7 +264,10 @@
   box-shadow: 0 8px 32px rgba(0,0,0,0.25);
   padding: 24px 28px 18px 28px;
   min-width: 260px;
+  max-width: 90vw;
   background: rgba(0, 0, 0, 0.829);
+  transform: translateX(0);
+  overflow: hidden;
 }
 
 .filter-popover-title {
@@ -338,7 +349,7 @@
 }
 
 .cards {
-  margin-top: 10px;
+  margin-top: 0px !important;
   justify-content: center;
   align-items: flex-start;
 }
@@ -543,7 +554,6 @@
     margin: 0 auto !important;
     padding: 0 !important;
     border-radius: 15px !important;
-    min-height: auto !important;
     overflow: visible !important;
   }
   
@@ -653,15 +663,16 @@
   .visit-entry, .reminder-entry {
     width: 100% !important;
     min-width: auto !important;
-    margin: 15px 0 !important; /* Réduit de 25px 0 à 15px 0 */
-    padding: 25px 30px !important; /* Réduit de 35px 40px à 25px 30px */
+    margin: 20px 0 !important;
+    padding: 35px 40px !important;
     grid-template-columns: 1fr !important;
-    gap: 20px !important; /* Réduit de 30px à 20px */
+    gap: 25px !important;
     font-size: 1.5rem !important;
     max-width: none !important;
     box-sizing: border-box !important;
     border-radius: 15px !important;
     box-shadow: 0 8px 25px rgba(0,0,0,0.2) !important;
+    min-height: 180px !important;
   }
   
   /* Forcer la largeur des conteneurs de texte */
@@ -675,20 +686,20 @@
   .client-name {
     min-width: auto !important;
     padding-right: 0 !important;
-    text-align: center !important;
-    margin-bottom: 15px !important; /* Réduit de 20px à 15px */
+    text-align: left !important;
+    margin-bottom: 20px !important;
   }
   
   .client-name strong {
     font-size: 1.8rem !important;
-    text-align: center !important;
+    text-align: left !important;
     line-height: 1.4 !important;
     display: block !important;
     margin-bottom: 10px !important; /* Réduit de 15px à 10px */
   }
   
   .client-name .infos-adresse {
-    text-align: center !important;
+    text-align: left !important;
     font-size: 1.4rem !important;
     line-height: 1.5 !important;
   }
@@ -696,14 +707,14 @@
   /* AGRANDIR LES CONTENEURS DE STATUT ET INFO */
   .status-container, .info-container {
     min-width: auto !important;
-    text-align: center !important;
-    justify-content: center !important;
+    text-align: left !important;
+    justify-content: flex-start !important;
     margin-bottom: 15px !important; /* Réduit de 20px à 15px */
   }
   
   .status.validée, .status-à-rappeler {
     min-width: auto !important;
-    text-align: center !important;
+    text-align: left !important;
     font-size: 1.6rem !important;
     padding: 10px 20px !important; /* Réduit de 12px 25px à 10px 20px */
     border-radius: 12px !important;
@@ -712,25 +723,31 @@
   }
   
   .visit-date, .visit-date-passed {
-    text-align: center !important;
+    text-align: left !important;
     font-size: 1.4rem !important;
     line-height: 1.6 !important;
     margin-bottom: 10px !important; /* Réduit de 15px à 10px */
   }
   
   .info-container .infos-adresse {
-    justify-content: center !important;
-    text-align: center !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
     font-size: 1.4rem !important;
     line-height: 1.6 !important;
     margin-bottom: 10px !important; /* Réduit de 15px à 10px */
+    flex-wrap: nowrap !important;
   }
   
   /* AGRANDIR LA MODALE DE FILTRE */
   .filter-popover {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translate(-50%, -50%) !important;
     min-width: 90vw !important;
     max-width: 95vw !important;
-    padding: 25px 25px 20px 25px !important; /* Réduit de 35px 35px 30px 35px à 25px 25px 20px 25px */
+    padding: 25px 25px 20px 25px !important;
     font-size: 1.4rem !important;
     border-radius: 20px !important;
   }
@@ -801,7 +818,6 @@
     max-width: none !important;
     padding: 0 !important;
     border-radius: 0 !important;
-    min-height: auto !important;
     overflow: visible !important;
   }
   
@@ -1094,13 +1110,13 @@
   
   /* Supprimer la hauteur minimale fixe qui cause le scrolling */
   .card {
-    min-height: auto !important; /* Supprime la min-height: 750px */
+    min-height: 950px; /* Supprime la min-height: 750px */
   }
   
   /* Réduire les marges de la barre de recherche */
   .search-bar {
     margin-top: 20px !important; /* Réduit de 60px à 20px */
-    margin-bottom: 20px !important; /* Réduit de 48px à 20px */
+    margin-bottom: 6px !important; /* Réduit de 48px à 6px */
   }
 }
 
@@ -1134,10 +1150,19 @@
   /* Réduire les marges de la barre de recherche */
   .search-bar {
     margin-top: 15px !important; /* Réduit de 60px à 15px */
-    margin-bottom: 15px !important; /* Réduit de 48px à 15px */
+    margin-bottom: 6px !important; /* Réduit de 48px à 6px */
   }
 }
 
 /* Ajustement: bouton directement sous la carte */
 .cards { margin-bottom: 0 !important; }
 .card { margin-bottom: 0 !important; }
+
+/* FORCER LA RÉDUCTION D'ESPACEMENT - PRIORITÉ ABSOLUE */
+body .dashboard .search-bar {
+  margin-bottom: 6px !important;
+}
+
+body .dashboard .cards {
+  margin-top: 50px !important;
+}

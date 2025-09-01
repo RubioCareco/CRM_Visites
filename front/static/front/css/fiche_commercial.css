@@ -545,6 +545,25 @@ header .page-title {
     margin-bottom: 5px;
 }
 
+/* Style pour l'objectif annuel (exactement comme sur le dashboard) */
+.rdv-objectif-annuel {
+    color: #fff;
+    font-weight: 500;
+    font-size: 0.98rem;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.rdv-objectif-annuel i {
+    display: none; /* Masquer l'icône pour correspondre au dashboard */
+}
+
+/* Style pour la valeur de l'objectif (en bleu/cyan comme sur le dashboard) */
+.objectif-valeur {
+    color: #4dd0e1;
+    font-weight: 500;
+}
+
 .rdv-details-icon {
     position: absolute;
     top: 15px;
@@ -618,6 +637,318 @@ footer {
   padding-bottom: 20px !important;
 }
 
+/* ===== RESPONSIVE DESIGN ===== */
+
+/* Tablette - Portrait (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .main-container {
+    padding: 25px;
+    margin: 15px;
+  }
+  
+  .commercial-header {
+    flex-direction: column;
+    gap: 25px;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .commercial-id {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+  
+  .commercial-id .avatar {
+    width: 80px;
+    height: 80px;
+    font-size: 2.2rem;
+    margin: 0 auto;
+  }
+  
+  .title-container h1 {
+    font-size: 1.8rem;
+    text-align: center;
+  }
+  
+  .stats-container {
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .stat-card {
+    padding: 15px 25px 10px 25px;
+    min-width: 100px;
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .stat-card .stat-value {
+    font-size: 1.8rem;
+  }
+  
+  .satisfaction-section {
+    justify-content: center;
+    margin-top: 0;
+  }
+  
+  .satisfaction-card {
+    max-width: 100%;
+    margin-top: 0;
+    text-align: center;
+  }
+  
+  .satisfaction-content {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .satisfaction-percentage {
+    font-size: 2rem;
+    min-width: auto;
+  }
+  
+  .satisfaction-comparisons {
+    margin-top: 10px;
+  }
+  
+  .content-grid {
+    grid-template-columns: 1fr;
+    gap: 25px;
+  }
+  
+  .column {
+    min-height: auto;
+    padding: 20px;
+  }
+  
+  .column h2 {
+    font-size: 1.4rem;
+    margin-bottom: 20px;
+  }
+  
+  .card-list {
+    max-height: 50vh;
+    gap: 15px;
+  }
+  
+  .rdv-card {
+    padding: 20px;
+  }
+  
+  .rdv-title {
+    font-size: 1.1rem;
+  }
+  
+  .filter-panel {
+    width: 90vw;
+    max-width: 500px;
+    padding: 20px 25px;
+  }
+  
+  .date-filter-buttons {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .filter-btn {
+    flex: 1;
+    min-width: 80px;
+  }
+  
+  .date-range-picker {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .date-input-group {
+    width: 100%;
+  }
+}
+
+/* Tablette - Paysage (1025px - 1366px) */
+@media (min-width: 1025px) and (max-width: 1366px) {
+  .main-container {
+    padding: 25px;
+    margin: 15px;
+  }
+  
+  .commercial-header {
+    gap: 20px;
+  }
+  
+  .stats-container {
+    gap: 18px;
+  }
+  
+  .stat-card {
+    padding: 16px 30px 10px 30px;
+    min-width: 110px;
+  }
+  
+  .content-grid {
+    gap: 25px;
+  }
+  
+  .column {
+    padding: 20px;
+  }
+  
+  .card-list {
+    gap: 16px;
+  }
+  
+  .rdv-card {
+    padding: 16px;
+  }
+}
+
+/* Mobile (max-width: 767px) */
+@media (max-width: 767px) {
+  body {
+    padding: 15px;
+  }
+  
+  .main-container {
+    padding: 20px;
+    margin: 10px;
+    border-radius: 15px;
+  }
+  
+  .commercial-header {
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .commercial-id {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+  
+  .commercial-id .avatar {
+    width: 70px;
+    height: 70px;
+    font-size: 1.8rem;
+    margin: 0 auto;
+  }
+  
+  .title-container h1 {
+    font-size: 1.6rem;
+    text-align: center;
+  }
+  
+  .stats-container {
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+  
+  .stat-card {
+    padding: 15px 20px 10px 20px;
+    width: 100%;
+    text-align: center;
+  }
+  
+  .stat-card .stat-value {
+    font-size: 1.6rem;
+  }
+  
+  .satisfaction-section {
+    justify-content: center;
+    margin-top: 0;
+  }
+  
+  .satisfaction-card {
+    max-width: 100%;
+    margin-top: 0;
+    text-align: center;
+    padding: 15px 20px;
+  }
+  
+  .satisfaction-content {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .satisfaction-percentage {
+    font-size: 1.8rem;
+    min-width: auto;
+  }
+  
+  .content-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .column {
+    min-height: auto;
+    padding: 15px;
+  }
+  
+  .column h2 {
+    font-size: 1.3rem;
+    margin-bottom: 18px;
+  }
+  
+  .card-list {
+    max-height: 45vh;
+    gap: 12px;
+  }
+  
+  .rdv-card {
+    padding: 15px;
+  }
+  
+  .rdv-title {
+    font-size: 1rem;
+  }
+  
+  .filter-panel {
+    width: 95vw;
+    padding: 20px;
+    margin: 20px;
+  }
+  
+  .date-filter-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .filter-btn {
+    width: 100%;
+  }
+  
+  .date-range-picker {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .date-input-group {
+    width: 100%;
+  }
+  
+  .filter-panel-footer {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+  
+  .apply-btn {
+    width: 100%;
+    padding: 15px;
+  }
+  
+  .reset-link {
+    text-align: center;
+    padding: 10px;
+  }
+}
+
+/* Footer responsive */
 @media (max-width: 700px) {
   .site-footer {
     /* Conserve l'alignement plein écran sur mobile aussi */

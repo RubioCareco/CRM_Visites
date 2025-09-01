@@ -85,9 +85,7 @@
             if (!isEditing) {
               e.preventDefault(); // Bloque l'envoi à la première étape
               inputs.forEach(input => {
-                  if (input.name !== 'site') { // Garde le champ site désactivé
-                    input.disabled = false
-                  }
+                  input.disabled = false
               });
               editBtn.innerHTML = '<i class="fa fa-check"></i> Enregistrer';
               isEditing = true;

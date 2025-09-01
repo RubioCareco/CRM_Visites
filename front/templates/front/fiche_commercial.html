@@ -111,12 +111,7 @@
                 <h2>Visites récentes</h2>
                 <div class="card-list">
                     {% for rdv in visites_recentes %}
-                    <div class="rdv-card" data-date="{{ rdv.date_rdv|date:"Y-m-d" }}" data-status="realise" style="position:relative;" data-nb-rdv-valides="{{ rdv.nb_rdv_valides }}">
-                        {% if rdv.nb_rdv_valides > 0 %}
-                        <div class="rdv-counter-bubble" title="{{ rdv.nb_rdv_valides }} rendez-vous validés">
-                            {{ rdv.nb_rdv_valides }}
-                        </div>
-                        {% endif %}
+                    <div class="rdv-card" data-date="{{ rdv.date_rdv|date:"Y-m-d" }}" data-status="realise">
                         <div class="rdv-title">{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom }}</div>
                         <div class="rdv-status-recent">
                             <i class="fa fa-check-square"></i> Validée
@@ -153,12 +148,7 @@
                 <h2>A Rappeler</h2>
                 <div class="card-list">
                     {% for rdv in a_rappeler %}
-                    <div class="rdv-card" data-date="{{ rdv.date_rdv|date:"Y-m-d" }}" data-status="annule" style="position:relative;" data-nb-rdv-valides="{{ rdv.nb_rdv_valides }}">
-                        {% if rdv.nb_rdv_valides > 0 %}
-                        <div class="rdv-counter-bubble" title="{{ rdv.nb_rdv_valides }} rendez-vous validés">
-                            {{ rdv.nb_rdv_valides }}
-                        </div>
-                        {% endif %}
+                    <div class="rdv-card" data-date="{{ rdv.date_rdv|date:"Y-m-d" }}" data-status="annule">
                         <div class="rdv-title">{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom }}</div>
                         <div class="rdv-details" style="margin-bottom: 5px;"><i class="fa fa-phone" style="margin-right: 8px;"></i>{{ rdv.client.telephone|default:"N/A" }}</div>
                         <div class="rdv-status-cancelled">
@@ -166,7 +156,7 @@
                         </div>
                         <div class="rdv-details">Dernière visite le {{ rdv.date_rdv|date:"d/m/Y" }}</div>
                         <div class="rdv-objectif-annuel">
-                            <i class="fa fa-target"></i> Objectif annuel: {{ rdv.objectif_annuel_realise }}/{{ rdv.objectif_annuel_total }}
+                            Objectif annuel: <span class="objectif-valeur">{{ rdv.objectif_annuel_realise }}/{{ rdv.objectif_annuel_total }}</span>
                         </div>
                         <div class="rdv-details-icon"></div>
                     </div>
@@ -350,69 +340,7 @@
             });
         }
 
-        // Ajout : affichage du nombre de rendez-vous validés dans la modale
-        // Supposons que la modale s'ouvre sur clic d'une .rdv-card
-        // et que les champs de la modale ont des IDs comme inputCodeComptable
 
-        // Ajoute ce code dans le DOMContentLoaded
-        const modal = document.getElementById('clientModal');
-        const inputCodeComptable = document.getElementById('inputCodeComptable');
-        const nbRdvValidesDiv = document.createElement('div');
-        nbRdvValidesDiv.id = 'nbRdvValidesDiv';
-        nbRdvValidesDiv.style = 'margin-top:6px;font-size:1.04rem;color:#4dd0e1;font-weight:500;';
-
-        // Fonction pour ouvrir la modale (à adapter selon ton code)
-        document.querySelectorAll('.rdv-card').forEach(card => {
-          card.addEventListener('click', function() {
-            // ... code d'ouverture de la modale ...
-            // Récupérer le nombre de rdv validés
-            const nbRdvValides = this.getAttribute('data-nb-rdv-valides');
-            // Insérer sous le champ code comptable
-            if (inputCodeComptable && inputCodeComptable.parentNode) {
-              nbRdvValidesDiv.textContent = `Nombre de rendez-vous validés : ${nbRdvValides}`;
-              // Supprimer l'ancien si déjà présent
-              if (inputCodeComptable.parentNode.querySelector('#nbRdvValidesDiv')) {
-                inputCodeComptable.parentNode.querySelector('#nbRdvValidesDiv').remove();
-              }
-              inputCodeComptable.parentNode.appendChild(nbRdvValidesDiv);
-            }
-          });
-        });
-
-        // Fonction pour mettre à jour dynamiquement les compteurs de RDV validés
-        function updateRdvCounters() {
-          // Mettre à jour les compteurs sur toutes les cartes clients
-          document.querySelectorAll('[data-nb-rdv-valides]').forEach(card => {
-            const clientRsNom = card.getAttribute('data-rs_nom');
-            if (clientRsNom) {
-              // Récupérer le nombre de RDV validés pour ce client
-              fetch(`/api/rdv-counters-by-client/?rs_nom=${encodeURIComponent(clientRsNom)}`)
-                .then(response => response.json())
-                .then(data => {
-                  const nbRdvValides = data.nb_rdv_valides || 0;
-                  card.setAttribute('data-nb-rdv-valides', nbRdvValides);
-                  
-                  // Mettre à jour ou créer la bulle de compteur
-                  let counterBubble = card.querySelector('.rdv-counter-bubble');
-                  if (nbRdvValides > 0) {
-                    if (!counterBubble) {
-                      counterBubble = document.createElement('div');
-                      counterBubble.className = 'rdv-counter-bubble';
-                      counterBubble.title = `${nbRdvValides} rendez-vous validés`;
-                      card.appendChild(counterBubble);
-                    }
-                    counterBubble.textContent = nbRdvValides;
-                    counterBubble.style.display = 'flex'; // Utiliser flex au lieu de block
-                  } else if (counterBubble) {
-                    counterBubble.remove(); // Supprimer complètement au lieu de cacher
-                  }
-                })
-                .catch(error => {
-                  console.error('Erreur lors de la mise à jour du compteur:', error);
-                });
-            }
-          });
-        }
     });
     </script>
     {% include 'front/footer.html' %}

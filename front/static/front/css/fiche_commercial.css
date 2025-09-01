@@ -596,33 +596,7 @@ footer {
     background: rgba(255, 255, 255, 0.22);
 } 
 
-/* Style pour la bulle de compteur de RDV (identique dashboard) */
-.rdv-counter-bubble {
-  position: absolute !important;
-  top: 8px !important;
-  right: 21px !important;
-  background: rgba(77, 208, 225, 0.2) !important;
-  border: 1px solid rgba(77, 208, 225, 0.4) !important;
-  border-radius: 50% !important;
-  width: 28px !important;
-  height: 28px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-size: 12px !important;
-  font-weight: bold !important;
-  color: #4dd0e1 !important;
-  z-index: 10 !important;
-  backdrop-filter: blur(4px) !important;
-  transition: all 0.3s ease !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-}
-.rdv-counter-bubble:hover {
-  background: rgba(77, 208, 225, 0.3) !important;
-  border-color: rgba(77, 208, 225, 0.6) !important;
-  transform: scale(1.1) !important;
-} 
+ 
 
 /* Footer overrides specific to fiche_commercial */
 .site-footer {

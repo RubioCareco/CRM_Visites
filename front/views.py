@@ -170,12 +170,11 @@ def dashboard(request):
     # --- Génération automatique des RDV à la demande (hors week-end) ---
     today = date.today()
     if today.weekday() < 5:  # 0=lundi, ..., 4=vendredi
-        from front.models import Rendezvous
-        deja_genere = Rendezvous.objects.filter(date_rdv=today, statut_rdv='a_venir').exists()
-        if not deja_genere:
-            from front.utils import generer_rendezvous_simples
-            for commercial in Commercial.objects.filter(role='commercial'):
-                generer_rendezvous_simples(today, commercial)
+        # Toujours tenter de compléter à 7 RDV pour CHAQUE commercial.
+        # La fonction called est idempotente: elle remplit jusqu'à 7 ce jour sans dupliquer.
+        from front.utils import generer_rendezvous_simples
+        for commercial in Commercial.objects.filter(role='commercial'):
+            generer_rendezvous_simples(today, commercial)
     # --- Fin génération automatique ---
     
     # --- Nettoyage automatique des RDV anciens ---

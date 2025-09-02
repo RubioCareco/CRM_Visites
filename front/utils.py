@@ -471,15 +471,17 @@ def generer_rendezvous_simples(date_cible=None, commercial=None):
         commerciaux = Commercial.objects.filter(role='commercial')
 
     for commercial_obj in commerciaux:
-        # Vérifier s'il y a déjà des RDV pour ce jour
-        rdv_existants = Rendezvous.objects.filter(
+        # Objectif: 7 RDV par JOUR et par commercial via la génération automatique.
+        # On calcule la capacité restante pour la date cible uniquement.
+        rdv_existants_jour = Rendezvous.objects.filter(
             commercial=commercial_obj,
             date_rdv=date_cible,
             statut_rdv='a_venir'
         ).count()
-        
-        if rdv_existants > 0:
-            continue  # Passer au commercial suivant si des RDV existent déjà
+        capacite_restante = max(0, 7 - rdv_existants_jour)
+        if capacite_restante == 0:
+            # Déjà 7 RDV ce jour-là: ne rien ajouter pour ce commercial
+            continue
         
         # Récupérer TOUS les clients de ce commercial
         clients_commercial = FrontClient.objects.filter(commercial_id=commercial_obj.id)
@@ -520,8 +522,8 @@ def generer_rendezvous_simples(date_cible=None, commercial=None):
         import random
         random.shuffle(clients_disponibles)
         
-        # Prendre les 7 premiers clients disponibles
-        clients_selectionnes = clients_disponibles[:7]
+        # Prendre au plus la capacité restante (<= 7 - déjà planifiés ce jour)
+        clients_selectionnes = clients_disponibles[:min(7, capacite_restante)]
         
         # Créer les RDV
         for idx, client_obj in enumerate(clients_selectionnes):
@@ -535,7 +537,7 @@ def generer_rendezvous_simples(date_cible=None, commercial=None):
                 date_rdv=date_cible
             ).exists()
             
-            if not rdv_existe:
+            if not rdv_existe and capacite_restante > 0:
                 Rendezvous.objects.create(
                     client=client_obj,
                     commercial=commercial_obj,
@@ -546,5 +548,6 @@ def generer_rendezvous_simples(date_cible=None, commercial=None):
                     rs_nom=client_obj.rs_nom
                 )
                 rdv_crees += 1
+                capacite_restante -= 1
     
     return rdv_crees 

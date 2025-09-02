@@ -1230,13 +1230,28 @@ def historique_rdv_resp(request):
 		if not hasattr(rdv, 'adresse_principale') or rdv.adresse_principale is None:
 			rdv.adresse_principale = Adresse.objects.filter(client=rdv.client).first() if getattr(rdv, 'client', None) else None
 
-	# Tri spécifique selon l'onglet
-	visites_recentes = sorted(visites_recentes, key=lambda r: (r.date_statut or r.date_rdv, r.heure_rdv), reverse=True)
-	a_rappeler = sorted(a_rappeler, key=lambda r: (r.date_statut or r.date_rdv, r.heure_rdv), reverse=True)
+	# Fonction de tri sécurisée qui normalise les types de dates
+	def tri_securise(r):
+		# Normaliser la date pour la comparaison
+		date_principale = r.date_statut or r.date_rdv
+		if hasattr(date_principale, 'date'):
+			# Si c'est un datetime, extraire la date
+			date_normalisee = date_principale.date()
+		else:
+			# Si c'est déjà une date, l'utiliser directement
+			date_normalisee = date_principale
+		return (date_normalisee, r.heure_rdv)
+
+	# Tri spécifique selon l'onglet avec la fonction sécurisée
+	visites_recentes = sorted(visites_recentes, key=tri_securise, reverse=True)
+	a_rappeler = sorted(a_rappeler, key=tri_securise, reverse=True)
+	
 	# Pour l'historique général :
 	def tri_pertinent(r):
 		if r.statut_rdv in ['valide', 'annule'] and r.date_statut:
-			return (r.date_statut, r.heure_rdv)
+			# Normaliser date_statut si c'est un datetime
+			date_statut = r.date_statut.date() if hasattr(r.date_statut, 'date') else r.date_statut
+			return (date_statut, r.heure_rdv)
 		return (r.date_rdv, r.heure_rdv)
 	historique_general = sorted(historique_general, key=tri_pertinent, reverse=True)
 
@@ -1884,10 +1899,16 @@ def api_clients_by_commercial(request):
 		return JsonResponse({'clients': []})
 	try:
 		commercial = Commercial.objects.get(id=commercial_id)
-		# On prend le nom de code (ex: "Commercial 1") et on supprime les espaces
-		commercial_name = commercial.commercial.replace(' ', '').strip()
-		# On cherche les clients avec ce nom de code (insensible à la casse)
-		clients = FrontClient.objects.filter(commercial__iexact=commercial_name)
+		# Normaliser le nom du commercial (suppression des espaces + upper)
+		nom_normalise = commercial.commercial.replace(' ', '').upper()
+		# Comparaison normalisée côté base: REPLACE(UPPER(commercial), ' ', '') = nom_normalise
+		from django.db.models.functions import Replace, Upper
+		from django.db.models import Value
+		clients = (
+			FrontClient.objects
+			.annotate(_nom_norm=Replace(Upper('commercial'), Value(' '), Value('')))
+			.filter(_nom_norm=nom_normalise)
+		)
 		data = [
 			{
 				'id': client.id,

@@ -169,12 +169,21 @@ def new_password(request):
 def dashboard(request):
     # --- Génération automatique des RDV à la demande (hors week-end) ---
     today = date.today()
-    if today.weekday() < 5:  # 0=lundi, ..., 4=vendredi
-        # Toujours tenter de compléter à 7 RDV pour CHAQUE commercial.
-        # La fonction called est idempotente: elle remplit jusqu'à 7 ce jour sans dupliquer.
-        from front.utils import generer_rendezvous_simples
+    # Génération roulante: compléter à 7 RDV par jour sur les 5 prochains jours ouvrés
+    from front.utils import generer_rendezvous_simples, is_jour_ferie_france
+    def iter_prochains_jours_ouvres(start_date, n):
+        d = start_date
+        count = 0
+        while count < n:
+            # Sauter week-ends et jours fériés
+            if d.weekday() < 5 and not is_jour_ferie_france(d):
+                yield d
+                count += 1
+            d = d + timedelta(days=1)
+
+    for d in iter_prochains_jours_ouvres(today, 5):
         for commercial in Commercial.objects.filter(role='commercial'):
-            generer_rendezvous_simples(today, commercial)
+            generer_rendezvous_simples(d, commercial)
     # --- Fin génération automatique ---
     
     # --- Nettoyage automatique des RDV anciens ---

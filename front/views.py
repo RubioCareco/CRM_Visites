@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Commercial, Rendezvous, CommentaireRdv, ImportClientCorrected, SatisfactionB2B, FrontClient, ActivityLog
+from .models import Commercial, Rendezvous, CommentaireRdv, ImportClientCorrected, SatisfactionB2B, FrontClient, ActivityLog, ClientVisitStats
 from django.contrib.auth.hashers import check_password, make_password
 from functools import wraps
 from django.http import JsonResponse, HttpResponse, Http404
@@ -2490,3 +2490,198 @@ def extend_session(request):
             return JsonResponse({'success': False, 'message': 'Utilisateur non connecté'}, status=401)
     
     return JsonResponse({'success': False, 'message': 'Méthode non autorisée'}, status=405)
+
+@login_required
+def objectif_annuel(request):
+    """Vue pour afficher les objectifs annuels du commercial"""
+    commercial_id = request.session.get('commercial_id')
+    if not commercial_id:
+        return redirect('login')
+    
+    try:
+        commercial = Commercial.objects.get(id=commercial_id)
+    except Commercial.DoesNotExist:
+        return redirect('login')
+    
+    # Année courante par défaut, ou année sélectionnée
+    current_year = timezone.now().year
+    selected_year = request.GET.get('year', current_year)
+    
+    try:
+        selected_year = int(selected_year)
+    except ValueError:
+        selected_year = current_year
+    
+    # Récupérer les données depuis front_clientvisitstats
+    with connection.cursor() as cursor:
+        # KPIs globaux du commercial
+        cursor.execute("""
+            SELECT 
+                SUM(objectif) as target_global,
+                SUM(visites_valides) as done_global
+            FROM front_clientvisitstats 
+            WHERE commercial_id = %s AND annee = %s
+        """, [commercial_id, selected_year])
+        
+        kpis_result = cursor.fetchone()
+        target_global = kpis_result[0] or 0
+        done_global = kpis_result[1] or 0
+        remaining_global = max(target_global - done_global, 0)
+        
+        # Calcul du pourcentage de progression
+        progress_percentage = 0
+        if target_global > 0:
+            progress_percentage = min(int((done_global / target_global) * 100), 100)
+        
+        # Données détaillées par client
+        cursor.execute("""
+            SELECT 
+                cvs.client_id,
+                cvs.objectif,
+                cvs.visites_valides,
+                (cvs.objectif - cvs.visites_valides) as restants,
+                CASE WHEN cvs.visites_valides >= cvs.objectif THEN 'Atteint' ELSE 'Non atteint' END as statut,
+                fc.rs_nom,
+                fc.nom,
+                fc.prenom
+            FROM front_clientvisitstats cvs
+            LEFT JOIN front_client fc ON cvs.client_id = fc.id
+            WHERE cvs.commercial_id = %s AND cvs.annee = %s
+            ORDER BY restants DESC, statut DESC, fc.rs_nom
+        """, [commercial_id, selected_year])
+        
+        clients_data = []
+        for row in cursor.fetchall():
+            client_id, objectif, visites_valides, restants, statut, rs_nom, nom, prenom = row
+            
+            # Nom d'affichage du client
+            client_name = rs_nom or f"{nom or ''} {prenom or ''}".strip() or f"Client {client_id}"
+            
+            clients_data.append({
+                'client_id': client_id,
+                'client_name': client_name,
+                'objectif': objectif or 0,
+                'realises': visites_valides or 0,
+                'restants': max(restants or 0, 0),
+                'statut': statut,
+                'is_atteint': statut == 'Atteint'
+            })
+    
+    # Contexte pour le template
+    context = {
+        'commercial': commercial,
+        'selected_year': selected_year,
+        'current_year': current_year,
+        'kpis': {
+            'target_global': target_global,
+            'done_global': done_global,
+            'remaining_global': remaining_global,
+            'progress_percentage': progress_percentage
+        },
+        'clients_data': clients_data,
+        'years_range': range(current_year - 2, current_year + 1)  # 2 ans en arrière + année courante
+    }
+    
+    return render(request, 'front/objectif_annuel.html', context)
+
+@csrf_exempt
+def api_client_details(request, client_id):
+    """API pour récupérer les détails d'un client avec ses questionnaires"""
+    # Pour les tests, utiliser le premier commercial
+    commercial_id = request.session.get('commercial_id')
+    if not commercial_id:
+        commercial = Commercial.objects.first()
+        commercial_id = commercial.id if commercial else None
+        print(f"DEBUG: Utilisation du commercial par défaut: {commercial_id}")
+    
+    print(f"DEBUG: API appelée pour client_id={client_id}, commercial_id={commercial_id}")
+    
+    try:
+        # Récupérer les informations du client
+        client = FrontClient.objects.get(id=client_id)
+        
+        # Vérifier que le client appartient bien à ce commercial
+        commercial = Commercial.objects.get(id=commercial_id)
+        if client.commercial != commercial.commercial:
+            return JsonResponse({'error': 'Accès non autorisé à ce client'}, status=403)
+        
+        # Récupérer les RDV réalisés du client pour ce commercial
+        rdv_realises = Rendezvous.objects.filter(
+            client_id=client_id,
+            commercial_id=commercial_id,
+            statut_rdv='termine'
+        ).order_by('-date_rdv')
+        
+        # Récupérer les questionnaires de satisfaction liés à ces RDV
+        questionnaires = SatisfactionB2B.objects.filter(
+            rdv__in=rdv_realises
+        ).select_related('rdv')
+        
+        # Créer un dictionnaire des questionnaires par RDV
+        questionnaires_par_rdv = {}
+        for questionnaire in questionnaires:
+            if questionnaire.rdv:
+                questionnaires_par_rdv[questionnaire.rdv.id] = {
+                    'id': questionnaire.id,
+                    'uuid': str(questionnaire.uuid),
+                    'date_soumission': questionnaire.date_soumission.strftime('%Y-%m-%d %H:%M'),
+                    'pdf_base64': questionnaire.pdf_base64,
+                    'score_hybride': float(questionnaire.score_hybride) if questionnaire.score_hybride else None,
+                    'moyenne': float(questionnaire.moyenne) if questionnaire.moyenne else None
+                }
+        
+        # Préparer les données des RDV
+        rdv_data = []
+        for rdv in rdv_realises:
+            questionnaire_info = questionnaires_par_rdv.get(rdv.id)
+            rdv_data.append({
+                'id': rdv.id,
+                'date': rdv.date_rdv.strftime('%Y-%m-%d'),
+                'heure': rdv.date_rdv.strftime('%H:%M'),
+                'statut': rdv.statut_rdv,
+                'questionnaire_rempli': questionnaire_info is not None,
+                'questionnaire': questionnaire_info
+            })
+        
+        # Récupérer les objectifs du client
+        try:
+            stats = ClientVisitStats.objects.get(
+                client_id=client_id,
+                commercial_id=commercial_id,
+                annee=timezone.now().year
+            )
+            objectif_annuel = stats.objectif
+            restants = max(objectif_annuel - stats.visites_valides, 0)
+        except ClientVisitStats.DoesNotExist:
+            objectif_annuel = 0
+            restants = 0
+        
+        # Récupérer l'adresse du client
+        adresse_client = client.adresses.first()
+        adresse_complete = ""
+        if adresse_client:
+            adresse_complete = f"{adresse_client.adresse or ''}, {adresse_client.code_postal or ''} {adresse_client.ville or ''}".strip()
+        
+        # Préparer la réponse
+        response_data = {
+            'civilite': getattr(client, 'civilite', 'M.'),
+            'rs_nom': client.rs_nom or f"{client.nom or ''} {client.prenom or ''}".strip(),
+            'coordonnees': {
+                'adresse': adresse_complete,
+                'telephone': client.telephone or '',
+                'email': client.email or ''
+            },
+            'objectif_annuel': objectif_annuel,
+            'rdv_realises': rdv_data,
+            'restants': restants
+        }
+        
+        print(f"DEBUG: Données envoyées pour client {client_id}")
+        return JsonResponse(response_data)
+        
+    except FrontClient.DoesNotExist:
+        print(f"DEBUG: Client {client_id} non trouvé")
+        return JsonResponse({'error': 'Client non trouvé'}, status=404)
+    except Exception as e:
+        print(f"DEBUG: Erreur pour client {client_id}: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)

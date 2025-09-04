@@ -50,4 +50,6 @@ urlpatterns = [
     path('geocoder-adresses/', views.geocoder_adresses, name='geocoder_adresses'),
     path('api/search-rdv-historique/', views.api_search_rdv_historique, name='api_search_rdv_historique'),
     path('extend-session/', views.extend_session, name='extend_session'),
+    path('objectif-annuel/', views.objectif_annuel, name='objectif_annuel'),
+    path('api/client-details/<int:client_id>/', views.api_client_details, name='api_client_details'),
 ]

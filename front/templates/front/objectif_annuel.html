@@ -3,14 +3,561 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Objectif Annuel</title>
+    <title>Objectifs annuels</title>
         {% load static %}
         <link rel="stylesheet" href="{% static 'front/css/objectif_annuel.css' %}">
+    <link rel="stylesheet" href="{% static 'front/css/footer.css' %}">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     </head>
     <body>
-        <div class="objectif-annuel-container"></div>
-            <h1>Objectif Annuel</h1>
+    <div class="objectif-container">
+        <!-- En-tête avec avatar et informations commercial -->
+        <div class="header-section">
+            <div class="avatar">
+                {{ commercial.prenom|first }}{{ commercial.nom|first }}
+            </div>
+            <div class="header-info">
+                <h1>Objectifs annuels</h1>
+                <p class="commercial-name">{{ commercial.prenom }} {{ commercial.nom }}</p>
+            </div>
         </div>
+
+        <!-- Bouton Filtres -->
+        <div class="filters-button-section">
+            <button class="btn-filtres" onclick="openFiltersModal()">
+                <i class="fa-solid fa-filter"></i>
+                Filtres
+            </button>
+        </div>
+
+        <!-- Section KPIs et jauge de progression -->
+        <div class="kpis-progress-section">
+            <!-- Section KPIs globaux -->
+            <div class="kpis-section">
+                <div class="kpi-card">
+                    <div class="kpi-value">{{ kpis.target_global }}</div>
+                    <div class="kpi-label">Objectif annuel</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value">{{ kpis.done_global }}</div>
+                    <div class="kpi-label">Réalisés</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-value">{{ kpis.remaining_global }}</div>
+                    <div class="kpi-label">Restants</div>
+                </div>
+            </div>
+
+            <!-- Jauge de progression circulaire -->
+            <div class="progress-section">
+            <div class="progress-circle">
+                <svg>
+                    <circle class="progress-bg" cx="60" cy="60" r="52"></circle>
+                    <circle class="progress-fill" cx="60" cy="60" r="52" 
+                            stroke-dasharray="{{ kpis.progress_percentage }} 100"></circle>
+                </svg>
+                <div class="progress-text">{{ kpis.progress_percentage }}%</div>
+            </div>
+        </div>
+        </div>
+
+        <!-- Section tableau clients -->
+        <div class="clients-section">
+            <h2>Clients</h2>
+            <div class="table-container">
+                <table class="clients-table">
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Obj.</th>
+                            <th>Réalisés</th>
+                            <th>Restants</th>
+                            <th>Statut</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for client in clients_data %}
+                        <tr class="client-row" data-client-id="{{ client.client_id }}" onclick="openClientModal({{ client.client_id }})">
+                            <td>{{ client.client_name }}</td>
+                            <td>{{ client.objectif }}</td>
+                            <td>{{ client.realises }}</td>
+                            <td>{{ client.restants }}</td>
+                            <td>
+                                {% if client.is_atteint %}
+                                    <div class="status-atteint">
+                                        <i class="fa-solid fa-check status-icon"></i>
+                                        Atteint
+                                    </div>
+                                {% else %}
+                                    <div class="status-non-atteint">
+                                        <i class="fa-solid fa-times status-icon"></i>
+                                        Non atteint
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'add_rdv' %}?client_id={{ client.client_id }}&next={% url 'objectif_annuel' %}" 
+                                   class="btn-planifier {% if client.is_atteint %}disabled{% endif %}"
+                                   onclick="event.stopPropagation()">
+                                    Planifier RDV
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 20px;">
+                                Aucun objectif défini pour {{ selected_year }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Bouton retour -->
+        <div style="margin-top: 30px;">
+            <a href="{% url 'dashboard' %}" class="btn-retour">
+                <i class="fa-solid fa-arrow-left" style="margin-right: 8px;"></i>
+                Retour au dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Modal des filtres -->
+    <div id="filtersModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Filtres</h3>
+                <span class="close" onclick="closeFiltersModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <!-- Filtre par année -->
+                <div class="filter-group">
+                    <label class="filter-label">Année :</label>
+                    <div class="filter-buttons">
+                        {% for year in years_range %}
+                            <button class="filter-btn {% if year == selected_year %}active{% endif %}" 
+                                    onclick="selectFilter('year', {{ year }})">
+                                {{ year }}
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Filtre par statut -->
+                <div class="filter-group">
+                    <label class="filter-label">Statut :</label>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" onclick="selectFilter('status', 'all')" data-status="all">
+                            Tous
+                        </button>
+                        <button class="filter-btn" onclick="selectFilter('status', 'atteint')" data-status="atteint">
+                            <i class="fa-solid fa-check"></i> Atteints
+                        </button>
+                        <button class="filter-btn" onclick="selectFilter('status', 'non-atteint')" data-status="non-atteint">
+                            <i class="fa-solid fa-times"></i> Non atteints
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-apply" onclick="applyFilters()">Appliquer</button>
+                <button class="btn-cancel" onclick="closeFiltersModal()">Annuler</button>
+            </div>
+        </div>
+        </div>
+
+    <!-- Modal détaillée du client -->
+    <div id="clientModal" class="modal">
+        <div class="modal-content client-modal-content">
+            <div class="modal-header">
+                <h3 id="clientModalTitle">Détails du client</h3>
+                <span class="close" onclick="closeClientModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="clientModalContent">
+                    <!-- Le contenu sera chargé dynamiquement -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-apply" id="btnPlanifierClient" onclick="planifierRdvClient()">
+                    <i class="fa-solid fa-calendar-plus"></i>
+                    Planifier un RDV
+                </button>
+                <button class="btn-cancel" onclick="closeClientModal()">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script pour animer la jauge et gérer les filtres -->
+    <script>
+        let currentYear = {{ selected_year }};
+        let currentStatus = 'all';
+        let tempYear = {{ selected_year }};
+        let tempStatus = 'all';
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animation de la jauge de progression
+            const progressFill = document.querySelector('.progress-fill');
+            if (progressFill) {
+                setTimeout(() => {
+                    progressFill.style.strokeDasharray = '{{ kpis.progress_percentage }} 100';
+                }, 100);
+            }
+        });
+        
+        // Fonctions pour la modal
+        function openFiltersModal() {
+            document.getElementById('filtersModal').style.display = 'block';
+            tempYear = currentYear;
+            tempStatus = currentStatus;
+        }
+        
+        function closeFiltersModal() {
+            document.getElementById('filtersModal').style.display = 'none';
+            // Réinitialiser les sélections temporaires aux valeurs actuelles
+            resetTempFilters();
+        }
+        
+        function resetTempFilters() {
+            // Réinitialiser les variables temporaires aux valeurs actuelles
+            tempYear = currentYear;
+            tempStatus = currentStatus;
+            
+            // Réinitialiser les boutons de statut dans la modal
+            document.querySelectorAll('#filtersModal [data-status]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`#filtersModal [data-status="${currentStatus}"]`).classList.add('active');
+            
+            // Réinitialiser les boutons d'année dans la modal
+            document.querySelectorAll('#filtersModal .filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent.trim() == currentYear) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Restaurer l'affichage du tableau selon les filtres actuels
+            restoreTableDisplay();
+        }
+        
+        function restoreTableDisplay() {
+            // Afficher toutes les lignes du tableau selon le statut actuel
+            const rows = document.querySelectorAll('.clients-table tbody tr');
+            rows.forEach(row => {
+                if (row.querySelector('td')) { // Ignorer les lignes vides
+                    const statusCell = row.querySelector('.status-atteint, .status-non-atteint');
+                    if (statusCell) {
+                        const isAtteint = statusCell.classList.contains('status-atteint');
+                        
+                        if (currentStatus === 'all' || 
+                            (currentStatus === 'atteint' && isAtteint) || 
+                            (currentStatus === 'non-atteint' && !isAtteint)) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    }
+                }
+            });
+        }
+        
+        function applyFilters() {
+            // Appliquer les filtres temporaires
+            if (tempYear !== currentYear) {
+                filterByYear(tempYear);
+            } else {
+                filterByStatus(tempStatus);
+                closeFiltersModal();
+            }
+        }
+        
+        // Fonction pour filtrer par année
+        function filterByYear(year) {
+            currentYear = year;
+            tempYear = year;
+            // Mettre à jour l'URL et recharger la page
+            const url = new URL(window.location);
+            url.searchParams.set('year', year);
+            window.location.href = url.toString();
+        }
+        
+        // Fonction pour filtrer par statut (côté client)
+        function filterByStatus(status) {
+            currentStatus = status;
+            tempStatus = status;
+            
+            // Mettre à jour les boutons de statut dans la modal
+            document.querySelectorAll('#filtersModal [data-status]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`#filtersModal [data-status="${status}"]`).classList.add('active');
+            
+            // Filtrer les lignes du tableau
+            const rows = document.querySelectorAll('.clients-table tbody tr');
+            rows.forEach(row => {
+                if (row.querySelector('td')) { // Ignorer les lignes vides
+                    const statusCell = row.querySelector('.status-atteint, .status-non-atteint');
+                    if (statusCell) {
+                        const isAtteint = statusCell.classList.contains('status-atteint');
+                        
+                        if (status === 'all' || 
+                            (status === 'atteint' && isAtteint) || 
+                            (status === 'non-atteint' && !isAtteint)) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    }
+                }
+            });
+            
+            // Mettre à jour le compteur de lignes visibles
+            updateVisibleCount();
+        }
+        
+        // Fonction pour mettre à jour le compteur
+        function updateVisibleCount() {
+            const visibleRows = document.querySelectorAll('.clients-table tbody tr:not([style*="display: none"])');
+            const totalRows = document.querySelectorAll('.clients-table tbody tr').length;
+            
+            // Optionnel : afficher le nombre de résultats
+            console.log(`${visibleRows.length} clients affichés sur ${totalRows} total`);
+        }
+        
+        // Fermer la modal en cliquant à l'extérieur
+        window.onclick = function(event) {
+            const filtersModal = document.getElementById('filtersModal');
+            const clientModal = document.getElementById('clientModal');
+            if (event.target == filtersModal) {
+                closeFiltersModal();
+            }
+            if (event.target == clientModal) {
+                closeClientModal();
+            }
+        }
+        
+        // Variables pour la modal client
+        let currentClientId = null;
+        let currentClientData = null;
+        
+        // Fonction pour ouvrir la modal du client
+        function openClientModal(clientId) {
+            currentClientId = clientId;
+            document.getElementById('clientModal').style.display = 'block';
+            
+            // Charger les données du client
+            loadClientData(clientId);
+        }
+        
+        // Fonction pour fermer la modal du client
+        function closeClientModal() {
+            document.getElementById('clientModal').style.display = 'none';
+            currentClientId = null;
+            currentClientData = null;
+        }
+        
+        // Fonction pour charger les données du client
+        function loadClientData(clientId) {
+            // Afficher un loader
+            document.getElementById('clientModalContent').innerHTML = `
+                <div class="loading">
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    Chargement des données...
+                </div>
+            `;
+            
+            // Appel AJAX pour récupérer les vraies données
+            fetch(`/api/client-details/${clientId}/`)
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            throw new Error('Session expirée. Veuillez vous reconnecter.');
+                        } else if (response.status === 403) {
+                            throw new Error('Accès non autorisé à ce client.');
+                        } else {
+                            throw new Error('Erreur lors du chargement des données');
+                        }
+                    }
+                    return response.json();
+                })
+                .then(clientData => {
+                    currentClientData = clientData;
+                    displayClientData(clientData);
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    document.getElementById('clientModalContent').innerHTML = `
+                        <div class="error-message">
+                            <i class="fa-solid fa-exclamation-triangle"></i>
+                            ${error.message}
+                        </div>
+                    `;
+                });
+        }
+        
+        // Fonction pour afficher les données du client
+        function displayClientData(data) {
+            const content = `
+                <div class="client-details">
+                    <!-- Informations générales -->
+                    <div class="client-section">
+                        <h4><i class="fa-solid fa-user"></i> Informations générales</h4>
+                        <div class="client-info">
+                            <p><strong>Civilité :</strong> ${data.civilite}</p>
+                            <p><strong>Raison sociale :</strong> ${data.rs_nom}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Coordonnées -->
+                    <div class="client-section">
+                        <h4><i class="fa-solid fa-address-book"></i> Coordonnées</h4>
+                        <div class="client-info">
+                            <p><strong>Adresse :</strong> ${data.coordonnees.adresse}</p>
+                            <p><strong>Téléphone :</strong> <a href="tel:${data.coordonnees.telephone}">${data.coordonnees.telephone}</a></p>
+                            <p><strong>Email :</strong> <a href="mailto:${data.coordonnees.email}">${data.coordonnees.email}</a></p>
+                        </div>
+                    </div>
+                    
+                    <!-- Objectif annuel -->
+                    <div class="client-section">
+                        <h4><i class="fa-solid fa-target"></i> Objectif annuel</h4>
+                        <div class="client-info">
+                            <p><strong>Objectif :</strong> ${data.objectif_annuel} rendez-vous</p>
+                            <p><strong>Restants :</strong> <span class="restants-count">${data.restants}</span> rendez-vous</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Historique des RDV -->
+                    <div class="client-section">
+                        <h4><i class="fa-solid fa-history"></i> Historique des RDV réalisés</h4>
+                        <div class="rdv-history">
+                            ${data.rdv_realises.length > 0 ? 
+                                data.rdv_realises.map(rdv => `
+                                    <div class="rdv-item">
+                                        <div class="rdv-date">
+                                            <i class="fa-solid fa-calendar"></i>
+                                            ${new Date(rdv.date).toLocaleDateString('fr-FR')} à ${rdv.heure}
+                                        </div>
+                                        <div class="rdv-status ${rdv.statut.toLowerCase()}">
+                                            <i class="fa-solid fa-check-circle"></i>
+                                            ${rdv.statut}
+                                        </div>
+                                        <div class="rdv-actions">
+                                            ${rdv.questionnaire_rempli && rdv.questionnaire ? 
+                                                `<button onclick="openQuestionnairePDF('${rdv.questionnaire.pdf_base64}', '${rdv.questionnaire.date_soumission}')" class="btn-questionnaire">
+                                                    <i class="fa-solid fa-file-pdf"></i>
+                                                    Questionnaire
+                                                    ${rdv.questionnaire.score_hybride ? `<span class="score">${rdv.questionnaire.score_hybride}/10</span>` : ''}
+                                                </button>` : 
+                                                `<span class="no-questionnaire">
+                                                    <i class="fa-solid fa-minus"></i>
+                                                    Pas de questionnaire
+                                                </span>`
+                                            }
+                                        </div>
+                                    </div>
+                                `).join('') : 
+                                '<p class="no-rdv">Aucun RDV réalisé pour le moment.</p>'
+                            }
+                        </div>
+                    </div>
+        </div>
+            `;
+            
+            document.getElementById('clientModalContent').innerHTML = content;
+            
+            // Afficher/masquer le bouton Planifier RDV selon les restants
+            const btnPlanifier = document.getElementById('btnPlanifierClient');
+            if (data.restants > 0) {
+                btnPlanifier.style.display = 'inline-flex';
+                btnPlanifier.disabled = false;
+            } else {
+                btnPlanifier.style.display = 'none';
+            }
+        }
+        
+        // Fonction pour planifier un RDV depuis la modal
+        function planifierRdvClient() {
+            if (currentClientId) {
+                window.location.href = `{% url 'add_rdv' %}?client_id=${currentClientId}&next={% url 'objectif_annuel' %}`;
+            }
+        }
+        
+        // Fonction pour gérer les clics sur les boutons de filtre dans la modal
+        function selectFilter(filterType, value) {
+            if (filterType === 'year') {
+                tempYear = value;
+                // Mettre à jour les boutons d'année
+                document.querySelectorAll('#filtersModal .filter-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+            } else if (filterType === 'status') {
+                tempStatus = value;
+                // Mettre à jour les boutons de statut
+                document.querySelectorAll('#filtersModal [data-status]').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+                
+                // Prévisualiser le filtrage du tableau dans la modal
+                previewTableFilter(value);
+            }
+        }
+        
+        function previewTableFilter(status) {
+            // Prévisualiser le filtrage sans l'appliquer définitivement
+            const rows = document.querySelectorAll('.clients-table tbody tr');
+            rows.forEach(row => {
+                if (row.querySelector('td')) { // Ignorer les lignes vides
+                    const statusCell = row.querySelector('.status-atteint, .status-non-atteint');
+                    if (statusCell) {
+                        const isAtteint = statusCell.classList.contains('status-atteint');
+                        
+                        if (status === 'all' || 
+                            (status === 'atteint' && isAtteint) || 
+                            (status === 'non-atteint' && !isAtteint)) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Fonction pour ouvrir le PDF du questionnaire
+        function openQuestionnairePDF(pdfBase64, dateSoumission) {
+            if (pdfBase64) {
+                // Créer un blob à partir du base64
+                const byteCharacters = atob(pdfBase64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: 'application/pdf' });
+                
+                // Créer une URL pour le blob
+                const url = window.URL.createObjectURL(blob);
+                
+                // Ouvrir dans un nouvel onglet
+                const newWindow = window.open(url, '_blank');
+                
+                // Nettoyer l'URL après un délai
+                setTimeout(() => {
+                    window.URL.revokeObjectURL(url);
+                }, 1000);
+            } else {
+                alert('PDF non disponible');
+            }
+        }
+    </script>
+
+    {% include 'front/footer.html' %}
     </body>
 </html>

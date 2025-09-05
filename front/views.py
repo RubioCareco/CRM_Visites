@@ -2595,6 +2595,7 @@ def api_client_details(request, client_id):
         print(f"DEBUG: Utilisation du commercial par défaut: {commercial_id}")
     
     print(f"DEBUG: API appelée pour client_id={client_id}, commercial_id={commercial_id}")
+    print(f"DEBUG: Session commercial_id: {request.session.get('commercial_id')}")
     
     try:
         # Récupérer les informations du client
@@ -2602,7 +2603,15 @@ def api_client_details(request, client_id):
         
         # Vérifier que le client appartient bien à ce commercial
         commercial = Commercial.objects.get(id=commercial_id)
-        if client.commercial != commercial.commercial:
+        print(f"DEBUG: client.commercial='{client.commercial}', commercial.commercial='{commercial.commercial}'")
+        
+        # Vérification plus flexible - ignorer les espaces et la casse
+        client_commercial_clean = (client.commercial or '').strip().lower()
+        commercial_name_clean = (commercial.commercial or '').strip().lower()
+        
+        if client_commercial_clean != commercial_name_clean:
+            print(f"DEBUG: Accès refusé - commercial ne correspond pas")
+            print(f"DEBUG: client_commercial_clean='{client_commercial_clean}', commercial_name_clean='{commercial_name_clean}'")
             return JsonResponse({'error': 'Accès non autorisé à ce client'}, status=403)
         
         # Récupérer les RDV réalisés du client pour ce commercial

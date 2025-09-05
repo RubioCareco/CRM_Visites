@@ -65,7 +65,7 @@
             
             <!-- Barre de progression simple -->
             <div class="simple-progress-bar">
-                <div class="progress-fill" style="width: {{ kpis.progress_percentage }}%"></div>
+                <div class="progress-fill" data-width="{{ kpis.progress_percentage|default:0 }}"></div>
             </div>
         </div>
 
@@ -86,7 +86,7 @@
                     </thead>
                     <tbody>
                         {% for client in clients_data %}
-                        <tr class="client-row" data-client-id="{{ client.client_id }}" onclick="openClientModal({{ client.client_id }})">
+                        <tr class="client-row" data-client-id="{{ client.client_id }}" onclick="openClientModal('{{ client.client_id }}')">
                             <td>{{ client.client_name }}</td>
                             <td>{{ client.objectif }}</td>
                             <td>{{ client.realises }}</td>
@@ -147,7 +147,7 @@
                     <div class="filter-buttons">
                         {% for year in years_range %}
                             <button class="filter-btn {% if year == selected_year %}active{% endif %}" 
-                                    onclick="selectFilter('year', {{ year }})">
+                                    onclick="selectFilter('year', '{{ year }}')">
                                 {{ year }}
                             </button>
                         {% endfor %}
@@ -201,15 +201,22 @@
 
     <!-- Script pour animer la jauge et gérer les filtres -->
     <script>
-        let currentYear = {{ selected_year }};
+        let currentYear = '{{ selected_year }}';
         let currentStatus = 'all';
-        let tempYear = {{ selected_year }};
+        let tempYear = '{{ selected_year }}';
         let tempStatus = 'all';
         
         document.addEventListener('DOMContentLoaded', function() {
-            // Animation de la jauge de progression
+            // Appliquer la largeur de la barre de progression
             const progressFill = document.querySelector('.progress-fill');
             if (progressFill) {
+                const width = progressFill.getAttribute('data-width');
+                progressFill.style.width = width + '%';
+            }
+            
+            // Animation de la jauge de progression
+            const progressFillAnimated = document.querySelector('.progress-fill');
+            if (progressFillAnimated) {
                 setTimeout(() => {
                     progressFill.style.strokeDasharray = '{{ kpis.progress_percentage }} 100';
                 }, 100);

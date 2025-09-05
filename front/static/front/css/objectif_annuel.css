@@ -38,50 +38,97 @@ body {
   overflow-x: hidden;
 }
 
-/* Section pour le layout horizontal des KPIs et du donut */
-.kpis-progress-section {
+/* Section principale avec donut en haut à droite */
+.main-layout-section {
   display: flex;
-  gap: 30px;
-  align-items: flex-start;
+  justify-content: flex-end;
   margin-bottom: 30px;
   width: 100%;
-  flex-wrap: wrap;
 }
 
-/* Responsive alignment for KPI row + donut */
+/* Section KPIs avec barre de progression (position flèche 3) */
+.kpis-section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 30px;
+  justify-content: flex-start;
+  width: 100%;
+  max-width: 600px;
+}
+
+/* Responsive alignment for new layout */
 @media (max-width: 1200px) {
-  .kpis-progress-section {
-    gap: 20px;
+  .main-layout-section {
+    justify-content: flex-end;
+    margin-bottom: 20px;
   }
+  
   .kpis-section {
+    max-width: 500px;
+    margin: 0 auto 20px auto;
+  }
+  
+  .kpis-cards-row {
     flex-wrap: wrap;
     gap: 12px;
+    justify-content: center;
   }
+  
   .kpi-card {
     flex: 1 1 calc(33.33% - 12px);
     min-width: 150px;
   }
-  .progress-section {
-    align-self: center;
-    flex-shrink: 0;
-  }
 }
 
 @media (max-width: 1024px) {
-  .kpis-progress-section {
-    align-items: stretch;
-  }
-  .kpis-section {
-    flex: 1 1 100%;
-    width: 100%;
-    justify-content: space-between;
-  }
-  .kpi-card {
-    flex: 1 1 calc(33.33% - 12px);
-  }
   .progress-section {
-    min-width: 180px;
-    min-height: 180px;
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 10;
+  }
+  
+  .main-layout-section {
+    justify-content: flex-end;
+    margin-bottom: 15px;
+  }
+  
+  .kpis-section {
+    max-width: 450px;
+    margin: 0 auto 15px auto;
+  }
+  
+  .kpis-cards-row {
+    justify-content: center;
+    gap: 12px;
+  }
+  
+  .kpi-card {
+    flex: 1 1 calc(33.33% - 8px);
+    min-width: 120px;
+  }
+  
+  .progress-section {
+    min-width: 250px;
+    padding: 15px 25px;
+    height: 90px;
+  }
+  
+  .progress-circle {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .progress-title {
+    font-size: 11px;
+    margin-bottom: 3px;
+  }
+  
+  .simple-progress-bar {
+    margin: 8px 0;
+    height: 6px;
+    width: 20%;
   }
   
   /* Tableau responsive pour tablette */
@@ -115,25 +162,55 @@ body {
 }
 
 @media (max-width: 768px) {
-  .kpis-progress-section {
-    flex-direction: column;
-    gap: 16px;
+  .progress-section {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 10;
   }
+  
+  .main-layout-section {
+    justify-content: flex-end;
+    margin-bottom: 15px;
+  }
+  
   .kpis-section {
-    order: 1;
+    max-width: 400px;
+    margin: 0 auto 15px auto;
+  }
+  
+  .kpis-cards-row {
     justify-content: center;
     gap: 10px;
+    flex-wrap: wrap;
   }
+  
   .kpi-card {
-    flex: 1 1 100%;
-    max-width: 320px;
-    margin: 0 auto;
+    flex: 1 1 calc(50% - 5px);
+    min-width: 120px;
+    max-width: 160px;
   }
+  
   .progress-section {
-    order: 0;
-    align-self: center;
-    min-width: 150px;
-    min-height: 150px;
+    min-width: 220px;
+    padding: 12px 20px;
+    height: 80px;
+  }
+  
+  .progress-circle {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .progress-title {
+    font-size: 10px;
+    margin-bottom: 2px;
+  }
+  
+  .simple-progress-bar {
+    margin: 6px 0;
+    height: 5px;
+    width: 20%;
   }
   
   /* Tableau responsive pour mobile */
@@ -303,6 +380,8 @@ body {
   justify-content: flex-start;
   width: auto;
   flex: 1;
+  margin: auto;
+  margin-left: 130px;
 }
 
 .kpi-card {
@@ -336,43 +415,98 @@ body {
   letter-spacing: 0.5px;
 }
 
+/* Section KPIs avec rangée de cartes */
+.kpis-section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 0;
+  justify-content: flex-start;
+  width: auto;
+  flex: 1;
+}
+
+.kpis-cards-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  margin: auto;
+
+}
+
+/* Barre de progression simple */
+.simple-progress-bar {
+  width: 120%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 0;
+  align-self: flex-start;
+  margin-bottom: 15px;
+}
+
+.simple-progress-bar .progress-fill {
+  height: 100%;
+  background: #e53935;
+  border-radius: 4px;
+  transition: width 1s ease;
+}
+
 /* Jauge de progression circulaire */
 .progress-section {
   background: rgba(250, 250, 250, 0.1);
   backdrop-filter: blur(10px);
   border-radius: 20px;
-  padding: 40px;
+  padding: 20px 30px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   margin-bottom: 0;
   text-align: center;
-  align-self: flex-start;
-  min-width: 200px;
-  min-height: 200px;
+  width: auto;
+  min-width: 300px;
+  height: 100px;
+  position: relative;
+  flex-shrink: 0;
+  overflow: visible;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  flex-shrink: 0;
+}
+
+.progress-title {
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 5px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
 }
 
 .progress-circle {
   position: relative;
-  width: 160px;
-  height: 160px;
-  margin: 0 auto 20px;
-  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  margin: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .progress-circle svg {
-  width: 100%;
-  height: 100%;
+  width: 90%;
+  height: 90%;
   transform: rotate(-90deg);
 }
 
 .progress-circle circle {
   fill: none;
-  stroke-width: 8;
+  stroke-width: 6;
   stroke-linecap: round;
 }
 
@@ -392,8 +526,11 @@ body {
   left: 50%;
   transform: translate(-50%, -50%);
   color: white;
-  font-size: 32px;
+  font-size: 28px;
   font-weight: bold;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  z-index: 2;
 }
 
 /* Section tableau clients */
@@ -404,8 +541,9 @@ body {
   padding: 30px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  max-width: 98%;
+  max-width: 80%;
   overflow: hidden;
+  margin: 0 auto;
 }
 
 .clients-section h2 {
@@ -1148,6 +1286,9 @@ body {
     padding: 25px;
     min-width: 150px;
     min-height: 150px;
+    margin-top: -280px;
+    margin-right: -20px;
+
   }
   
   .progress-circle {
@@ -1233,6 +1374,13 @@ body {
 
 /* Responsive design - Petit mobile */
 @media (max-width: 480px) {
+  .progress-section {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 10;
+  }
+  
   .objectif-container {
     padding: 8px;
   }
@@ -1255,32 +1403,56 @@ body {
     font-size: 16px;
   }
   
+  .main-layout-section {
+    justify-content: flex-end;
+    margin-bottom: 10px;
+  }
+  
   .kpis-section {
-    gap: 10px;
+    max-width: 350px;
+    margin: 0 auto 10px auto;
+  }
+  
+  .kpis-cards-row {
+    gap: 8px;
+    flex-direction: column;
+    align-items: center;
   }
   
   .kpi-card {
-    max-width: 150px;
-    padding: 12px;
+    width: 100%;
+    max-width: 180px;
+    padding: 10px;
   }
   
   .kpi-value {
-    font-size: 24px;
+    font-size: 22px;
   }
   
   .kpi-label {
-    font-size: 11px;
+    font-size: 10px;
   }
   
   .progress-section {
-    padding: 20px;
-    min-width: 120px;
-    min-height: 120px;
+    min-width: 200px;
+    padding: 10px 15px;
+    height: 70px;
   }
   
   .progress-circle {
-    width: 100px;
-    height: 100px;
+    width: 35px;
+    height: 35px;
+  }
+  
+  .progress-title {
+    font-size: 8px;
+    margin-bottom: 1px;
+  }
+  
+  .simple-progress-bar {
+    margin: 4px 0;
+    height: 4px;
+    width: 20%;
   }
   
   .progress-text {

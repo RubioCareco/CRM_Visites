@@ -30,10 +30,25 @@
             </button>
         </div>
 
-        <!-- Section KPIs et jauge de progression -->
-        <div class="kpis-progress-section">
-            <!-- Section KPIs globaux -->
-            <div class="kpis-section">
+        <!-- Section principale avec donut en haut à droite -->
+        <div class="main-layout-section">
+            <!-- Jauge de progression circulaire (position flèche 2) -->
+            <div class="progress-section">
+                <div class="progress-title">Progression</div>
+                <div class="progress-circle">
+                    <svg viewBox="0 0 120 120">
+                        <circle class="progress-bg" cx="60" cy="60" r="52"></circle>
+                        <circle class="progress-fill" cx="60" cy="60" r="52" 
+                                stroke-dasharray="{{ kpis.progress_percentage }} 100"></circle>
+                    </svg>
+                    <div class="progress-text">{{ kpis.progress_percentage }}%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section KPIs avec barre de progression (position flèche 3) -->
+        <div class="kpis-section">
+            <div class="kpis-cards-row">
                 <div class="kpi-card">
                     <div class="kpi-value">{{ kpis.target_global }}</div>
                     <div class="kpi-label">Objectif annuel</div>
@@ -47,18 +62,11 @@
                     <div class="kpi-label">Restants</div>
                 </div>
             </div>
-
-            <!-- Jauge de progression circulaire -->
-            <div class="progress-section">
-            <div class="progress-circle">
-                <svg>
-                    <circle class="progress-bg" cx="60" cy="60" r="52"></circle>
-                    <circle class="progress-fill" cx="60" cy="60" r="52" 
-                            stroke-dasharray="{{ kpis.progress_percentage }} 100"></circle>
-                </svg>
-                <div class="progress-text">{{ kpis.progress_percentage }}%</div>
+            
+            <!-- Barre de progression simple -->
+            <div class="simple-progress-bar">
+                <div class="progress-fill" style="width: {{ kpis.progress_percentage }}%"></div>
             </div>
-        </div>
         </div>
 
         <!-- Section tableau clients -->

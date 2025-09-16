@@ -85,7 +85,7 @@ class ImportClientCorrected(models.Model):
     en_compte = models.CharField(max_length=50, blank=True, null=True)
     class Meta:
         db_table = 'import_clients_corrected'
-        managed = True
+        managed = False  # Table historique: on ne la gère plus via Django
 
 class SatisfactionB2B(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)

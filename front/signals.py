@@ -4,6 +4,13 @@ from django.db import transaction
 from .models import Rendezvous, ClientVisitStats, FrontClient
 from datetime import datetime
 import os
+import threading
+import logging
+from django.contrib.auth.signals import user_logged_in
+from django.core.cache import cache
+from django.utils import timezone as dj_timezone
+
+logger = logging.getLogger(__name__)
 
 # Dictionnaire pour stocker les anciennes valeurs avant sauvegarde
 _PRE_UPDATE_SNAPSHOT = {}
@@ -262,3 +269,40 @@ def notify_responsable_on_client_modification(sender, instance, created, **kwarg
 		
 	except Exception as e:
 		print(f"❌ Erreur lors de l'envoi de l'email de notification : {e}") 
+
+
+# ==========================
+# Déclenchement auto J+28 au login (1x/jour)
+# ==========================
+
+def _run_planning_job_background(dry_run: bool = False):
+    try:
+        from .services import ensure_visits_next_4_weeks
+        stats = ensure_visits_next_4_weeks(dry_run=dry_run)
+        logger.info("Planification J+28 exécutée: %s", stats)
+        print(f"✅ Planification J+28 exécutée: {stats}")
+    except Exception as e:
+        logger.exception("Erreur planification J+28: %s", e)
+        print(f"❌ Erreur planification J+28: {e}")
+
+
+@receiver(user_logged_in)
+def trigger_planning_on_login(sender, user, request, **kwargs):
+    """Complète jusqu'à J+28 au premier login de la journée (verrou cache)."""
+    from django.conf import settings
+
+    enabled = getattr(settings, 'GENERATION_AUTO_ENABLED', True)
+    if not enabled:
+        return
+
+    today = dj_timezone.localdate().isoformat()
+    cache_key = f"planning:last_run:{today}"
+    if cache.get(cache_key):
+        return
+
+    # Poser le verrou pour 26h pour éviter doublons même avec fuseaux
+    cache.set(cache_key, True, timeout=26*3600)
+
+    dry_run = getattr(settings, 'GENERATION_AUTO_DRY_RUN', False)
+    # Lancer en arrière-plan pour ne pas bloquer la réponse
+    threading.Thread(target=_run_planning_job_background, kwargs={'dry_run': dry_run}, daemon=True).start()

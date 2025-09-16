@@ -1,9 +1,13 @@
 import requests
 import time
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 from decimal import Decimal
 from django.utils import timezone
-from .models import Adresse, Commercial, Rendezvous
+from datetime import date, datetime, timedelta, time as dtime
+from django.conf import settings
+from django.db import transaction
+from django.db.models import Q
+from .models import Adresse, Commercial, Rendezvous, FrontClient, ClientVisitStats
 
 
 class GeocodingService:
@@ -265,3 +269,202 @@ class RouteOptimizationService:
             'total_distance': round(total_distance, 2),
             'estimated_time_minutes': estimated_time_minutes
         } 
+
+
+# ============================
+# Planification des rendez-vous
+# ============================
+
+CLASSEMENT_TO_TARGET_28D: Dict[str, int] = {
+    'A': 10,
+    'B': 5,
+    'C': 1,
+    '': 1,  # N/A
+    None: 1,
+}
+
+
+def _is_business_day(target_date: date) -> bool:
+    # Lundi=0 ... Dimanche=6
+    if target_date.weekday() >= 5:
+        return False
+    # Jours fériés optionnels depuis settings (liste de dates ISO)
+    holidays = getattr(settings, 'PUBLIC_HOLIDAYS', []) or []
+    return target_date.isoformat() not in holidays
+
+
+def _count_rdv_non_annules_for_commercial_on_date(commercial: Commercial, d: date) -> int:
+    return Rendezvous.objects.filter(
+        commercial=commercial,
+        date_rdv=d
+    ).exclude(statut_rdv='annule').count()
+
+
+def _rdv_exists_for_client_on_date(client: FrontClient, commercial: Commercial, d: date) -> bool:
+    return Rendezvous.objects.filter(
+        client=client,
+        commercial=commercial,
+        date_rdv=d
+    ).exclude(statut_rdv='annule').exists()
+
+
+def _get_objectif_annuel(client: FrontClient, commercial: Commercial, annee: int) -> int:
+    # Tenter de lire ClientVisitStats; sinon dériver du classement
+    stats = ClientVisitStats.objects.filter(client=client, commercial=commercial, annee=annee).first()
+    if stats:
+        return stats.objectif
+    classement = (client.classement_client or '').upper().strip()
+    return CLASSEMENT_TO_TARGET_28D.get(classement, 1)
+
+
+def _get_visites_valides_annee(client: FrontClient, commercial: Commercial, annee: int) -> int:
+    return Rendezvous.objects.filter(
+        client=client,
+        commercial=commercial,
+        date_rdv__year=annee,
+        statut_rdv='valide'
+    ).count()
+
+
+def _get_already_planned_in_horizon(client: FrontClient, commercial: Commercial, start_d: date, end_d: date) -> int:
+    return Rendezvous.objects.filter(
+        client=client,
+        commercial=commercial,
+        date_rdv__gte=start_d,
+        date_rdv__lte=end_d
+    ).exclude(statut_rdv='annule').count()
+
+
+def _iter_business_days(start_d: date, end_d: date):
+    d = start_d
+    while d <= end_d:
+        if _is_business_day(d):
+            yield d
+        d += timedelta(days=1)
+
+
+def ensure_visits_next_4_weeks(run_date: Optional[date] = None, *, dry_run: bool = False, collect_breakdown: bool = True) -> dict:
+    """Complète la planification jusqu'à J+28.
+
+    - Respecte le plafond 7 RDV/jour/commercial
+    - Ignore les commerciaux absents
+    - Jours ouvrés uniquement, hors fériés (configurable)
+    - Créneau matin 09:00
+    - Idempotent via get_or_create (pas de doublon)
+    - Prend en compte l'objectif annuel par client (reste annuel)
+
+    Returns: statistiques d'exécution
+    """
+    start = (run_date or timezone.localdate())
+    end = start + timedelta(days=28)
+
+    created_count = 0
+    skipped_absence = 0
+    skipped_quota = 0
+    skipped_existing = 0
+    skipped_objectif_zero = 0
+    per_day: Dict[str, int] = {}
+    per_commercial_per_day: Dict[int, Dict[str, int]] = {}
+
+    # Jours de l'horizon
+    business_days = list(_iter_business_days(start, end))
+
+    # Les commerciaux actifs (tous pour l'instant)
+    for commercial in Commercial.objects.all():
+        if commercial.is_absent:
+            skipped_absence += 1
+            continue
+
+        # Pré-calcul de capacité par jour
+        capacity_by_day = {d: max(0, 7 - _count_rdv_non_annules_for_commercial_on_date(commercial, d)) for d in business_days}
+        if collect_breakdown and commercial.id not in per_commercial_per_day:
+            per_commercial_per_day[commercial.id] = {}
+
+        # Sélection des clients du commercial (par liaison numerique si présente)
+        clients_qs = FrontClient.objects.filter(commercial_id=commercial.id, actif=True)
+        # Si pas de liaison stricte, on ne prend pas de risque en incluant seulement ceux liés
+
+        # Priorité C > '' > B > A
+        def prio_order(c: FrontClient) -> int:
+            val = (c.classement_client or '').upper().strip()
+            if val == 'C':
+                return 0
+            if val == '':
+                return 1
+            if val == 'B':
+                return 2
+            if val == 'A':
+                return 3
+            return 4
+
+        clients = sorted(list(clients_qs), key=prio_order)
+
+        for client in clients:
+            classement = (client.classement_client or '').upper().strip()
+            cible_28 = CLASSEMENT_TO_TARGET_28D.get(classement, 1)
+
+            annee = start.year
+            objectif_annuel = _get_objectif_annuel(client, commercial, annee)
+            visites_valides = _get_visites_valides_annee(client, commercial, annee)
+            reste_annuel = max(0, objectif_annuel - visites_valides)
+            if reste_annuel <= 0:
+                skipped_objectif_zero += 1
+                continue
+
+            cible_28_effective = min(cible_28, reste_annuel)
+            deja_planifies = _get_already_planned_in_horizon(client, commercial, start, end)
+            manquants = max(0, cible_28_effective - deja_planifies)
+            if manquants == 0:
+                continue
+
+            for d in business_days:
+                if manquants == 0:
+                    break
+                if capacity_by_day.get(d, 0) <= 0:
+                    continue
+                if _rdv_exists_for_client_on_date(client, commercial, d):
+                    skipped_existing += 1
+                    continue
+
+                if dry_run:
+                    # Simule la création
+                    capacity_by_day[d] -= 1
+                    manquants -= 1
+                    created_count += 1
+                    if collect_breakdown:
+                        per_day[d.isoformat()] = per_day.get(d.isoformat(), 0) + 1
+                        per_commercial_per_day[commercial.id][d.isoformat()] = per_commercial_per_day[commercial.id].get(d.isoformat(), 0) + 1
+                    continue
+
+                with transaction.atomic():
+                    obj, created = Rendezvous.objects.get_or_create(
+                        client=client,
+                        commercial=commercial,
+                        date_rdv=d,
+                        heure_rdv=dtime(hour=9, minute=0),
+                        defaults={
+                            'statut_rdv': 'a_venir',
+                            'objet': 'Visite planifiée automatiquement',
+                        }
+                    )
+                    if created:
+                        created_count += 1
+                        capacity_by_day[d] -= 1
+                        manquants -= 1
+                        if collect_breakdown:
+                            per_day[d.isoformat()] = per_day.get(d.isoformat(), 0) + 1
+                            per_commercial_per_day[commercial.id][d.isoformat()] = per_commercial_per_day[commercial.id].get(d.isoformat(), 0) + 1
+                    else:
+                        skipped_existing += 1
+
+    return {
+        'created': created_count,
+        'skipped_absent_commercials': skipped_absence,
+        'skipped_quota_days': skipped_quota,
+        'skipped_existing': skipped_existing,
+        'skipped_objectif_zero': skipped_objectif_zero,
+        'start': start.isoformat(),
+        'end': end.isoformat(),
+        'per_day': per_day if collect_breakdown else None,
+        'per_commercial_per_day': per_commercial_per_day if collect_breakdown else None,
+    }

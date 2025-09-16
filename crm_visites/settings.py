@@ -11,21 +11,25 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import environ
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+env = environ.Env(DEBUG=(bool, True))         # déclare le type de DEBUG
+environ.Env.read_env(BASE_DIR / ".env")       # charge le fichier .env
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-3ti*w9ne5)$*%%5oig9!y)k3-8o+ie#%4e!d^ckm!%qmsz4xo@'
+SECRET_KEY = env('DJANGO_SECRET_KEY')
+
+#'django-insecure-3ti*w9ne5)$*%%5oig9!y)k3-8o+ie#%4e!d^ckm!%qmsz4xo@'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env.bool('DEBUG', default=True)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 
 
 # Application definition
@@ -73,18 +77,15 @@ WSGI_APPLICATION = 'crm_visites.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'crm_visites',
-        'USER': 'root',
-        'PASSWORD': '',  # Mets ton mot de passe MySQL ici
-        'HOST': '127.0.0.1',
-        'PORT': '3306',
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": env("DB_NAME", default="crm_visites"),
+        "USER": env("DB_USER", default="root"),
+        "PASSWORD": env("DB_PASSWORD", default=""),
+        "HOST": env("DB_HOST", default="127.0.0.1"),
+        "PORT": env("DB_PORT", default="3306"),
+        "OPTIONS": {"init_command": "SET sql_mode='STRICT_TRANS_TABLES'"},
     }
 }
 
@@ -111,7 +112,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'fr-fr'
 
 TIME_ZONE = 'Europe/Paris'
 
@@ -124,11 +125,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 
-STATICFILES_DIRS = [
-    BASE_DIR / "front" / "static",
-]
+#STATICFILES_DIRS = [
+#    BASE_DIR / "front" / "static",
+#]
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
@@ -136,20 +138,27 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # settings.py
-CSRF_COOKIE_SECURE = False  # Important pour le local en HTTP
-SESSION_COOKIE_SECURE = False
-CSRF_USE_SESSIONS = False  # (désactive l'attente d'un token stocké côté session)
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_HOST_USER = 'bznjamin.gillens@gmail.com'
-EMAIL_HOST_PASSWORD = 'hhwz rtgp qntz gdah'
-EMAIL_USE_TLS = True
-DEFAULT_FROM_EMAIL = 'bznjamin.gillens@gmail.com'
-# Base URL utilisée pour générer des liens absolus dans les emails
-SITE_BASE_URL = 'http://127.0.0.1:8000'
+CSRF_USE_SESSIONS = False  # tu peux garder ce choix
+
+if not DEBUG:  # prod
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+else:          # dev local
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+EMAIL_BACKEND = env(
+    "EMAIL_BACKEND",
+    default="django.core.mail.backends.console.EmailBackend"  # en dev : on affiche dans la console
+)
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="no-reply@rubio.fr")
+SITE_BASE_URL = env("SITE_BASE_URL", default="http://127.0.0.1:8000")
+
 
 # Configuration des sessions pour la sécurité
 SESSION_COOKIE_AGE = 1800  # 30 minutes en secondes
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Session expire à la fermeture du navigateur
 SESSION_SAVE_EVERY_REQUEST = True  # Sauvegarde la session à chaque requête
+
+GENERATION_AUTO_ENABLED = False
+GENERATION_AUTO_DRY_RUN = True

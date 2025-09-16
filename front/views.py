@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Commercial, Rendezvous, CommentaireRdv, ImportClientCorrected, SatisfactionB2B, FrontClient, ActivityLog, ClientVisitStats
+from .models import Commercial, Rendezvous, CommentaireRdv, SatisfactionB2B, FrontClient, ActivityLog, ClientVisitStats
 from django.contrib.auth.hashers import check_password, make_password
 from functools import wraps
 from django.http import JsonResponse, HttpResponse, Http404
@@ -564,7 +564,7 @@ def add_rdv(request):
     if client_id_prefill:
         try:
             client_prefill, adresse_prefill, client_type_prefill = get_client_and_adresse(client_id_prefill)
-        except ImportClientCorrected.DoesNotExist:
+        except FrontClient.DoesNotExist:
             client_prefill = None
 
     role = request.session.get('role')
@@ -625,19 +625,22 @@ def add_rdv(request):
                 return redirect(next_url)
             return redirect('dashboard')
 
-        except ImportClientCorrected.DoesNotExist:
+        except FrontClient.DoesNotExist:
             error_message = "Le client sélectionné est introuvable."
         except Exception as e:
             error_message = f"Une erreur est survenue : {e}"
 
     # Si responsable/admin, on affiche tous les clients, sinon seulement ceux du commercial
     if role in ['responsable', 'admin']:
-        clients = ImportClientCorrected.objects.all()
+        clients = FrontClient.objects.filter(actif=True)
     else:
-        nom_normalise = commercial.commercial.replace(' ', '').upper()
-        clients = ImportClientCorrected.objects.extra(
-            where=["REPLACE(UPPER(commercial), ' ', '') = %s"], params=[nom_normalise]
-        )
+        if hasattr(commercial, 'id'):
+            clients = FrontClient.objects.filter(actif=True, commercial_id=commercial.id)
+            if not clients.exists():
+                nom_normalise = commercial.commercial.replace(' ', '').upper()
+                clients = FrontClient.objects.extra(
+                    where=["REPLACE(UPPER(commercial), ' ', '') = %s"], params=[nom_normalise]
+                )
     client_temp = request.session.get('client_temp') if from_new_client else None
     next_url = request.GET.get('next', '/dashboard')
 
@@ -2285,55 +2288,29 @@ def search_clients_table(request):
 
 # === Fonctions utilitaires safe pour la migration ===
 def get_client_and_adresse(client_id):
-	"""
-	Récupère un client et son adresse de façon sécurisée, en privilégiant FrontClient/Adresse,
-	avec fallback sur ImportClientCorrected si besoin.
-	"""
-	from .models import FrontClient, Adresse, ImportClientCorrected
-	try:
-		client = FrontClient.objects.get(id=client_id)
-		adresse_obj = Adresse.objects.filter(client=client).first()
-		adresse = {
-			"adresse": adresse_obj.adresse if adresse_obj else "",
-			"code_postal": adresse_obj.code_postal if adresse_obj else "",
-			"ville": adresse_obj.ville if adresse_obj else "",
-		}
-		client_type = "front"
-		
-		# Enrichir le client avec les informations manquantes
-		if not hasattr(client, 'email') or not client.email:
-			client.email = getattr(client, 'email', '')
-		if not hasattr(client, 'civilite'):
-			client.civilite = ''
-		if not hasattr(client, 'statut'):
-			client.statut = ''
-		if not hasattr(client, 'code_comptable'):
-			client.code_comptable = ''
-		if not hasattr(client, 'classement_client'):
-			client.classement_client = ''
-			
-	except FrontClient.DoesNotExist:
-		# Fallback temporaire
-		client = ImportClientCorrected.objects.get(id=client_id)
-		adresse = {
-			"adresse": client.adresse,
-			"code_postal": client.code_postal,
-			"ville": client.ville,
-		}
-		client_type = "import"
-		
-		# Enrichir le client import avec les informations manquantes
-		if not hasattr(client, 'email') or not client.email:
-			client.email = getattr(client, 'e_mail', '')
-		if not hasattr(client, 'civilite'):
-			client.civilite = ''
-		if not hasattr(client, 'statut'):
-			client.statut = ''
-		if not hasattr(client, 'code_comptable'):
-			client.code_comptable = ''
-		if not hasattr(client, 'classement_client'):
-			client.classement_client = ''
-			
+	"""Récupère un client FrontClient et sa première adresse (si présente)."""
+	from .models import FrontClient, Adresse
+	client = FrontClient.objects.get(id=client_id)
+	adresse_obj = Adresse.objects.filter(client=client).first()
+	adresse = {
+		"adresse": adresse_obj.adresse if adresse_obj else "",
+		"code_postal": adresse_obj.code_postal if adresse_obj else "",
+		"ville": adresse_obj.ville if adresse_obj else "",
+	}
+	client_type = "front"
+
+	# Garantir la présence des attributs attendus
+	if not hasattr(client, 'email') or not client.email:
+		client.email = getattr(client, 'email', '')
+	if not hasattr(client, 'civilite'):
+		client.civilite = ''
+	if not hasattr(client, 'statut'):
+		client.statut = ''
+	if not hasattr(client, 'code_comptable'):
+		client.code_comptable = ''
+	if not hasattr(client, 'classement_client'):
+		client.classement_client = ''
+
 	return client, adresse, client_type
 
 # === Remplacement dans les vues ===

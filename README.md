@@ -33,7 +33,7 @@ Un système de gestion de la relation client (CRM) spécialement conçu pour les
 - **Donut de progression** animé et responsive
 
 ### 👥 Gestion des Commerciaux
-- **Profils commerciaux** avec photos, informations personnelles et géolocalisation
+- **Profils commerciaux**informations personnelles
 - **Attribution des clients** par commercial avec gestion des rôles
 - **Rôles et permissions** (commercial, responsable, admin)
 - **Statistiques individuelles** et performances
@@ -49,34 +49,30 @@ Un système de gestion de la relation client (CRM) spécialement conçu pour les
 - **Génération automatique** de RDV mensuels
 
 ### 👤 Gestion des Clients
-- **Fichier client** (`/client-file/`) - Interface complète de gestion
-- **Recherche avancée** de clients avec filtres multiples
+- **Fichier client** (`/client-file/`) - Interface de gestion
+- **Recherche avancée** de clients avec filtres
 - **Modification** des informations client en temps réel
 - **Historique détaillé** des interactions et RDV
 - **Import/Export Excel** des données clients
 - **Classification clients** (A, B, C) pour les objectifs
 
 ### 📝 Questionnaires de Satisfaction B2B
-- **Génération automatique** de questionnaires après chaque RDV
 - **Scores hybrides** et moyennes calculées automatiquement
 - **Export PDF** des résultats avec mise en page professionnelle
 - **Suivi de la satisfaction** client avec analyse de sentiment
 - **UUID sécurisés** pour chaque questionnaire
-- **Statistiques détaillées** par commercial et période
 
 ### 🗺️ Géolocalisation et Optimisation
 - **Géocodage automatique** des adresses avec Nominatim
 - **Optimisation des itinéraires** avec OpenRouteService
 - **Calcul de distances** Haversine pour les tournées
-- **Cartes interactives** des clients et points de visite
-- **Gestion des points de départ** par commercial
 
 ### 📊 Rapports et Analytics
-- **Export Excel** des satisfactions et statistiques
+- **Export Excel** des satisfactions
 - **Graphiques de performance** par commercial
-- **Statistiques de satisfaction** avec filtres temporels
+- **Statistiques de satisfaction** avec filtres
 - **Rapports de tournées** optimisées
-- **Suivi des objectifs** avec métriques détaillées
+- **Suivi des objectifs** avec métriques
 
 ## 🛠️ Technologies utilisées
 
@@ -304,7 +300,7 @@ python manage.py map_commerciaux
 - `GET /dashboard-responsable/` - Dashboard responsable
 - `GET /objectif-annuel/` - Interface des objectifs annuels
 - `GET /historique_rdv/` - Historique des rendez-vous
-- `GET /historique_rdv_resp/` - Historique responsable
+- `GET /historique_rdv_resp/` - Historique des rendez-vous responsable
 - `GET /add_rdv/` - Ajouter un rendez-vous
 - `GET /client_file/` - Fichier client (gestion complète)
 - `GET /profils_commerciaux/` - Profils des commerciaux
@@ -332,7 +328,7 @@ python manage.py map_commerciaux
 
 ## 🤝 Contribuer
 
-Ce projet est développé en interne. Pour toute question ou suggestion, contactez l'équipe de développement.
+Ce projet est développé en interne.
 
 ## 📄 Licence
 

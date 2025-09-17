@@ -284,13 +284,61 @@ CLASSEMENT_TO_TARGET_28D: Dict[str, int] = {
 }
 
 
+def _load_holidays_for_years(country_code: str, years: list[int]) -> set[str]:
+    """Charge les jours fériés via python-holidays si dispo, sinon renvoie set()"""
+    try:
+        import holidays as pyholidays  # type: ignore
+    except Exception:
+        return set()
+
+    dates: set[str] = set()
+    try:
+        for y in years:
+            try:
+                country_class = getattr(pyholidays, country_code)
+            except Exception:
+                # Mapping simple pour France
+                country_class = getattr(pyholidays, 'FR', None)
+            if country_class is None:
+                continue
+            for d in country_class(years=y):
+                dates.add(d.strftime('%Y-%m-%d'))
+    except Exception:
+        return set()
+    return dates
+
+
+def _get_holiday_set() -> set[str]:
+    """Construit l'ensemble des jours fériés en ISO-8601 (YYYY-MM-DD)."""
+    # Fallback manuel depuis settings.PUBLIC_HOLIDAYS
+    manual: set[str] = set(getattr(settings, 'PUBLIC_HOLIDAYS', []) or [])
+
+    # Essayer via python-holidays si des paramètres sont fournis
+    country = getattr(settings, 'HOLIDAYS_COUNTRY', None)
+    years_csv = getattr(settings, 'HOLIDAYS_YEARS', None)
+
+    if not country or not years_csv:
+        return manual
+
+    try:
+        years = [int(x.strip()) for x in str(years_csv).split(',') if x.strip()]
+    except Exception:
+        years = []
+
+    if not years:
+        return manual
+
+    lib = _load_holidays_for_years(country, years)
+    return lib or manual
+
+
 def _is_business_day(target_date: date) -> bool:
     # Lundi=0 ... Dimanche=6
     if target_date.weekday() >= 5:
         return False
-    # Jours fériés optionnels depuis settings (liste de dates ISO)
-    holidays = getattr(settings, 'PUBLIC_HOLIDAYS', []) or []
-    return target_date.isoformat() not in holidays
+    # Jours fériés depuis lib holidays si dispo, sinon fallback settings.PUBLIC_HOLIDAYS
+    holiday_set = _get_holiday_set()
+    return target_date.isoformat() not in holiday_set
 
 
 def _count_rdv_non_annules_for_commercial_on_date(commercial: Commercial, d: date) -> int:

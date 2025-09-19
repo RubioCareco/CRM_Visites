@@ -1,13 +1,16 @@
 # Normalisation des fins de ligne
 * text=auto
 
-# Code: toujours LF (Unix)
+# Code & config: toujours LF
 *.py   text eol=lf
 *.sh   text eol=lf
 *.md   text eol=lf
 *.yml  text eol=lf
 *.yaml text eol=lf
 *.json text eol=lf
+*.toml text eol=lf
+*.ini  text eol=lf
+*.cfg  text eol=lf
 *.sql  text eol=lf
 *.html text eol=lf
 *.css  text eol=lf
@@ -16,3 +19,15 @@
 # Scripts Windows: CRLF
 *.ps1  text eol=crlf
 *.bat  text eol=crlf
+*.cmd  text eol=crlf
+
+# Binaires (pas de diff texte, pas de normalisation)
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.pdf  binary
+*.ttf  binary
+*.otf  binary
+*.woff binary
+*.woff2 binary

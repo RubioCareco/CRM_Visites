@@ -17,6 +17,7 @@ db.sqlite3
 # Python
 __pycache__/
 *.py[cod]
+.pytest_cache/
 
 # IDE / OS
 .vscode/

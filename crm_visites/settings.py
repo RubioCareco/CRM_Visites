@@ -175,3 +175,19 @@ if not DEBUG:
 PUBLIC_HOLIDAYS = env.list("PUBLIC_HOLIDAYS", default=[])  # ex: ["2025-01-01", "2025-05-01"]
 HOLIDAYS_COUNTRY = env("HOLIDAYS_COUNTRY", default="FR")
 HOLIDAYS_YEARS = env("HOLIDAYS_YEARS", default="2025,2026")
+
+# Clé OpenRouteService (facultatif). Si vide, on tombera en Haversine.
+ORS_API_KEY = env("ORS_API_KEY", default="")
+
+# Mapbox (prioritaire si présent)
+MAPBOX_ACCESS_TOKEN = env("MAPBOX_ACCESS_TOKEN", default="")
+
+# Désactiver complètement ORS (fallback) si souhaité
+ROUTING_USE_ORS = env.bool("ROUTING_USE_ORS", default=False)
+
+# Contraintes géographiques pour la sélection
+MAX_RADIUS_KM = env.int("MAX_RADIUS_KM", default=80)
+MAX_DAILY_DISTANCE_KM = env.int("MAX_DAILY_DISTANCE_KM", default=220)
+
+# Clustering proximité (km) pour grouper les RDV d'une même zone
+CLUSTER_RADIUS_KM = env.int("CLUSTER_RADIUS_KM", default=10)

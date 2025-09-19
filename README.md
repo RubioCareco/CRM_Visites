@@ -51,7 +51,7 @@ Un système de gestion de la relation client (CRM) pour les commerciaux, permett
 
 ### 🗺️ Géolocalisation
 - **Géocodage** Nominatim
-- **Itinéraires** (optimisation simple « nearest neighbor »)
+- **Planification auto J+28** avec sélection géographique (rayon, clustering) et ordre optimisé (Mapbox + 2‑opt)
 
 ## 🛠️ Technologies utilisées
 
@@ -133,6 +133,19 @@ HOLIDAYS_COUNTRY=FR
 HOLIDAYS_YEARS=2025,2026
 # Liste manuelle de secours (fallback si la lib/vars ne sont pas disponibles)
 PUBLIC_HOLIDAYS=2025-01-01,2025-05-01,2025-12-25
+
+# Optimisation d'itinéraire
+MAPBOX_ACCESS_TOKEN=your_mapbox_token
+ROUTING_USE_ORS=False  # laisser False si vous n'utilisez plus ORS
+
+# Règles de sélection géographique
+MAX_RADIUS_KM=60            # rayon max autour du départ
+MAX_DAILY_DISTANCE_KM=180   # limite distance cumulée d'une journée
+CLUSTER_RADIUS_KM=10        # rayon de clustering pour regrouper une zone
+
+# Génération automatique au login
+GENERATION_AUTO_ENABLED=True
+GENERATION_AUTO_DRY_RUN=False
 ```
 
 Les paramètres sont lus dans `crm_visites/settings.py` via `environ.Env.read_env()`.
@@ -149,6 +162,19 @@ python manage.py runserver
 - Ouvrir `http://127.0.0.1:8000`
 - Se connecter avec le superutilisateur
 - Accéder aux interfaces: `/dashboard`, `/dashboard-responsable`, `/objectif-annuel`, `/client_file`
+
+### Génération automatique des RDV (au login)
+- À chaque connexion d’un utilisateur, un job quotidien se déclenche (verrou cache par jour) et appelle `ensure_visits_next_4_weeks`.
+- Ce job planifie jusqu’à J+28 en jours ouvrés, plafond 7 RDV/jour/commercial, en sélectionnant d’abord une zone proche (rayon + clustering), puis en optimisant l’ordre (Mapbox + 2‑opt) et en réassignant les créneaux.
+- Le processus est idempotent (pas de doublon).
+
+### Visualiser rapidement l’itinéraire d’un commercial
+```bash
+python manage.py show_route --commercial "Commercial 2"
+# ou
+python manage.py show_route --date 2025-09-18 --commercial "Commercial 2"
+```
+La commande affiche l'ordre optimisé, les segments, les totaux, et le mode utilisé (MAPBOX/HAVERSINE).
 
 ## 📁 Structure du projet
 

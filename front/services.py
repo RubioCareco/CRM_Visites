@@ -12,9 +12,9 @@ from .models import Adresse, Commercial, Rendezvous, FrontClient, ClientVisitSta
 
 class GeocodingService:
     """Service pour géocoder les adresses avec Nominatim (OpenStreetMap)"""
-    
+
     BASE_URL = "https://nominatim.openstreetmap.org/search"
-    
+
     @classmethod
     def geocode_address(cls, adresse: str, code_postal: str, ville: str) -> Optional[Tuple[Decimal, Decimal]]:
         """
@@ -23,13 +23,13 @@ class GeocodingService:
         headers = {
             'User-Agent': 'CRM-Visites/1.0 (https://github.com/your-repo)'
         }
-        
+
         # Essai 1 : Adresse complète
         full_address = f"{adresse}, {code_postal} {ville}, France"
         coords = cls._try_geocode(full_address, headers)
         if coords:
             return coords
-        
+
         # Essai 2 : Sans le nom d'entreprise (prendre après le premier tiret ou espace)
         if ' - ' in adresse:
             clean_address = adresse.split(' - ')[-1].strip()
@@ -42,21 +42,21 @@ class GeocodingService:
                 clean_address = adresse
         else:
             clean_address = adresse
-            
+
         if clean_address != adresse:
             fallback_address = f"{clean_address}, {code_postal} {ville}, France"
             coords = cls._try_geocode(fallback_address, headers)
             if coords:
                 return coords
-        
+
         # Essai 3 : Juste la ville et le code postal
         city_address = f"{code_postal} {ville}, France"
         coords = cls._try_geocode(city_address, headers)
         if coords:
             return coords
-        
+
         return None
-    
+
     @classmethod
     def _try_geocode(cls, address: str, headers: dict) -> Optional[Tuple[Decimal, Decimal]]:
         """
@@ -68,34 +68,34 @@ class GeocodingService:
             'limit': 1,
             'countrycodes': 'fr'
         }
-        
+
         try:
             response = requests.get(cls.BASE_URL, params=params, headers=headers, timeout=10)
             response.raise_for_status()
-            
+
             data = response.json()
-            
+
             if data and len(data) > 0:
                 lat = Decimal(data[0]['lat'])
                 lon = Decimal(data[0]['lon'])
                 return lat, lon
-            
+
         except Exception as e:
             print(f"Échec géocodage pour {address}: {e}")
-        
+
         return None
-    
+
     @classmethod
     def geocode_all_addresses(cls):
         """
         Géocode toutes les adresses qui n'ont pas encore de coordonnées
         """
         addresses = Adresse.objects.filter(latitude__isnull=True, longitude__isnull=True)
-        
+
         for address in addresses:
             if address.adresse and address.code_postal and address.ville:
                 coords = cls.geocode_address(address.adresse, address.code_postal, address.ville)
-                
+
                 if coords:
                     address.latitude, address.longitude = coords
                     address.geocode_date = timezone.now()
@@ -103,7 +103,7 @@ class GeocodingService:
                     print(f"Géocodé: {address}")
                 else:
                     print(f"Échec géocodage: {address}")
-                
+
                 # Pause pour respecter les limites de l'API
                 time.sleep(1)
 
@@ -113,29 +113,29 @@ class RouteOptimizationService:
 
     Modes de coût (priorité):
     - Mapbox Matrix (durée routière) si MAPBOX_ACCESS_TOKEN défini
-    - OpenRouteService Matrix si ORS_API_KEY défini
+    - OpenRouteService Matrix si ORS_API_KEY défini (+ ROUTING_USE_ORS=True)
     - Haversine (vol d'oiseau) en repli
     """
-    
+
     @classmethod
     def calculate_distance(cls, lat1: Decimal, lon1: Decimal, lat2: Decimal, lon2: Decimal) -> float:
         """
         Calcule la distance en km entre deux points (formule de Haversine)
         """
         from math import radians, cos, sin, asin, sqrt
-        
+
         # Conversion en radians
         lat1, lon1, lat2, lon2 = map(radians, [float(lat1), float(lon1), float(lat2), float(lon2)])
-        
+
         # Différences
         dlat = lat2 - lat1
         dlon = lon2 - lon1
-        
+
         # Formule de Haversine
         a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
         c = 2 * asin(sqrt(a))
         r = 6371  # Rayon de la Terre en km
-        
+
         return c * r
 
     # ==============================
@@ -241,7 +241,7 @@ class RouteOptimizationService:
 
             # lightweight logger
             try:
-                print(f"[MATRIX] one-to-many elements={1*len(destinations)} (src=1, dst={len(destinations)})")
+                print(f"[MATRIX] one-to-many elements={len(destinations)} (src=1, dst={len(destinations)})")
             except Exception:
                 pass
 
@@ -251,8 +251,8 @@ class RouteOptimizationService:
             durs = data.get('durations')
             if not durs:
                 return None
-            # ligne 0 = durées depuis la source vers toutes les destinations
-            row0 = durs[0][1:]  # on enlève source->source
+            # ligne 0 = durées depuis la source vers toutes les destinations (déjà k valeurs)
+            row0 = durs[0]
             return [(d or 0.0) / 60.0 for d in row0]
         except Exception as e:
             print(f"Mapbox matrix error: {e}")
@@ -267,12 +267,16 @@ class RouteOptimizationService:
     def _sequence_cost(cls, start_lat: Decimal, start_lon: Decimal, coords: List[Tuple[Decimal, Decimal]], *, use_matrix: bool = True) -> Tuple[float, str]:
         """
         Coût total (minutes) d'une séquence (start -> c0 -> c1 ...).
-        - use_matrix=True : Mapbox, mais seulement arêtes consécutives (one-to-many 1×1).
-        - use_matrix=False : Haversine à 50 km/h (rapide, pour 2-opt).
+        - use_matrix=True : Mapbox OU ORS (arêtes consécutives en one-to-many).
+        - use_matrix=False : Haversine à vitesse moyenne (pour 2-opt).
         """
         if not coords:
-            return 0.0, ('MAPBOX' if (use_matrix and cls._mb_enabled()) else 'HAVERSINE')
+            mode = 'MAPBOX' if (use_matrix and cls._mb_enabled()) else (
+                'ORS' if (use_matrix and getattr(settings, 'ROUTING_USE_ORS', False) and cls._ors_enabled()) else 'HAVERSINE'
+            )
+            return 0.0, mode
 
+        # 1) Mapbox prioritaire
         if use_matrix and cls._mb_enabled():
             total_min = 0.0
             # start -> first
@@ -290,12 +294,29 @@ class RouteOptimizationService:
                 total_min += float(dij[0]) if dij else 0.0
             return total_min, 'MAPBOX'
 
-        # Fallback rapide : Haversine + 50 km/h
+        # 2) ORS si activé
+        if use_matrix and getattr(settings, 'ROUTING_USE_ORS', False) and cls._ors_enabled():
+            total_min = 0.0
+            d0 = cls._ors_matrix_durations(
+                (float(start_lat), float(start_lon)),
+                [(float(coords[0][0]), float(coords[0][1]))]
+            )
+            total_min += float(d0[0]) if d0 else 0.0
+            for i in range(len(coords)-1):
+                dij = cls._ors_matrix_durations(
+                    (float(coords[i][0]), float(coords[i][1])),
+                    [(float(coords[i+1][0]), float(coords[i+1][1]))]
+                )
+                total_min += float(dij[0]) if dij else 0.0
+            return total_min, 'ORS'
+
+        # 3) Fallback : Haversine + vitesse moyenne
+        avg_speed = getattr(settings, 'ROUTING_AVG_SPEED_KMH', 50)
         total_km = 0.0
         total_km += cls.calculate_distance(start_lat, start_lon, coords[0][0], coords[0][1])
         for i in range(len(coords)-1):
             total_km += cls.calculate_distance(coords[i][0], coords[i][1], coords[i+1][0], coords[i+1][1])
-        return (total_km / 50.0) * 60.0, 'HAVERSINE'
+        return (total_km / float(avg_speed)) * 60.0, 'HAVERSINE'
 
     @classmethod
     def _improve_2opt(cls, start_lat: Decimal, start_lon: Decimal, items: List[dict]) -> List[dict]:
@@ -319,40 +340,30 @@ class RouteOptimizationService:
                 if improved:
                     break
         return route
-    
+
     @classmethod
     def nearest_neighbor_optimization(cls, commercial: Commercial, date_rdv: str, max_rdv: int = 7) -> List[Rendezvous]:
         """
         Optimise l'ordre des rendez-vous avec l'algorithme Nearest Neighbor
-        
-        Args:
-            commercial: Le commercial concerné
-            date_rdv: Date des rendez-vous (YYYY-MM-DD)
-            max_rdv: Nombre maximum de rendez-vous à optimiser
-            
-        Returns:
-            Liste des rendez-vous dans l'ordre optimisé
         """
         # Récupération des rendez-vous à venir pour ce commercial à cette date
-        rdvs = Rendezvous.objects.filter(
-            commercial=commercial,
-            date_rdv=date_rdv,
-            statut_rdv='a_venir'
-        ).order_by('heure_rdv')[:max_rdv]
-        
+        rdvs = (Rendezvous.objects
+                .filter(commercial=commercial, date_rdv=date_rdv, statut_rdv='a_venir')
+                .select_related('client')
+                .order_by('heure_rdv')[:max_rdv])
+
         if not rdvs:
             return []
-        
+
         # Récupération des adresses des clients avec coordonnées
         rdvs_with_coords = []
         for rdv in rdvs:
             if rdv.client:
-                # Prendre la première adresse du client
                 address = rdv.client.adresses.filter(
                     latitude__isnull=False,
                     longitude__isnull=False
                 ).first()
-                
+
                 if address:
                     rdvs_with_coords.append({
                         'rdv': rdv,
@@ -360,10 +371,10 @@ class RouteOptimizationService:
                         'lon': address.longitude,
                         'address': address
                     })
-        
+
         if not rdvs_with_coords:
-            return [rdv['rdv'] for rdv in rdvs_with_coords]
-        
+            return []
+
         # Point de départ (domicile du commercial)
         if commercial.latitude_depart and commercial.longitude_depart:
             start_lat = commercial.latitude_depart
@@ -372,21 +383,24 @@ class RouteOptimizationService:
             # Si pas de point de départ, utiliser le premier rendez-vous
             start_lat = rdvs_with_coords[0]['lat']
             start_lon = rdvs_with_coords[0]['lon']
-        
-        # Algorithme Nearest Neighbor (coût = durée ORS si dispo, sinon distance Haversine)
+
+        # Algorithme Nearest Neighbor (coût = Mapbox/ORS si dispo, sinon distance Haversine)
         optimized_route = []
         current_lat, current_lon = start_lat, start_lon
         unvisited = rdvs_with_coords.copy()
-        
+
         while unvisited:
-            # Préparer destinations
             dest_coords = [(item['lat'], item['lon']) for item in unvisited]
+
             # Priorité: MAPBOX -> ORS -> Haversine
             durations = None
             if cls._mb_enabled():
-                durations = cls._mb_matrix_from_source((float(current_lat), float(current_lon)), [(float(lat), float(lon)) for (lat, lon) in dest_coords])
+                durations = cls._mb_matrix_from_source((float(current_lat), float(current_lon)),
+                                                       [(float(lat), float(lon)) for (lat, lon) in dest_coords])
             if durations is None and getattr(settings, 'ROUTING_USE_ORS', False) and cls._ors_enabled():
-                durations = cls._ors_matrix_durations((float(current_lat), float(current_lon)), [(float(lat), float(lon)) for (lat, lon) in dest_coords])
+                durations = cls._ors_matrix_durations((float(current_lat), float(current_lon)),
+                                                      [(float(lat), float(lon)) for (lat, lon) in dest_coords])
+
             min_cost = float('inf')
             nearest_idx = 0
             if durations:
@@ -405,16 +419,16 @@ class RouteOptimizationService:
                     if distance < min_cost:
                         min_cost = distance
                         nearest_idx = i
-            
+
             # Ajouter le rendez-vous le plus proche à la route
             nearest_rdv = unvisited.pop(nearest_idx)
             optimized_route.append(nearest_rdv['rdv'])
-            
+
             # Mettre à jour la position actuelle
             current_lat = nearest_rdv['lat']
             current_lon = nearest_rdv['lon']
+
         # Passe d'amélioration 2-opt sur la séquence retenue
-        # Reconstituer la liste avec lat/lon pour 2-opt
         seq_items = []
         for rdv in optimized_route:
             addr = rdv.client.adresses.filter(latitude__isnull=False, longitude__isnull=False).first() if rdv.client else None
@@ -423,7 +437,7 @@ class RouteOptimizationService:
         if seq_items:
             improved_items = cls._improve_2opt(start_lat, start_lon, seq_items)
             optimized_route = [it['rdv'] for it in improved_items]
-        
+
         return optimized_route
 
     @classmethod
@@ -434,7 +448,16 @@ class RouteOptimizationService:
         rdvs = cls.nearest_neighbor_optimization(commercial, d.isoformat(), max_rdv=7)
         if not rdvs:
             return 0
-        creneaux = [dtime(8,0), dtime(8,35), dtime(9,10), dtime(9,45), dtime(10,20), dtime(10,55), dtime(11,30)]
+        # Créneaux: de 09:00 à 12:00, pas au-delà de 12:30
+        creneaux = [
+            dtime(9, 0),
+            dtime(9, 30),
+            dtime(10, 0),
+            dtime(10, 30),
+            dtime(11, 0),
+            dtime(11, 30),
+            dtime(12, 0),
+        ]
         changed = 0
         for idx, rdv in enumerate(rdvs):
             if idx >= len(creneaux):
@@ -445,51 +468,52 @@ class RouteOptimizationService:
                 rdv.save(update_fields=['heure_rdv'])
                 changed += 1
         return changed
-    
+
     @classmethod
     def get_optimized_route_for_commercial(cls, commercial: Commercial, date_rdv: str) -> dict:
         """
         Retourne une route optimisée avec les informations de distance
         """
         optimized_rdvs = cls.nearest_neighbor_optimization(commercial, date_rdv)
-        
+
         if not optimized_rdvs:
             return {
                 'rdvs': [],
                 'total_distance': 0,
-                'estimated_time': 0
+                'estimated_time_minutes': 0,
+                'mode': 'HAVERSINE'
             }
-        
-        # Calcul de la distance totale
+
+        # Calcul de la distance totale (vol d'oiseau sur la séquence finale)
         total_distance = 0
         current_lat = commercial.latitude_depart or 0
         current_lon = commercial.longitude_depart or 0
-        
+
         route_details = []
-        
+
         for rdv in optimized_rdvs:
             if rdv.client:
                 address = rdv.client.adresses.filter(
                     latitude__isnull=False,
                     longitude__isnull=False
                 ).first()
-                
+
                 if address:
                     distance = cls.calculate_distance(
                         current_lat, current_lon,
                         address.latitude, address.longitude
                     )
                     total_distance += distance
-                    
+
                     route_details.append({
                         'rdv': rdv,
                         'distance_from_previous': distance,
                         'address': address
                     })
-                    
+
                     current_lat = address.latitude
                     current_lon = address.longitude
-        
+
         # Point de départ
         if commercial.latitude_depart and commercial.longitude_depart:
             start_lat = commercial.latitude_depart
@@ -506,19 +530,18 @@ class RouteOptimizationService:
                 if address:
                     coords.append((address.latitude, address.longitude))
 
-        # Temps final : Mapbox (arêtes consécutives) si dispo, sinon Haversine
-        use_mbx = cls._mb_enabled()
-        est_min, _ = cls._sequence_cost(start_lat, start_lon, coords, use_matrix=use_mbx)
+        # Temps final : Mapbox OU ORS (arêtes consécutives) si dispo, sinon Haversine
+        use_matrix = cls._mb_enabled() or (getattr(settings, 'ROUTING_USE_ORS', False) and cls._ors_enabled())
+        est_min, mode = cls._sequence_cost(start_lat, start_lon, coords, use_matrix=use_matrix)
         estimated_time_minutes = int(est_min)
-        mode = 'MAPBOX' if use_mbx else ('ORS' if getattr(settings, 'ROUTING_USE_ORS', False) and cls._ors_enabled() else 'HAVERSINE')
-        
+
         return {
             'rdvs': optimized_rdvs,
             'route_details': route_details,
             'total_distance': round(total_distance, 2),
             'estimated_time_minutes': estimated_time_minutes,
             'mode': mode
-        } 
+        }
 
 
 # ============================
@@ -787,7 +810,29 @@ def ensure_visits_next_4_weeks(run_date: Optional[date] = None, *, dry_run: bool
             clusters = sorted(clusters, key=lambda cl: _cluster_score(cl, s_lat, s_lon))
             # On ne garde que le cluster le plus dense/proche
             main_cluster = clusters[0]
-            clients = [c for (c, _, __) in main_cluster]
+            # Sélection gloutonne ancrée au départ: 1) plus proche du départ, puis
+            # 2) à chaque étape, on prend le plus proche du dernier choisi, jusqu'à 7
+            remaining = [(c, lat, lon) for (c, lat, lon) in main_cluster]
+            selected: List[FrontClient] = []
+            if remaining:
+                # premier: plus proche du départ
+                first_idx = min(
+                    range(len(remaining)),
+                    key=lambda i: RouteOptimizationService.calculate_distance(s_lat, s_lon, remaining[i][1], remaining[i][2])
+                )
+                c, lat, lon = remaining.pop(first_idx)
+                selected.append(c)
+                cur_lat, cur_lon = lat, lon
+                # suivants: plus proche du dernier point choisi
+                while remaining and len(selected) < 7:
+                    next_idx = min(
+                        range(len(remaining)),
+                        key=lambda i: RouteOptimizationService.calculate_distance(cur_lat, cur_lon, remaining[i][1], remaining[i][2])
+                    )
+                    c, lat, lon = remaining.pop(next_idx)
+                    selected.append(c)
+                    cur_lat, cur_lon = lat, lon
+            clients = selected
         else:
             # fallback: proximité simple au départ
             def score_tuple(item):

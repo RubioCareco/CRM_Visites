@@ -81,14 +81,13 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
         "NAME": env("DB_NAME", default="crm_visites"),
-        "USER": env("DB_USER", default="root"),
-        "PASSWORD": env("DB_PASSWORD", default=""),
-        "HOST": env("DB_HOST", default="127.0.0.1"),
+        "USER": env("DB_USER", default="appuser"),
+        "PASSWORD": env("DB_PASSWORD", default="apppass"),
+        "HOST": env("DB_HOST", default="db"),
         "PORT": env("DB_PORT", default="3306"),
-        "OPTIONS": {"init_command": "SET sql_mode='STRICT_TRANS_TABLES'"},
+        "OPTIONS": {"charset": "utf8mb4", "init_command": "SET sql_mode='';"},
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

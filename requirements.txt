@@ -57,4 +57,5 @@ xhtml2pdf==0.2.17
 zopfli==0.2.3.post1
 django-environ~=0.12.0
 holidays>=0.55
+gunicorn>=21.2
 

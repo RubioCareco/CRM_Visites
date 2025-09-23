@@ -46,6 +46,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -85,7 +86,7 @@ DATABASES = {
         "PASSWORD": env("DB_PASSWORD", default="apppass"),
         "HOST": env("DB_HOST", default="db"),
         "PORT": env("DB_PORT", default="3306"),
-        "OPTIONS": {"charset": "utf8mb4", "init_command": "SET sql_mode='';"},
+        "OPTIONS": {"charset": "utf8mb4",},
     }
 }
 
@@ -159,7 +160,7 @@ EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
 
 
 # Configuration des sessions pour la sécurité
-SESSION_COOKIE_AGE = 1800  # 30 minutes en secondes
+SESSION_COOKIE_AGE = 1800  # 30 minutes 
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Session expire à la fermeture du navigateur
 SESSION_SAVE_EVERY_REQUEST = True  # Sauvegarde la session à chaque requête
 
@@ -167,8 +168,7 @@ GENERATION_AUTO_ENABLED = env.bool("GENERATION_AUTO_ENABLED", default=False)
 GENERATION_AUTO_DRY_RUN  = env.bool("GENERATION_AUTO_DRY_RUN",  default=True)
 
 #cash-busting -> # Production only
-if not DEBUG:
-    STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
+STATICFILES_STORAGE ="whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # settings.py
 PUBLIC_HOLIDAYS = env.list("PUBLIC_HOLIDAYS", default=[])  # ex: ["2025-01-01", "2025-05-01"]
@@ -178,7 +178,7 @@ HOLIDAYS_YEARS = env("HOLIDAYS_YEARS", default="2025,2026")
 # Clé OpenRouteService (facultatif). Si vide, on tombera en Haversine.
 ORS_API_KEY = env("ORS_API_KEY", default="")
 
-# Mapbox (prioritaire si présent)
+# Mapbox (prioritaire)
 MAPBOX_ACCESS_TOKEN = env("MAPBOX_ACCESS_TOKEN", default="")
 
 # Désactiver complètement ORS (fallback) si souhaité

@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   db:
     image: mysql:8.0
@@ -9,7 +7,8 @@ services:
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-    command: --default-authentication-plugin=mysql_native_password --sql-mode=""
+    command: --default-authentication-plugin=mysql_native_password --sql-mode="STRICT_TRANS_TABLES"
+
     ports:
       - "3307:3306" 
     volumes:

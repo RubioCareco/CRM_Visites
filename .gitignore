@@ -2,6 +2,14 @@
 .env
 *.env
 !.env.example
+*.pem
+*.p12
+*.key
+
+backup/
+*.sqlite3
+*.dump
+*.bak
 
 # Environnements
 .venv/

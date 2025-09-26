@@ -13,7 +13,7 @@ backup/
 *.bak
 *.sql
 *.sql.gz
-
+/staticfiles/
 
 # Environnements
 .venv/

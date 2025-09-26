@@ -7,7 +7,7 @@
 !.env.example
 !.env.*.example
 
-backup/
+backups/
 *.sqlite3
 *.dump
 *.bak

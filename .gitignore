@@ -1,15 +1,19 @@
 # Secrets
 .env
-*.env
-!.env.example
+.env.prod
 *.pem
 *.p12
 *.key
+!.env.example
+!.env.*.example
 
 backup/
 *.sqlite3
 *.dump
 *.bak
+*.sql
+*.sql.gz
+
 
 # Environnements
 .venv/

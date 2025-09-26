@@ -35,5 +35,4 @@ urlpatterns = [
         template_name='front/reset_password_complete.html'
     ), name='password_reset_complete'),
     path('satisfaction-b2b/', satisfaction_b2b, name='satisfaction_b2b'),
-    path('new-password/', front_views.new_password, name='new_password'),
 ]

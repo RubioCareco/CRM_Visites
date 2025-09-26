@@ -252,6 +252,13 @@ python manage.py fill_rdv_rs_nom
 python manage.py map_commerciaux
 ```
 
+## 🚀 Déploiement avec Docker
+
+### Mode développement
+Lancer avec base MySQL dans Docker et hot-reload :
+```bash
+docker compose up -d
+
 ## 🌐 API Endpoints
 
 ### Principaux

@@ -1,0 +1,64 @@
+services:
+  nginx:
+    image: nginx:alpine
+    depends_on:
+      - web
+    ports:
+      - "80:80"                       # http://localhost
+      # - "443:443"                   # plus tard pour HTTPS
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - staticfiles:/app/staticfiles:ro
+    networks:
+      - app_net
+    restart: unless-stopped
+
+  web:
+    # image/build hérité du compose de base
+    env_file: .env.prod
+    depends_on:
+      db:
+        condition: service_healthy
+    ports: []
+    expose:
+      - "8000"                        # visible par nginx sur le réseau interne
+    volumes:
+      - staticfiles:/app/staticfiles
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8000/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app_net
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    command: --default-authentication-plugin=mysql_native_password --sql-mode="STRICT_TRANS_TABLES"
+    ports:
+      - "3307:3306"                   # optionnel
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - app_net
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  staticfiles:
+
+networks:
+  app_net:
+    driver: bridge

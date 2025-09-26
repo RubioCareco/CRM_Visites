@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
+# --- Bootstrap Django ---
+# ------------------------
+
+
 """
 Script de cap: garantit au plus 7 RDV 'a_venir' par commercial (toutes dates confondues).
 Supprime les plus lointains d'abord, en gardant les plus proches.
 """
-
 import os
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "crm_visites.settings")
 import django
-from datetime import date
-
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'crm_visites.settings')
 django.setup()
 
+from datetime import date
 from front.models import Rendezvous, Commercial
 
 

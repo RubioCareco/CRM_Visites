@@ -32,6 +32,11 @@ DEBUG = env.bool('DEBUG', default=True)
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 
 
+SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=not DEBUG)
+SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=not DEBUG)
+CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=not DEBUG)
+
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -124,7 +129,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 #Dossier de sources (developpement)
@@ -138,13 +143,13 @@ CSRF_USE_SESSIONS = False  # tu peux garder ce choix
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=["http://127.0.0.1:8000"])
 
 
-if not DEBUG:  # prod
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-else:          # dev local
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
+#if not DEBUG:  # prod
+ #   SECURE_SSL_REDIRECT = True
+ #   SESSION_COOKIE_SECURE = True
+  #  CSRF_COOKIE_SECURE = True
+#else:          # dev local
+ #   SESSION_COOKIE_SECURE = False
+ #   CSRF_COOKIE_SECURE = False
 EMAIL_BACKEND = env(
     "EMAIL_BACKEND",
     default="django.core.mail.backends.console.EmailBackend"  # en dev : on affiche dans la console

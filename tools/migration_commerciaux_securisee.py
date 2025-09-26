@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+
+# --- Bootstrap Django ---
+import os
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "crm_visites.settings")
+import django
+django.setup()
+# ------------------------
+
 """
 Script de migration sécurisé pour corriger les noms de commerciaux
 ATTENTION : Ce script ne modifie RIEN sans validation explicite !

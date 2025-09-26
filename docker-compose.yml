@@ -14,10 +14,12 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u${DB_USER} -p${DB_PASSWORD} --silent"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${DB_ROOT_PASSWORD} --silent || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 30           # un peu plus large
+      start_period: 30s     # laisse à MySQL le temps de s'initialiser
+
 
   web:
     build: .
@@ -26,8 +28,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    ports:
-      - "8000:8000"  
+    expose:
+      - "8000"
     volumes:
       - .:/app
 

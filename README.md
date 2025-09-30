@@ -28,7 +28,7 @@ Solution CRM pour planifier, optimiser et suivre les rendez‑vous commerciaux, 
   - Déclenchée automatiquement au premier login de la journée (verrou cache 1×/jour)
   - Respect des objectifs annuels par client (A=10, B=5, C=1, vide=1) et des visites déjà validées
   - Prend en compte les absences des commerciaux (aucune création)= statut gelé. 
-  - Sélection géographique: filtre par rayon autour du point de départ, clustering par proximité, puis sélection gloutonne compacte (les 7 plus proches les uns des autres en partant du départ)
+  - Sélection géographique: filtre par rayon autour du point de départ, clustering par proximité, puis sélection des RDV (les 7 plus proches les uns des autres en partant du départ)
 
 - Optimisation d’itinéraires
   - Ordre optimisé via Nearest Neighbor + amélioration 2‑opt
@@ -83,11 +83,11 @@ Solution CRM pour planifier, optimiser et suivre les rendez‑vous commerciaux, 
 ## 🚀 Installation rapide
 
 ```bash
-python -m venv venv
-venv\Scripts\activate  # Windows
+python -m venv venv                             -> (Création d'un environnement virtuel en python local)
+venv\Scripts\activate  # Windows                -> (Activation de l'environnement virtuel)
 # source venv/bin/activate  # Linux/Mac
-python -m pip install --upgrade pip
-pip install -r requirements.txt
+python -m pip install --upgrade pip             -> (Met à jour PIP, le gestionnaire de paquets Python, à la dernière version dans l'environnement virtuel)
+pip install -r requirements.txt                 -> (Install toute les dépendances listées dans requirement.txt, qui sont necessaire pour faire fonctionner le projet)
 ```
 
 ## ⚙️ Configuration (.env)
@@ -147,18 +147,17 @@ Ouvrir `http://127.0.0.1:8000`.
 
 - Déclenchée par un signal `user_logged_in` avec un verrou cache (1×/jour)
 - Appelle `front.services.ensure_visits_next_4_weeks`
-- Respecte: jours ouvrés, fériés, 7/jour, objectifs annuels, absences
+- Respecte: jours ouvrés, fériés, 7 rdv/jour, objectifs annuels, absences
 - Slots réassignés chaque jour à: 09:00, 09:30, 10:00, 10:30, 11:00, 11:30, 12:00
 
-Mode “essai à blanc” (ne crée rien): mettre `GENERATION_AUTO_DRY_RUN=True`.
+Mode “essai à blanc” (ne crée rien en BDD): mettre `GENERATION_AUTO_DRY_RUN=True`.
 
 ## 🗺️ Optimisation d’itinéraires
 
-- Sélection “poche” : points filtrés par rayon, cluster le plus dense/proche du départ, puis chaîne gloutonne (plus proche du précédent) jusqu’à 7
+- Sélection “poche” : points filtrés par rayon, cluster le plus dense/proche du départ, puis chaîne (plus proche du précédent) jusqu’à 7
 - Ordre final amélioré par 2‑opt (coût Haversine interne, gratuit)
 - Coût final (estimation minutes) :
   - Mapbox Matrix one‑to‑many prioritaire (économe en éléments)
-  - Sinon ORS Matrix si activé
   - Sinon Haversine (50 km/h par défaut)
 
 Afficher rapidement une tournée optimisée:
@@ -260,8 +259,7 @@ Un système de gestion de la relation client (CRM) pour les commerciaux, permett
 ## ✨ Fonctionnalités
 
 ### 🎯 Dashboard Principal
-- **Vue d'ensemble** des rendez-vous (à venir, récents, à rappeler, en retard)
-- **Statistiques** en temps réel avec compteurs dynamiques
+- **Vue d'ensemble** des rendez-vous (à venir, récent, à rappeler, notification pour rdv en retard)
 - **Interface responsive** (PC, tablette, mobile)
 - **Gestion des sessions** avec timeout automatique et avertissement
 - **Nettoyage** des RDV anciens non traités
@@ -282,7 +280,7 @@ Un système de gestion de la relation client (CRM) pour les commerciaux, permett
 ### 📅 Rendez-vous
 - **Planification** (statuts: à venir, validé, annulé, gelé)
 - **Historique** et commentaires
-- **Planification auto J+28** (idempotente, jours ouvrés, plafond 7/jour)
+- **Planification auto J+28** (idempotente, jours ouvrés, plafond 7rdv/jour)
 
 ### 👤 Clients
 - **Fichier client** `/client_file/`

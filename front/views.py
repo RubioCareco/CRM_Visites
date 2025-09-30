@@ -12,13 +12,13 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from django.db import models
 from django.core.paginator import Paginator
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
 import base64
 from django.template.loader import render_to_string
 from xhtml2pdf import pisa
 from io import BytesIO
 from django.core.exceptions import PermissionDenied
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_GET, require_POST
 import pandas as pd
 from django.db.models import Avg, Count, Q
 from django.db.models.functions import Coalesce, TruncDay, TruncWeek, TruncMonth, TruncYear
@@ -338,7 +338,7 @@ def dashboard(request):
             commercial=rdv.commercial,
             statut_rdv='valide'
         ).count()
-        # Compteurs annuels (ne s'affichent pas ici mais prêts si besoin)
+        # Compteurs annuels 
         enrichir_compteurs_annuels(rdv)
 
     # Préparation des données client de manière robuste
@@ -1932,12 +1932,39 @@ def api_clients_by_commercial(request):
 	except Commercial.DoesNotExist:
 		return JsonResponse({'clients': []})
 
-@csrf_exempt  # À sécuriser en prod !
+@login_required
+@require_POST
+@csrf_protect
 def import_clients_excel(request):
-	if request.method == 'POST' and request.FILES.get('excel_file'):
-		excel_file = request.FILES['excel_file']
-		try:
-			df = pd.read_excel(excel_file)
+    # Vérification présence du fichier
+    if not request.FILES.get('excel_file'):
+        return JsonResponse({'message': 'Aucun fichier reçu'}, status=400)
+
+    excel_file = request.FILES['excel_file']
+
+    # Limite de taille (10 Mo par défaut)
+    max_bytes = 10 * 1024 * 1024
+    try:
+        from django.conf import settings as dj_settings
+        max_bytes = getattr(dj_settings, 'IMPORT_MAX_FILE_SIZE_BYTES', max_bytes)
+    except Exception:
+        pass
+
+    if getattr(excel_file, 'size', 0) and excel_file.size > int(max_bytes):
+        return JsonResponse({'message': 'Fichier trop volumineux'}, status=413)
+
+    # Vérification extension/MIME simple
+    filename = (excel_file.name or '').lower()
+    allowed_ext = ('.xlsx', '.xls', '.csv')
+    if not filename.endswith(allowed_ext):
+        return JsonResponse({'message': 'Format non supporté (xlsx, xls, csv)'}, status=400)
+
+    # Lecture en mémoire selon le format
+    try:
+        if filename.endswith('.csv'):
+            df = pd.read_csv(excel_file)
+        else:
+            df = pd.read_excel(excel_file, engine='openpyxl')
 			commercial_id = request.session.get('commercial_id')
 			clients = []
 			adresses_data = []
@@ -1976,10 +2003,9 @@ def import_clients_excel(request):
 				)
 				adresses_data.append(adresse)
 			Adresse.objects.bulk_create(adresses_data)
-			return JsonResponse({'message': f'Import réussi ({len(clients)} clients, {len(adresses_data)} adresses)'})
-		except Exception as e:
-			return JsonResponse({'message': f'Erreur lors de l\'import : {e}'}, status=400)
-	return JsonResponse({'message': 'Aucun fichier reçu'}, status=400)
+            return JsonResponse({'message': f'Import réussi ({len(clients)} clients, {len(adresses_data)} adresses)'})
+    except Exception as e:
+        return JsonResponse({'message': f"Erreur lors de l'import : {e}"}, status=400)
 
 @login_required
 def api_commerciaux(request):

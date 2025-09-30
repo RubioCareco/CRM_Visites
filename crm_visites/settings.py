@@ -171,6 +171,11 @@ SESSION_COOKIE_AGE = 1800  # 30 minutes
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Session expire à la fermeture du navigateur
 SESSION_SAVE_EVERY_REQUEST = True  # Sauvegarde la session à chaque requête
 
+# Limites d'upload (10 Mo)
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
+
 GENERATION_AUTO_ENABLED = env.bool("GENERATION_AUTO_ENABLED", default=False)
 GENERATION_AUTO_DRY_RUN  = env.bool("GENERATION_AUTO_DRY_RUN",  default=True)
 

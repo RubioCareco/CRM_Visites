@@ -5,9 +5,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
-# dépendances système pour mysqlclient
+# dépendances système pour mysqlclient + outils (mysql client, curl)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential default-libmysqlclient-dev pkg-config netcat-openbsd \
+    default-mysql-client curl \
     && rm -rf /var/lib/apt/lists/*
 
 # user non-root

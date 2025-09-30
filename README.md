@@ -57,7 +57,9 @@ Solution CRM pour planifier, optimiser et suivre les rendez‑vous commerciaux, 
   - geopy, geographiclib: géocodage Nominatim et calculs géographiques
 
 - PDF / rendu
-  - weasyprint, xhtml2pdf, reportlab, pydyf, tinycss2, cssselect2, html5lib, svglib, pyphen, zopfli, webencodings, tinyhtml5: génération et rendu de documents/PDF à partir d’HTML/CSS
+  - xhtml2pdf (pisa): moteur HTML→PDF utilisé par l’app (ex. export B2B)
+  - reportlab: dépendance de xhtml2pdf pour le rendu PDF
+  - html5lib, webencodings: parsing/encodages HTML requis par xhtml2pdf
 
 - Données / Excel / Numérique
   - pandas, numpy: traitement de données
@@ -305,9 +307,9 @@ Un système de gestion de la relation client (CRM) pour les commerciaux, permett
 ### Bibliothèques Python principales
 - **django-environ** (configuration .env)
 - **pandas**, **openpyxl** (Excel)
-- **openrouteservice**, **geopy** (carto)
+- **geopy** (carto)
 - **requests** (HTTP)
-- **xhtml2pdf**, **reportlab**, **weasyprint** (PDF)
+- **xhtml2pdf**, **reportlab**, **html5lib**, **webencodings** (PDF)
 - **textblob** (analyse texte)
 - **holidays** (jours fériés par pays/année)
 
@@ -342,7 +344,8 @@ Notes d’installation:
 - MySQL (mysqlclient) peut nécessiter: 
   - Windows: installer MySQL et ses en-têtes, Visual C++ Build Tools.
   - Linux: `sudo apt-get install default-libmysqlclient-dev build-essential`.
-- WeasyPrint peut nécessiter des bibliothèques système selon l’OS. Voir la doc officielle si besoin.
+  
+Remarque: la génération PDF est assurée par xhtml2pdf/ReportLab uniquement (aucune dépendance système spécifique ajoutée ici).
 
 ## ⚙️ Configuration (.env)
 

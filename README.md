@@ -43,6 +43,43 @@ Solution CRM pour planifier, optimiser et suivre les rendez‑vous commerciaux, 
   - Cookies sécurisés / redirection HTTPS si `DEBUG=False`
   - Statiques servis via WhiteNoise en web et via nginx en prod
 
+## 📚 Bibliothèques utilisées et rôles
+
+- Framework et serveur
+  - Django: framework web principal (ORM, vues, templates, admin)
+  - gunicorn: serveur WSGI (prod)
+  - whitenoise: service des fichiers statiques depuis l’app (prod)
+
+- Base de données
+  - mysqlclient: pilote MySQL pour Django
+
+- Géolocalisation et distances
+  - geopy, geographiclib: géocodage Nominatim et calculs géographiques
+
+- PDF / rendu
+  - weasyprint, xhtml2pdf, reportlab, pydyf, tinycss2, cssselect2, html5lib, svglib, pyphen, zopfli, webencodings, tinyhtml5: génération et rendu de documents/PDF à partir d’HTML/CSS
+
+- Données / Excel / Numérique
+  - pandas, numpy: traitement de données
+  - openpyxl, et_xmlfile: import/export Excel
+
+- Texte / NLP
+  - textblob, nltk, regex: analyse de texte
+
+- Réseau / HTTP
+  - requests, urllib3, chardet, charset-normalizer, idna, certifi: appels HTTP robustes (ex. Mapbox)
+
+- Sécurité / crypto (documents signés)
+  - cryptography, cffi, pycparser, oscrypto, asn1crypto, pyHanko, pyhanko-certvalidator: primitives crypto, signatures et validation
+
+- Internationalisation / fuseaux
+  - pytz, tzdata, tzlocal, python-dateutil: gestion des fuseaux et dates
+
+- Configuration / utilitaires
+  - django-environ: lecture des variables d’environnement (.env)
+  - PyYAML: lecture/écriture YAML
+  - click, colorama, tqdm, six, sqlparse, pillow, lxml, Brotli, uritools, arabic-reshaper, python-bidi, pypdf, joblib: utilitaires divers (CLI, couleurs, barre de progression, compat, parsing SQL, images, XML/HTML, compression, URLs, rendu texte RTL, PDF, parallélisme léger)
+
 ## 🚀 Installation rapide
 
 ```bash

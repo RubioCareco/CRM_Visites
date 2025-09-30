@@ -1,6 +1,5 @@
 import os
 from dotenv import load_dotenv
-import openrouteservice
 from django.core.management.base import BaseCommand
 from front.models import FrontClient, Rendezvous, Commercial, Adresse
 from geopy.geocoders import Nominatim
@@ -8,7 +7,6 @@ from django.db.models import Q
 import math
 
 load_dotenv()
-ORS_API_KEY = os.getenv('ORS_API_KEY')
 
 class Command(BaseCommand):
     help = "Planifie automatiquement 7 rendez-vous optimisés pour COMMERCIAL 1"
@@ -31,8 +29,7 @@ class Command(BaseCommand):
         return R * c * 1000  # en mètres
 
     def handle(self, *args, **options):
-        # 1. Initialisation ORS
-        client_ors = openrouteservice.Client(key=ORS_API_KEY)
+        # ORS supprimé: on s'appuie sur Haversine/Mapbox dans les services
 
         # 2. Géocoder dynamiquement le point de départ avec Nominatim
         adresse_depart = "10 avenue Normandie Niémen, 64140 Lons"

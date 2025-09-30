@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # --- Bootstrap Django ---
 # ------------------------
+# --- bootstrap: garantir le PYTHONPATH & les settings Django ---
+import os, sys
+from pathlib import Path
+ROOT = Path(__file__).resolve().parents[1]  # /app
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "crm_visites.settings")
+# ----------------------------------------------------------------
 
 
 """

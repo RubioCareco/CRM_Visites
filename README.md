@@ -1,3 +1,207 @@
+# 🏢 CRM Visites – Application Django de planification commerciale
+
+Solution CRM pour planifier, optimiser et suivre les rendez‑vous commerciaux, les objectifs annuels et la satisfaction B2B. Configuration par variables d’environnement, planification automatique sur 4 semaines et optimisation d’itinéraires.
+
+## 📋 Sommaire
+
+- Fonctionnalités clés
+- Installation rapide
+- Configuration (.env)
+- Lancer en local
+- Génération auto J+28 (au login)
+- Optimisation d’itinéraires (Mapbox/Haversine)
+- Commandes utiles
+- Tests
+- Déploiement Docker (web + nginx)
+- Bonnes pratiques prod
+
+## ✨ Fonctionnalités clés
+
+- Rendez‑vous
+  - Statuts: à venir, validé, annulé, gelé
+  - Créneaux matin uniquement: 09:00 → 12:00 (toutes les 30 min). Aucun slot après 12:30
+  - Jours ouvrés uniquement (week‑ends exclus) + jours fériés FR (lib `holidays` ou liste manuelle)
+  - Plafond: 7 RDV/jour/commercial
+  - Idempotence: aucune duplication à l’exécution
+
+- Planification automatique (J → J+28)
+  - Déclenchée automatiquement au premier login de la journée (verrou cache 1×/jour)
+  - Respect des objectifs annuels par client (A=10, B=5, C=1, vide=1) et des visites déjà validées
+  - Prend en compte les absences des commerciaux (aucune création)= statut gelé. 
+  - Sélection géographique: filtre par rayon autour du point de départ, clustering par proximité, puis sélection gloutonne compacte (les 7 plus proches les uns des autres en partant du départ)
+
+- Optimisation d’itinéraires
+  - Ordre optimisé via Nearest Neighbor + amélioration 2‑opt
+  - Coût routier: Mapbox Matrix “one‑to‑many” prioritaire (faible consommation). Fallback Haversine
+  - Estimation du temps total: Mapbox si possible, sinon Haversine à vitesse moyenne (50 km/h)
+
+- Géocodage
+  - Nominatim (OpenStreetMap) avec logique de fallback simple
+
+- Sécurité et configuration
+  - `django-environ` pour toutes les variables sensibles
+  - Cookies sécurisés / redirection HTTPS si `DEBUG=False`
+  - Statiques servis via WhiteNoise en web et via nginx en prod
+
+## 🚀 Installation rapide
+
+```bash
+python -m venv venv
+venv\Scripts\activate  # Windows
+# source venv/bin/activate  # Linux/Mac
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+## ⚙️ Configuration (.env)
+
+Créez `.env` à la racine (voir aussi `.env.example`):
+
+```env
+# Django
+DJANGO_SECRET_KEY=change-me
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+CSRF_TRUSTED_ORIGINS=http://127.0.0.1:8000
+
+# Base de données
+DB_NAME=crm_visites
+DB_USER=appuser
+DB_PASSWORD=apppass
+DB_HOST=db
+DB_PORT=3306
+
+# Email
+EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+DEFAULT_FROM_EMAIL=no-reply@rubio.fr
+SITE_BASE_URL=http://127.0.0.1:8000
+
+# Jours fériés (lib holidays prioritaire, fallback manuel)
+HOLIDAYS_COUNTRY=FR
+HOLIDAYS_YEARS=2025,2026
+PUBLIC_HOLIDAYS=2025-01-01,2025-05-01,2025-12-25
+
+# Optimisation d’itinéraire
+MAPBOX_ACCESS_TOKEN=
+
+# Sélection géographique
+MAX_RADIUS_KM=80
+MAX_DAILY_DISTANCE_KM=220
+CLUSTER_RADIUS_KM=10
+
+# Génération auto au login
+GENERATION_AUTO_ENABLED=True
+GENERATION_AUTO_DRY_RUN=False
+```
+
+Les paramètres sont lus dans `crm_visites/settings.py` (via `environ.Env.read_env`). Les fichiers `.env` et `.env.prod` ne sont pas versionnés.
+
+## ▶️ Lancer en local
+
+```bash
+python manage.py makemigrations
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver
+```
+Ouvrir `http://127.0.0.1:8000`.
+
+## ⚙️ Génération auto J+28 (au login)
+
+- Déclenchée par un signal `user_logged_in` avec un verrou cache (1×/jour)
+- Appelle `front.services.ensure_visits_next_4_weeks`
+- Respecte: jours ouvrés, fériés, 7/jour, objectifs annuels, absences
+- Slots réassignés chaque jour à: 09:00, 09:30, 10:00, 10:30, 11:00, 11:30, 12:00
+
+Mode “essai à blanc” (ne crée rien): mettre `GENERATION_AUTO_DRY_RUN=True`.
+
+## 🗺️ Optimisation d’itinéraires
+
+- Sélection “poche” : points filtrés par rayon, cluster le plus dense/proche du départ, puis chaîne gloutonne (plus proche du précédent) jusqu’à 7
+- Ordre final amélioré par 2‑opt (coût Haversine interne, gratuit)
+- Coût final (estimation minutes) :
+  - Mapbox Matrix one‑to‑many prioritaire (économe en éléments)
+  - Sinon ORS Matrix si activé
+  - Sinon Haversine (50 km/h par défaut)
+
+Afficher rapidement une tournée optimisée:
+```bash
+python manage.py show_route --commercial "Nom Commercial"
+# ou une date précise
+python manage.py show_route --commercial "Nom Commercial" --date 2025-09-18
+```
+
+## 🔧 Commandes utiles
+
+```bash
+# Géocoder les adresses manquantes
+python manage.py geocode_addresses
+
+# Afficher une tournée optimisée
+python manage.py show_route --commercial "Nom Commercial"
+
+# Purger des données de démo (avec --dry-run pour prévisualiser)
+python manage.py purge_demo_data --dry-run
+python manage.py purge_demo_data --yes
+
+# Divers (existant dans front/management/commands)
+python manage.py init_visit_stats
+python manage.py create_responsable_group
+python manage.py nettoyer_rdv_anciens
+python manage.py generer_rdv_mensuel
+python manage.py update_client_objectifs
+python manage.py fix_addresses
+python manage.py update_scores_hybrides
+python manage.py fill_rdv_rs_nom
+python manage.py map_commerciaux
+```
+
+## 🧪 Tests
+
+- Tests Django classiques (TestCase) présents dans `front/tests.py`
+- PyTest supporté si `pytest.ini` est présent
+  - Exécution verbeuse: `pytest -vv`
+  - Exécution compacte: `pytest -q`
+
+## 🐳 Déploiement Docker (exemple)
+
+Compose web + nginx + MySQL, statiques collectés et servies par nginx.
+
+Exemples de commandes :
+```bash
+# Démarrer en prod
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d --build
+
+# Vérifier les services
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod ps
+
+# Tester depuis le conteneur nginx (utiliser IPv4)
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod exec nginx \
+  sh -lc 'wget -S -O /dev/null http://127.0.0.1/'
+```
+Astuce: Si `wget http://localhost/` échoue avec IPv6 (::1), utiliser `127.0.0.1` ou activer `listen [::]:80;` dans la conf nginx.
+
+Collecte des statiques (si nécessaire):
+```bash
+python manage.py collectstatic --noinput
+```
+
+## 🔐 Bonnes pratiques prod
+
+- Mettre `DEBUG=False`, renseigner `ALLOWED_HOSTS` et `CSRF_TRUSTED_ORIGINS`
+- Cookies sécurisés et redirection HTTPS activés automatiquement si `DEBUG=False`
+- `STATIC_ROOT` configuré et `collectstatic` exécuté
+- Cache applicatif (Redis conseillé) pour le verrou quotidien
+- Clés/API et secrets uniquement via `.env`
+- Pour limiter la consommation Mapbox :
+  - Matrices one‑to‑many uniquement
+  - 2‑opt via Haversine
+  - Un seul calcul final de coût par tournée
+
+---
+
+© Projet sous licence MIT.
+
 # 🏢 CRM Visites - Gestion Commerciale
 
 Un système de gestion de la relation client (CRM) pour les commerciaux, permettant le suivi des rendez-vous, des objectifs annuels et des questionnaires de satisfaction B2B.
@@ -176,28 +380,39 @@ python manage.py show_route --date 2025-09-18 --commercial "Commercial 2"
 ```
 La commande affiche l'ordre optimisé, les segments, les totaux, et le mode utilisé (MAPBOX/HAVERSINE).
 
-## 📁 Structure du projet
+### Structure du projet
 
-```
-crm_visites/
+crm_visites/                    # package Django (settings, urls, wsgi/asgi)
 ├── crm_visites/
+|   ├── _init_.py              
 │   ├── settings.py
 │   ├── urls.py
 │   ├── wsgi.py
 │   └── asgi.py
-├── front/
-│   ├── models.py
-│   ├── views.py
-│   ├── urls.py
-│   ├── signals.py
-│   ├── services.py
-│   ├── templates/
-│   └── static/
-├── manage.py
+├── front/                       # app Django principale
+|   ├── css/
+|   ├── management/                 
+│   ├── migrations/              # migrations de l'app
+│   ├── templates/               # templates HTML (ex: front/login.html)
+│   └── static/                  # assets de l'app (front/css, front/img, ...)
+├── nginx/
+│   └── conf.d/
+│       └── app.conf             # conf Nginx (reverse proxy + /static/)
+├── staticfiles/                 # cible de collectstatic (ignoré par git)
+├── tools/                       # scripts utilitaires (optionnel)
+├── Dockerfile                   # image "web" (gunicorn + app)
+├── entrypoint.sh                # boot : migrations, collectstatic, gunicorn
+├── docker-compose.yml           # base (build image web)
+├── docker-compose.prod.yml      # overrides prod (nginx, volumes, healthchecks)
+├── .env.example                 # variables d’exemple (dev)
+├── .env.prod.example            # variables d’exemple (prod)
+├── .env                         # perso (gitignore)
+├── .env.prod                    # prod local (gitignore)
+├── .gitignore
 ├── requirements.txt
-├── README.md
-└── LICENSE
-```
+├── Makefile                     # raccourcis (optionnel)
+├── pytest.ini                   # tests (optionnel)
+└── README.md
 
 ## 🔧 Commandes de gestion
 

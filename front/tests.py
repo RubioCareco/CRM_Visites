@@ -51,7 +51,7 @@ class PlanningTests(TestCase):
         rdvs = data.get('rdvs', [])
         # On doit avoir au moins 3 RDV et un mode renseigné
         self.assertGreaterEqual(len(rdvs), 3)
-        self.assertIn(data.get('mode'), ['MAPBOX', 'HAVERSINE', 'ORS'])
+        self.assertIn(data.get('mode'), ['MAPBOX', 'HAVERSINE'])
 
 
 
@@ -65,9 +65,8 @@ from front.models import Commercial, Rendezvous
 
 @pytest.fixture(autouse=True)
 def disable_external_routing(settings):
-    # coupe Mapbox/ORS pendant les tests (zéro appel réseau)
+    # coupe Mapbox pendant les tests (zéro appel réseau)
     settings.MAPBOX_ACCESS_TOKEN = ""
-    settings.ROUTING_USE_ORS = False
 
 @pytest.mark.django_db
 def test_show_route_does_not_create_when_no_rdvs():

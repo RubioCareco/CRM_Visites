@@ -1,0 +1,94 @@
+.site-footer {
+  width: 100vw; /* pleine largeur, indépendant du conteneur parent */
+  margin-left: calc(50% - 50vw); /* full-bleed sans déborder */
+  margin-right: calc(50% - 50vw);
+  background: #231616;
+  color: #e0e0e0;
+  text-align: center;
+  padding: 18px 0 12px 0;
+  font-size: 1rem;
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.18);
+  border-top: 1px solid rgba(255,255,255,0.04);
+  /* Sticky footer moderne avec flexbox */
+  margin-top: 0; /* pas d'espace au-dessus */
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+/* Annule toute marge résiduelle de l'élément précédent */
+.content-wrapper,
+.back-button-container {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.footer-links {
+  display: inline-block;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.footer-link {
+  color: #e0e0e0;
+  text-decoration: underline;
+  margin: 0 8px;
+  transition: color 0.2s;
+  font-weight: 500;
+}
+
+.footer-link:hover {
+  color: #fff;
+  text-decoration: none;
+}
+
+.footer-separator {
+  color: #e0e0e0;
+  margin: 0 4px;
+  opacity: 0.5;
+}
+
+/* Tablette */
+@media (max-width: 1366px) {
+  .site-footer {
+    font-size: 0.95rem;
+    padding: 16px 0 12px 0;
+  }
+  .footer-link {
+    margin: 0 6px;
+  }
+}
+
+/* Smartphone */
+@media (max-width: 480px) {
+  .site-footer {
+    font-size: 0.9rem;
+    padding: 14px 0 10px 0;
+  }
+  .footer-link {
+    margin: 0 4px;
+  }
+}
+
+/* Layout moderne avec flexbox pour sticky footer */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Le contenu principal prend tout l'espace disponible */
+main, .dashboard-container, .content-wrapper, .dashboard {
+  flex: 1 0 auto;
+}
+
+/* Le footer reste en bas naturellement */
+.site-footer {
+  flex-shrink: 0;
+  margin-top: auto; /* Pousse le footer vers le bas */
+}

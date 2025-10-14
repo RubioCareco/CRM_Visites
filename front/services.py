@@ -8,6 +8,19 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from .models import Adresse, Commercial, Rendezvous, FrontClient, ClientVisitStats
+import unicodedata  # <-- ajouté
+
+
+def _norm_name_from_client(cli: FrontClient) -> str:
+    """
+    Nom normalisé pour éviter les doublons 'même nom' (accents/majuscules/espaces).
+    """
+    base = (getattr(cli, 'rs_nom', None)
+            or f"{getattr(cli, 'nom', '')} {getattr(cli, 'prenom', '')}".strip()
+            or str(cli))
+    s = unicodedata.normalize('NFKD', base or '').lower()
+    s = ''.join(c for c in s if not unicodedata.combining(c))
+    return ''.join(ch for ch in s if ch.isalnum() or ch in ' .-_')
 
 
 class GeocodingService:
@@ -35,10 +48,7 @@ class GeocodingService:
             clean_address = adresse.split(' - ')[-1].strip()
         elif ' ' in adresse and not adresse[0].isdigit():
             parts = adresse.split(' ', 1)
-            if len(parts) > 1:
-                clean_address = parts[1]
-            else:
-                clean_address = adresse
+            clean_address = parts[1] if len(parts) > 1 else adresse
         else:
             clean_address = adresse
 
@@ -175,6 +185,7 @@ class RouteOptimizationService:
         """Durée en minutes de source -> chaque destination via Mapbox.
            - 1 destination  : Directions A->B (évite l'erreur 422 Matrix 1x1)
            - >= 2 dests     : Matrix one-to-many
+           - > 24 dests     : CHUNKING par paquets de 24 (limite Mapbox = 25 coords total)
            Fallback segmentaire sur Haversine si l'appel échoue.
         """
         if not cls._mb_enabled() or not destinations:
@@ -183,6 +194,18 @@ class RouteOptimizationService:
         token = getattr(settings, 'MAPBOX_ACCESS_TOKEN', '').strip()
         if not token:
             return None
+
+        # --- CHUNKING: 1 source + 24 destinations max par appel Matrix ---
+        MAX_DEST = 24
+        if len(destinations) > MAX_DEST:
+            all_mins: List[float] = []
+            for i in range(0, len(destinations), MAX_DEST):
+                sub = destinations[i:i + MAX_DEST]
+                sub_mins = cls._mb_matrix_from_source(source, sub)  # appel récursif sur petit lot
+                if sub_mins is None:
+                    return None
+                all_mins.extend(sub_mins)
+            return all_mins
 
         # Cas 1: une seule destination -> Directions (A->B)
         if len(destinations) == 1:
@@ -200,23 +223,22 @@ class RouteOptimizationService:
             mins = cls.calculate_distance(Decimal(slat), Decimal(slon), Decimal(dlat), Decimal(dlon)) / avg_speed * 60.0
             return [float(mins)]
 
-        # Cas 2: plusieurs destinations -> Matrix one-to-many
+        # Cas 2: plusieurs destinations (<= 24) -> Matrix one-to-many
         try:
             coords = [[float(source[1]), float(source[0])]] + [[float(lon), float(lat)] for (lat, lon) in destinations]
             coord_str = ';'.join(f"{lon},{lat}" for lon, lat in coords)
             dest_idx = ';'.join(str(i) for i in range(1, len(coords)))  # 1..k
-
-            url = (
-                f"https://api.mapbox.com/directions-matrix/v1/mapbox/driving/{coord_str}"
-                f"?annotations=duration&sources=0&destinations={dest_idx}"
-                f"&access_token={token}"
-            )
 
             try:
                 print(f"[MATRIX] one-to-many elements={len(destinations)} (src=1, dst={len(destinations)})")
             except Exception:
                 pass
 
+            url = (
+                f"https://api.mapbox.com/directions-matrix/v1/mapbox/driving/{coord_str}"
+                f"?annotations=duration&sources=0&destinations={dest_idx}"
+                f"&access_token={token}"
+            )
             resp = requests.get(url, timeout=15)
             resp.raise_for_status()
             data = resp.json()
@@ -231,7 +253,7 @@ class RouteOptimizationService:
 
     @classmethod
     def _mb_full_matrix(cls, coords: List[Tuple[float, float]]) -> Optional[List[List[float]]]:
-        # Deprecated in low-consumption mode; kept for compatibility but unused
+        # Deprecated en mode low-consumption; non utilisé ici
         return None
 
     @classmethod
@@ -303,7 +325,7 @@ class RouteOptimizationService:
         return route
 
     @classmethod
-    def nearest_neighbor_optimization(cls, commercial: Commercial, date_rdv: str, max_rdv: int = 7) -> List[Rendezvous]:
+    def nearest_neighbor_optimization(cls, commercial: Commercial, date_rdv: str, max_rdv: int = 6) -> List[Rendezvous]:
         """
         Optimise l'ordre des rendez-vous avec l'algorithme Nearest Neighbor
         """
@@ -704,14 +726,103 @@ def _cluster_score(cluster: List[Tuple[FrontClient, Decimal, Decimal]], start_la
     return (-size, dist)
 
 
-# --- NOUVEAU ---
-# Sélection "plus proche voisin" depuis le point de départ (utilise Mapbox si dispo)
+# --- Sélection “par zone” : grappe compacte de k clients autour d'un centre (Mapbox prioritaire)
+def _pick_k_zone_cluster(
+    points: List[Tuple[FrontClient, Decimal, Decimal]],
+    start_lat: Decimal,
+    start_lon: Decimal,
+    *,
+    k: int = 6,
+    spread_km: float = 20.0,        # compacité intra-groupe (paire max)
+    seed_limit: int = 60            # nb de centres testés (les plus proches du départ)
+) -> List[FrontClient]:
+    """
+    Choisit une *grappe* compacte de k clients :
+    - on teste plusieurs centres (seeds) proches du départ,
+    - pour chaque seed on prend ses plus proches *en temps Mapbox* (fallback Haversine),
+      en vérifiant la compacité pairwise (<= spread_km),
+    - on score la grappe par (max distance pairwise, moyenne pairwise, distance centroïde→départ).
+    """
+    R = RouteOptimizationService
+    if not points:
+        return []
+
+    def dkm(a_lat, a_lon, b_lat, b_lon) -> float:
+        return R.calculate_distance(a_lat, a_lon, b_lat, b_lon)
+
+    # 1) centres candidats = points les plus proches du départ
+    pts_sorted = sorted(points, key=lambda t: dkm(start_lat, start_lon, t[1], t[2]))
+    seeds = pts_sorted[:min(seed_limit, len(pts_sorted))]
+
+    best_score = (float('inf'), float('inf'), float('inf'))
+    best_group: List[Tuple[FrontClient, Decimal, Decimal]] = []
+
+    for seed in seeds:
+        seed_cli, s_lat, s_lon = seed
+
+        # coûts seed -> tous (Mapbox prioritaire)
+        costs = None
+        try:
+            if R._mb_enabled():
+                costs = R._mb_matrix_from_source(
+                    (float(s_lat), float(s_lon)),
+                    [(float(lat), float(lon)) for (_, lat, lon) in points]
+                )
+        except Exception:
+            costs = None
+
+        if costs:
+            order_idx = list(range(len(points)))
+            order_idx.sort(key=lambda i: float(costs[i]))
+        else:
+            order_idx = list(range(len(points)))
+            order_idx.sort(key=lambda i: dkm(s_lat, s_lon, points[i][1], points[i][2]))
+
+        # construit la grappe en respectant la compacité pairwise
+        group: List[Tuple[FrontClient, Decimal, Decimal]] = [seed]
+        for i in order_idx:
+            if points[i][0].id == seed_cli.id:
+                continue
+            cand = points[i]
+            ok = True
+            for (_, la, lo) in group:
+                if dkm(la, lo, cand[1], cand[2]) > spread_km:
+                    ok = False
+                    break
+            if ok:
+                group.append(cand)
+                if len(group) == k:
+                    break
+
+        if len(group) == 0:
+            continue
+
+        # score: (max pairwise, moyenne pairwise, distance centroid->start)
+        pair = []
+        for a in range(len(group)):
+            for b in range(a + 1, len(group)):
+                pair.append(dkm(group[a][1], group[a][2], group[b][1], group[b][2]))
+        max_pair = max(pair) if pair else 0.0
+        avg_pair = sum(pair) / len(pair) if pair else 0.0
+        c_lat = sum(float(la) for (_, la, _) in group) / len(group)
+        c_lon = sum(float(lo) for (_, _, lo) in group) / len(group)
+        c_dist = dkm(Decimal(c_lat), Decimal(c_lon), start_lat, start_lon)
+
+        score = (max_pair, avg_pair, c_dist)
+        if score < best_score:
+            best_score = score
+            best_group = group
+
+    return [c for (c, _, __) in best_group[:k]]
+
+
+# --- Sélection "plus proche voisin" depuis le point de départ (utilise Mapbox si dispo)
 def _pick_k_stepwise_nearest(
     points: List[Tuple[FrontClient, Decimal, Decimal]],
     start_lat: Decimal,
     start_lon: Decimal,
     *,
-    k: int = 7,
+    k: int = 6,
     max_spread_km: Optional[float] = None,   # None = pas de contrainte de dispersion
     hard_radius_km: float = 0.0,             # 0 = pas de filtre dur
 ) -> List[FrontClient]:
@@ -798,7 +909,7 @@ def _select_local_group(
     start_lat: Decimal,
     start_lon: Decimal,
     *,
-    k: int = 7,
+    k: int = 6,
     base_radius_km: float = 10.0,
     max_spread_km: float = 35.0,
     hard_radius_km: float = 0.0,
@@ -853,13 +964,16 @@ def _select_local_group(
 def ensure_visits_next_4_weeks(run_date: Optional[date] = None, *, dry_run: bool = False, collect_breakdown: bool = True) -> dict:
     """Complète la planification jusqu'à J+28.
 
-    - 7 RDV/jour/commercial (max)
+    - 6 RDV/jour/commercial (max)
     - Jours ouvrés uniquement (WE/feriés exclus)
     - Créneau par défaut 09:00
     - Idempotent via get_or_create
-    - Sélection GREEDY "plus proche voisin" : on part du point de départ et on enchaîne
-      les 7 clients en coût minimal (Mapbox prioritaire), avec contrainte d'écart
-      pairwise max SAME_DAY_MAX_SPREAD_KM.
+
+    CHANGEMENT CLÉ :
+    ➜ On construit un groupe *par jour* en partant du point de départ (greedy
+      "plus proche voisin", Mapbox prioritaire), parmi les clients qui ont encore
+      des visites à faire dans l'horizon. Cela évite d'aller loin alors qu'il
+      reste des voisins autour du départ.
     """
     start = (run_date or timezone.localdate())
     end = start + timedelta(days=28)
@@ -879,125 +993,199 @@ def ensure_visits_next_4_weeks(run_date: Optional[date] = None, *, dry_run: bool
             skipped_absence += 1
             continue
 
-        capacity_by_day = {d: max(0, 7 - _count_rdv_non_annules_for_commercial_on_date(commercial, d)) for d in business_days}
         if collect_breakdown and commercial.id not in per_commercial_per_day:
             per_commercial_per_day[commercial.id] = {}
 
-        clients_qs = FrontClient.objects.filter(commercial_id=commercial.id, actif=True)
         start_coords = _get_commercial_start(commercial)
-
-        # Priorité C > '' > B > A (si jamais réutilisé)
-        def prio_order(c: FrontClient) -> int:
-            val = (c.classement_client or '').upper().strip()
-            if val == 'C': return 0
-            if val == '':  return 1
-            if val == 'B': return 2
-            if val == 'A': return 3
-            return 4
-
-        clients_all = list(clients_qs)
-
-        # Construire les points (client, lat, lon)
-        points: List[Tuple[FrontClient, Decimal, Decimal]] = []
+        s_lat = s_lon = None
         if start_coords:
             s_lat, s_lon = start_coords
+
+        # --- pool de clients actifs + coordonnées ---
+        clients_all = list(FrontClient.objects.filter(commercial_id=commercial.id, actif=True))
+        points_by_client: Dict[int, Tuple[FrontClient, Decimal, Decimal]] = {}
         for c in clients_all:
             coords = _get_first_client_coords(c)
-            if not coords:
-                continue
-            points.append((c, coords[0], coords[1]))
+            if coords:
+                points_by_client[c.id] = (c, coords[0], coords[1])
 
-        # Filtre rayon global d'abord (sécurité)
-        max_radius_km = getattr(settings, 'MAX_RADIUS_KM', 0) or 0
-        if start_coords and max_radius_km > 0:
-            points = [
-                (c, lat, lon) for (c, lat, lon) in points
-                if RouteOptimizationService.calculate_distance(s_lat, s_lon, lat, lon) <= float(max_radius_km)
-            ]
+        if not points_by_client:
+            continue
 
-        # Sélection GREEDY "plus proche voisin" depuis le départ (ce que tu veux)
-        if start_coords and points:
-            clients = _pick_k_stepwise_nearest(
-                points,
-                s_lat,
-                s_lon,
-                k=7,
-                max_spread_km=float(getattr(settings, 'SAME_DAY_MAX_SPREAD_KM', 35) or 35),
-                hard_radius_km=float(getattr(settings, 'MAX_RADIUS_KM', 0) or 0),
-            )
-        else:
-            # fallback: 7 plus proches du départ (si disponible), sinon 7 premiers
-            def score_tuple(item):
-                c, lat, lon = item
-                return RouteOptimizationService.calculate_distance(s_lat, s_lon, lat, lon) if start_coords else 0.0
-            clients = [c for (c, _, __) in sorted(points, key=score_tuple)[:7]]
-
-        # Création des RDV selon objectifs/quotas
-        for client in clients:
-            classement = (client.classement_client or '').upper().strip()
-            cible_28 = CLASSEMENT_TO_TARGET_28D.get(classement, 1)
-
-            annee = start.year
-            objectif_annuel = _get_objectif_annuel(client, commercial, annee)
-            visites_valides = _get_visites_valides_annee(client, commercial, annee)
+        # --- besoins ("manquants") par client sur l'horizon ---
+        need_remaining: Dict[int, int] = {}
+        annee = start.year
+        for cid, (cli, _, __) in points_by_client.items():
+            objectif_annuel = _get_objectif_annuel(cli, commercial, annee)
+            visites_valides = _get_visites_valides_annee(cli, commercial, annee)
             reste_annuel = max(0, objectif_annuel - visites_valides)
             if reste_annuel <= 0:
-                skipped_objectif_zero += 1
                 continue
 
+            classement = (cli.classement_client or '').upper().strip()
+            cible_28 = CLASSEMENT_TO_TARGET_28D.get(classement, 1)
             cible_28_effective = min(cible_28, reste_annuel)
-            deja_planifies = _get_already_planned_in_horizon(client, commercial, start, end)
+
+            deja_planifies = _get_already_planned_in_horizon(cli, commercial, start, end)
             manquants = max(0, cible_28_effective - deja_planifies)
-            if manquants == 0:
+            if manquants > 0:
+                need_remaining[cid] = manquants
+            else:
+                skipped_objectif_zero += 1
+
+        if not need_remaining:
+            continue
+
+        # Paramètres géo
+        max_radius_km = float(getattr(settings, 'MAX_RADIUS_KM', 0) or 0)
+        # nouvel algo "par zone"
+        same_day_spread_km = float(getattr(settings, 'SAME_DAY_SPREAD_KM', 20.0) or 20.0)
+        seed_limit = int(getattr(settings, 'SAME_DAY_CLUSTER_SEED_LIMIT', 60) or 60)
+
+        # --- Anti-doublon *horizon* (par nom normalisé) ---
+        existing_horizon = (Rendezvous.objects
+            .filter(commercial=commercial, date_rdv__gte=start, date_rdv__lte=end)
+            .exclude(statut_rdv='annule')
+            .select_related('client'))
+        horizon_seen_names = { _norm_name_from_client(r.client) for r in existing_horizon if r.client }
+
+        # --- boucle par jour ouvré ---
+        for d in business_days:
+            capacity = max(0, 6 - _count_rdv_non_annules_for_commercial_on_date(commercial, d))
+            if capacity <= 0:
+                skipped_quota += 1
                 continue
 
-            for d in business_days:
-                if manquants == 0:
-                    break
-                if capacity_by_day.get(d, 0) <= 0:
+            # candidats pour CE JOUR (besoin > 0, pas déjà posé ce jour)
+            day_candidates: List[Tuple[FrontClient, Decimal, Decimal]] = []
+            for cid, need in need_remaining.items():
+                if need <= 0:
                     continue
-                if _rdv_exists_for_client_on_date(client, commercial, d):
+                cli, lat, lon = points_by_client[cid]
+                if _rdv_exists_for_client_on_date(cli, commercial, d):
                     skipped_existing += 1
                     continue
+                if start_coords and max_radius_km > 0:
+                    if RouteOptimizationService.calculate_distance(s_lat, s_lon, lat, lon) > max_radius_km:
+                        continue
+
+                # *** blocage horizon par nom ***
+                if _norm_name_from_client(cli) in horizon_seen_names:
+                    continue
+
+                day_candidates.append((cli, lat, lon))
+
+            if not day_candidates:
+                continue
+
+            # Déduplication par nom normalisé : on garde (si départ connu) le plus proche du départ
+            if start_coords:
+                def _dist_from_start(item):
+                    return RouteOptimizationService.calculate_distance(s_lat, s_lon, item[1], item[2])
+            by_name: Dict[str, Tuple[FrontClient, Decimal, Decimal]] = {}
+            for it in day_candidates:
+                key = _norm_name_from_client(it[0])
+                best = by_name.get(key)
+                if best is None:
+                    by_name[key] = it
+                else:
+                    if start_coords and _dist_from_start(it) < _dist_from_start(best):
+                        by_name[key] = it
+            day_candidates = list(by_name.values())
+            if not day_candidates:
+                continue
+
+            k = min(capacity, len(day_candidates))
+
+            # --- Sélection par grappe stricte (toutes paires <= spread_km) ---
+            if start_coords:
+                seed_lat, seed_lon = s_lat, s_lon
+            else:
+                seed_lat, seed_lon = day_candidates[0][1], day_candidates[0][2]
+
+            # Construire une grappe compacte de k points autour d'un centre
+            pool = day_candidates
+            selected_clients = _pick_k_zone_cluster(
+                pool,
+                Decimal(seed_lat), Decimal(seed_lon),
+                k=k,
+                spread_km=float(same_day_spread_km) or 20.0,
+                seed_limit=int(seed_limit) if 'seed_limit' in locals() else 60,
+            )
+
+            # Fallback si on n'arrive pas à obtenir k clients (relâchement progressif)
+            relax = float(same_day_spread_km) or 20.0
+            while len(selected_clients) < min(k, len(pool)) and relax < 50.0:
+                relax += 5.0
+                selected_clients = _pick_k_zone_cluster(
+                    pool,
+                    Decimal(seed_lat), Decimal(seed_lon),
+                    k=k,
+                    spread_km=relax,
+                    seed_limit=60,
+                )
+
+            # --- préparation anti-doublons "même nom" pour le jour d ---
+            existing_today = (Rendezvous.objects
+                .filter(commercial=commercial, date_rdv=d)
+                .exclude(statut_rdv='annule')
+                .select_related('client'))
+            seen_names = { _norm_name_from_client(r.client) for r in existing_today if r.client }
+
+            # --- création des RDV pour le jour d ---
+            for client in selected_clients:
+                if need_remaining.get(client.id, 0) <= 0:
+                    continue
+
+                name_key = _norm_name_from_client(client)
+                # blocage intra-jour ET blocage horizon
+                if name_key in seen_names or name_key in horizon_seen_names:
+                    continue  # déjà présent
 
                 if dry_run:
-                    capacity_by_day[d] -= 1
-                    manquants -= 1
                     created_count += 1
+                    need_remaining[client.id] -= 1
+                    capacity -= 1
+                    seen_names.add(name_key)
+                    horizon_seen_names.add(name_key)  # important aussi en dry_run pour la logique locale
                     if collect_breakdown:
                         per_day[d.isoformat()] = per_day.get(d.isoformat(), 0) + 1
                         per_commercial_per_day[commercial.id][d.isoformat()] = per_commercial_per_day[commercial.id].get(d.isoformat(), 0) + 1
+                    if capacity <= 0:
+                        break
                     continue
 
                 with transaction.atomic():
+                    # IMPORTANT: ne pas inclure heure_rdv dans les critères -> évite les doublons
                     obj, created = Rendezvous.objects.get_or_create(
                         client=client,
                         commercial=commercial,
                         date_rdv=d,
-                        heure_rdv=dtime(hour=9, minute=0),
-                        defaults={
-                            'statut_rdv': 'a_venir',
-                            'objet': 'Visite planifiée automatiquement',
-                        }
+                        defaults={'heure_rdv': dtime(hour=9, minute=0), 'statut_rdv': 'a_venir', 'objet': 'Visite planifiée automatiquement'},
                     )
                     if created:
-                        max_daily_km = getattr(settings, 'MAX_DAILY_DISTANCE_KM', 0) or 0
+                        # contrôle distance journalière estimée (après insertion)
+                        max_daily_km = float(getattr(settings, 'MAX_DAILY_DISTANCE_KM', 0) or 0)
                         if max_daily_km > 0:
                             est = _estimate_day_distance_km(commercial, d)
-                            if est > float(max_daily_km):
+                            if est > max_daily_km:
                                 obj.delete()
                                 continue
                         created_count += 1
-                        capacity_by_day[d] -= 1
-                        manquants -= 1
+                        need_remaining[client.id] -= 1
+                        capacity -= 1
+                        seen_names.add(name_key)
+                        horizon_seen_names.add(name_key)  # <-- ajoute au set horizon
                         if collect_breakdown:
                             per_day[d.isoformat()] = per_day.get(d.isoformat(), 0) + 1
                             per_commercial_per_day[commercial.id][d.isoformat()] = per_commercial_per_day[commercial.id].get(d.isoformat(), 0) + 1
                     else:
                         skipped_existing += 1
 
-        # Réordonnancement/slots pour chaque jour
-        for d in business_days:
+                if capacity <= 0:
+                    break
+
+            # réordonne les créneaux du jour
             try:
                 RouteOptimizationService.reorder_day_assign_slots(commercial, d)
             except Exception as e:

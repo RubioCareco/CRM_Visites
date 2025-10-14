@@ -6,7 +6,7 @@ from front.utils import generer_rendezvous_simples, is_jour_ferie_france
 
 
 class Command(BaseCommand):
-    help = "Génère automatiquement 7 RDV par jour pour tout le mois pour chaque commercial"
+    help = "Génère automatiquement 6 RDV par jour pour tout le mois pour chaque commercial"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -76,7 +76,7 @@ class Command(BaseCommand):
                             ).delete()
                             self.stdout.write(f'  {current_date}: {rdv_existants} RDV supprimés')
 
-                        # Générer 7 RDV pour ce jour
+                        # Générer 6 RDV pour ce jour
                         rdv_jour = generer_rendezvous_simples(current_date)
                         if rdv_jour > 0:
                             self.stdout.write(

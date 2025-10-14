@@ -1,0 +1,728 @@
+/* Styles spécifiques à client_file.html */
+.client-card, .client-card * {
+  text-align: left !important;
+}
+table.client-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 12px;
+  background: transparent;
+}
+table.client-table th, table.client-table td {
+  padding: 8px 16px;
+  text-align: left;
+}
+table.client-table tr.client-card {
+  background: rgba(255,255,255,0.07);
+  transition: transform 0.18s, box-shadow 0.18s;
+  overflow: hidden;
+}
+table.client-table tr.client-card:hover {
+  /* transform: scale(1.015); */
+  background: rgba(255,255,255,0.13);
+  box-shadow: 0 4px 18px rgba(253, 253, 253, 0.13), 0 1.5px 8px rgba(255, 255, 255, 0.13);
+  z-index: 2;
+}
+table.client-table tr.client-card td {
+  background: none;
+  /* border-radius: 0; */
+  transition: none;
+}
+.pagination-container {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 0;
+  gap: 18px;
+}
+.pagination-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+}
+.pagination-form label {
+  font-weight: 500;
+  color: #fff;
+  margin-bottom: 0;
+  margin-right: 4px;
+  display: flex;
+  align-items: center;
+  height: 36px;
+}
+.pagination-form select {
+  background: rgba(255, 255, 255, 0.753);
+  color: #000000;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 0 14px;
+  font-size: 1rem;
+  outline: none;
+  transition: border 0.2s;
+  height: 36px;
+  min-width: 60px;
+  box-sizing: border-box;
+}
+.pagination-container {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 0;
+}
+/* Modale client harmonisée à l'identique avec dashboard */
+.client-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.6);
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+.client-modal-content {
+  background: rgba(255, 255, 255, 0.18);
+  color: white;
+  padding: 32px;
+  border-radius: 12px;
+  width: 700px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 0 20px rgba(0,0,0,0.3);
+  position: relative;
+  text-align: center;
+}
+.close-button {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  color: #e53935;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  box-sizing: border-box;
+  padding: 0;
+  z-index: 10;
+}
+.close-button:hover {
+  background-color: #e53935;
+  color: white;
+}
+#modalClientName {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 18px;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+#modalClientDetails {
+  font-size: 1.08rem;
+  line-height: 1.7;
+  color: #f3f3f3;
+  text-align: left;
+  margin-top: 8px;
+}
+/* Style du bouton retour identique à new_password */
+.back-login {
+  display: flex;
+  align-items: center;
+  font-size: 1.15rem;
+  color: #fff;
+  margin-top: 0;
+  text-decoration: none;
+  background: rgba(255,255,255,0.18);
+  transition: box-shadow 0.18s, transform 0.18s;
+  box-shadow: 0 2px 8px rgba(255,255,255,0.10);
+  border-radius: 12px;
+  padding: 8px 22px;
+  border: none;
+}
+.back-login:visited {
+  color: #fff;
+}
+.back-login:hover {
+  box-shadow: 0 8px 24px rgba(229,57,53,0.10), 0 2px 12px rgba(0,0,0,0.13);
+  transform: translateY(-4px) scale(1.04);
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+  text-decoration: underline;
+}
+
+/* Bouton filtre identique dashboard */
+.filter-button {
+  margin: 0;
+  vertical-align: middle;
+}
+.filter-button i {
+  font-size: 1.1em;
+  margin-right: 4px;
+}
+.filter-button:hover {
+  background: #e53935;
+  color: #fff;
+}
+
+/* Panneau de filtres identique dashboard */
+/*
+.filter-panel-client {
+  display: none !important;
+  position: fixed !important;
+  left: 50% !important;
+  top: 60px !important;
+  transform: translate(-50%, 0%) !important;
+  background: rgba(250, 250, 250, 0.19);
+  border-radius: 28px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  padding: 32px 32px 24px 32px;
+  z-index: 2000;
+  min-width: 340px;
+  max-width: 95vw;
+}
+*/
+@keyframes filterPanelPop {
+  0% { transform: translateY(-30px) scale(0.98); opacity: 0; }
+  100% { transform: none; opacity: 1; }
+}
+.filter-panel-title {
+  font-size: 1.18rem;
+  font-weight: 600;
+  margin-bottom: 18px;
+  color: #e53935;
+  text-align: left;
+}
+.filter-field {
+  margin-bottom: 14px;
+}
+.filter-field label {
+  display: block;
+  font-size: 0.98rem;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: #222;
+}
+.filter-field input {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  font-size: 1rem;
+  background: #fafafa;
+  color: #222;
+  outline: none;
+  transition: border 0.18s;
+}
+.filter-field input:focus {
+  border: 1.5px solid #e53935;
+}
+.reset-filter-btn {
+  background: none;
+  border: none;
+  color: #e53935;
+  font-size: 0.98rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 8px;
+  text-decoration: underline;
+  transition: color 0.18s;
+}
+.reset-filter-btn:hover {
+  color: #b71c1c;
+}
+.close-filter-panel {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: #e53935;
+  font-size: 1.5rem;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.18s, color 0.18s;
+}
+.close-filter-panel:hover {
+  opacity: 1;
+  color: #b71c1c;
+}
+.filter-panel-client input {
+  color: #fff;
+  display: block;
+  margin: 0 auto;
+  width: 90%;
+  background: rgba(255,255,255,0.13);
+  border-radius: 10px;
+  border: 1.5px solid #fff;
+  padding: 8px 12px;
+  font-size: 1.08rem;
+  transition: border 0.18s, background 0.18s;
+}
+.filter-panel-client input:focus {
+  border: 1.5px solid #e53935;
+  background: rgba(255,255,255,0.22);
+}
+.filter-panel-client input::placeholder {
+  color: #fff;
+  opacity: 0.7;
+}
+.client-table thead th {
+  position: sticky;
+  top: 0;
+  background: rgba(250, 250, 250, 0.13);
+  z-index: 2;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.table-container {
+  max-height: 500px;
+  overflow-y: auto;
+  scrollbar-width: thin !important; /* Firefox */
+  scrollbar-color: rgba(255,255,255,0.2) transparent !important;
+  padding-right: 8px; /* Décale le contenu pour laisser la place à la scrollbar */
+}
+
+/* Agrandir le tableau en mode mobile/tablette */
+@media (max-width: 1024px) {
+  .table-container {
+    max-height: 800px !important;
+    min-height: 600px !important;
+  }
+  
+  /* Ajuster l'espacement des lignes pour une meilleure lisibilité sur mobile */
+  table.client-table tr.client-card td {
+    padding: 12px 16px !important;
+  }
+  
+  /* Augmenter légèrement la taille de police sur mobile pour une meilleure lisibilité */
+  table.client-table {
+    font-size: 1.05rem;
+  }
+}
+
+/* Mode mobile spécifique */
+@media (max-width: 768px) {
+  .table-container {
+    max-height: 900px !important;
+    min-height: 700px !important;
+  }
+  
+  /* Ajuster les marges et paddings pour mobile */
+  .table-container {
+    margin-top: 20px !important;
+    padding: 0 12px 8px 8px !important;
+  }
+  
+  /* Optimiser l'affichage des colonnes sur mobile */
+  table.client-table th,
+  table.client-table td {
+    padding: 10px 12px !important;
+    font-size: 1rem !important;
+  }
+}
+.table-container::-webkit-scrollbar {
+  width: 8px !important;
+  background: transparent;
+  margin-left: 10px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  border-radius: 5px !important;
+}
+
+.filter-panel-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
+}
+
+.filter-panel-overlay.active {
+  display: flex;
+}
+
+#filterPanelClient {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 10000;
+  background: rgba(0,0,0,0.5);
+}
+#filterPanelClient.active {
+  display: flex;
+}
+
+#clientFilterForm {
+  margin: 0 !important;
+  padding: 25px 35px !important;
+  background: #222 !important;
+  border-radius: 20px !important;
+  width: 480px !important;
+  max-width: 90vw !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
+  color: #eee !important;
+  display: block !important;
+  position: static !important;
+}
+
+.filter-panel {
+  background: #222 !important;
+  border-radius: 20px;
+  width: 480px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  color: #eee;
+  padding: 25px 35px;
+  margin: 0;
+}
+.filter-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+.filter-panel-header h3 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+.filter-panel-header .close-btn {
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 2rem;
+  cursor: pointer;
+  line-height: 1;
+}
+.filter-group {
+  margin-bottom: 25px;
+}
+.filter-group label {
+  font-size: 1rem;
+  color: #ccc;
+  margin-bottom: 8px;
+  display: block;
+}
+.date-input {
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 1.05rem;
+}
+.filter-panel-footer {
+  display: flex;
+  gap: 18px;
+  margin-top: 18px;
+  justify-content: space-between;
+}
+.apply-btn {
+  background: #1ecb6b;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-size: 1.08rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.apply-btn:hover {
+  background: #159a4a;
+}
+.reset-link {
+  background: none !important;
+  border: none !important;
+  color: f54747 !important;
+  font-size: 1.08rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: normal !important;
+  box-shadow: none !important;
+}
+.reset-link:hover {
+  color: #da6d6b !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+
+.filters-bar .back-login {
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  display: flex;
+  align-items: center;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  box-sizing: border-box;
+}
+.filters-bar form,
+.filters-bar select {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+html, body {
+  height: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body.dashboard {
+  min-height: 100vh;
+  height: 100vh;
+  display: block;
+}
+
+/* Optimisations pour mobile/tablette */
+@media (max-width: 1024px) {
+  body.dashboard {
+    height: auto !important;
+    min-height: 100vh !important;
+  }
+  
+  /* Ajuster le conteneur principal pour mobile */
+  .dashboard-container {
+    padding: 20px 16px !important;
+    margin: 20px auto !important;
+  }
+  
+  /* Optimiser l'espacement des filtres sur mobile */
+  .filters-bar {
+    flex-direction: column !important;
+    gap: 16px !important;
+    align-items: stretch !important;
+  }
+  
+  .filters-bar .back-login {
+    align-self: center !important;
+    margin: 0 !important;
+  }
+  
+  /* Centrer la modal des filtres sur mobile/tablette */
+  .filter-panel-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(0,0,0,0.5) !important;
+    z-index: 1000 !important;
+  }
+  
+  .filter-panel-overlay.active {
+    display: flex !important;
+  }
+  
+  #filterPanelClient {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 10000 !important;
+    background: rgba(0,0,0,0.5) !important;
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  #filterPanelClient.active {
+    display: flex !important;
+  }
+  
+  #clientFilterForm {
+    margin: 0 auto !important;
+    padding: 25px 35px !important;
+    background: #222 !important;
+    border-radius: 20px !important;
+    width: 90% !important;
+    max-width: 480px !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
+    color: #eee !important;
+    display: block !important;
+    position: static !important;
+  }
+  
+  .filter-panel {
+    background: #222 !important;
+    border-radius: 20px !important;
+    width: 90% !important;
+    max-width: 480px !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
+    color: #eee !important;
+    padding: 25px 35px !important;
+    margin: 0 auto !important;
+  }
+} 
+
+/* Badges de filtres actifs à côté du bouton Filtres */
+.active-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 12px;
+}
+
+.filter-pill {
+  background: rgba(255, 255, 255, 0.20);
+  color: #fff;
+  border-radius: 16px;
+  padding: 8px 22px;
+  font-size: 0.97em;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 1px 3px rgba(255, 255, 255, 0.12);
+}
+
+.filter-pill a.remove-filter {
+  color: #e74c3c;
+  margin-left: 8px;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.filters-badges-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+} 
+
+/* Scrollbar moderne et translucide pour la modal client */
+.client-modal-content ::-webkit-scrollbar,
+#clientComments ::-webkit-scrollbar {
+  width: 10px;
+  background: transparent;
+}
+
+.client-modal-content ::-webkit-scrollbar-thumb,
+#clientComments ::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.18);
+  border-radius: 8px;
+  border: 2px solid rgba(255,255,255,0.08);
+}
+
+.client-modal-content ::-webkit-scrollbar-thumb:hover,
+#clientComments ::-webkit-scrollbar-thumb:hover {
+  background: rgba(229,57,53,0.25);
+}
+
+.client-modal-content,
+#clientComments {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.18) transparent;
+} 
+
+/* === CENTRAGE DE LA MODAL FILTRE SUR MOBILE/TABLETTE === */
+@media (max-width: 1366px) {
+  /* Centrer la modal des filtres sur mobile/tablette */
+  .filter-panel-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(0,0,0,0.5) !important;
+    z-index: 1000 !important;
+  }
+  
+  .filter-panel-overlay.active {
+    display: flex !important;
+  }
+  
+  #filterPanelClient {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 10000 !important;
+    background: rgba(0,0,0,0.5) !important;
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  #filterPanelClient.active {
+    display: flex !important;
+  }
+  
+  #clientFilterForm {
+    margin: 0 auto !important;
+    padding: 25px 35px !important;
+    background: #222 !important;
+    border-radius: 20px !important;
+    width: 90% !important;
+    max-width: 480px !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
+    color: #eee !important;
+    display: block !important;
+    position: static !important;
+  }
+  
+  .filter-panel {
+    background: #222 !important;
+    border-radius: 20px !important;
+    width: 90% !important;
+    max-width: 480px !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
+    color: #eee !important;
+    padding: 25px 35px !important;
+    margin: 0 auto !important;
+  }
+  
+  /* Assurer que la modal est bien centrée horizontalement et verticalement */
+  .filter-panel-overlay.active,
+  #filterPanelClient.active {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  /* Centrer le formulaire de filtre */
+  .filter-panel-overlay .filter-panel,
+  #filterPanelClient .filter-panel {
+    margin: 0 auto !important;
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+  }
+} 

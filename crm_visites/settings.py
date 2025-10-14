@@ -198,7 +198,13 @@ MAX_DAILY_DISTANCE_KM = env.int("MAX_DAILY_DISTANCE_KM", default=220)
 CLUSTER_RADIUS_KM = env.int("CLUSTER_RADIUS_KM", default=10)
 
 # Distance max autorisée entre les points (rdv)
-SAME_DAY_MAX_SPREAD_KM = env.int("SAME_DAY_MAX_SPREAD_KM", default=35)
+SAME_DAY_MAX_SPREAD_KM = env.int("SAME_DAY_MAX_SPREAD_KM", default=15)
+
+SAME_DAY_SPREAD_KM = env.float("SAME_DAY_SPREAD_KM", default=15.0)
+
+SAME_DAY_CLUSTER_SEED_LIMIT = env.int("SAME_DAY_CLUSTER_SEED_LIMIT", default=60)
 
 # Vitesse moyenne (km/h) pour le fallback Haversine (optimisation d'itinéraire)
 ROUTING_AVG_SPEED_KMH = env.int("ROUTING_AVG_SPEED_KMH", default=50)
+
+HORIZON_MAX_VISITS_PER_CLIENT = env.int("HORIZON_MAX_VISITS_PER_CLIENT", default=1)

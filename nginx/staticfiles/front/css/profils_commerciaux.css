@@ -1,0 +1,150 @@
+/* profils_commerciaux.css */
+body {
+    background: url('../img/background3.png') no-repeat center center fixed;
+    background-size: cover;
+    font-family: 'Segoe UI', sans-serif;
+    color: #fff;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+.main-container {
+    max-width: 1200px;
+    margin: auto;
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 30px;
+    position: relative;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 2rem;
+}
+
+footer {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+}
+
+.back-link {
+    color: #fff;
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.13);
+    padding: 10px 20px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s;
+}
+.back-link:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+.back-login {
+    display: block;
+    font-size: 1.15rem;
+    color: #fff;
+    text-decoration: none;
+    background: rgba(255,255,255,0.18);
+    transition: box-shadow 0.18s, transform 0.18s;
+    box-shadow: 0 2px 8px rgba(255,255,255,0.10);
+    border-radius: 12px;
+    padding: 8px 22px;
+}
+.back-login:visited {
+    color: #fff;
+}
+.back-login:hover {
+    box-shadow: 0 8px 24px rgba(229,57,53,0.10), 0 2px 12px rgba(0,0,0,0.13);
+    transform: translateY(-4px) scale(1.04);
+    background: rgba(255,255,255,0.18);
+    color: #fff;
+    text-decoration: underline;
+}
+
+.commerciaux-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 25px;
+}
+
+.commercial-card {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 15px;
+    padding: 25px;
+    text-align: center;
+    text-decoration: none;
+    color: #fff;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.commercial-card:hover {
+    transform: translateY(-5px);
+    background-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+.commercial-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #555;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.1rem;
+    font-weight: bold;
+    margin: 0 auto 15px;
+}
+
+.commercial-name {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.commercial-email {
+    font-size: 0.9rem;
+    color: #ccc;
+}
+
+.absent-commercial {
+  background: rgb(255 11 11 / 28%) !important;
+  border-left: 5px solid #e53935 !important;
+  position: relative;
+}
+.badge-absent {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  background: #e53935;
+  color: #fff !important;
+  border-radius: 8px;
+  padding: 2px 12px 2px 8px;
+  font-size: 0.98em;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(229,57,53,0.08);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 2;
+  margin-left: 10px;
+  margin-top: 10px;
+} 

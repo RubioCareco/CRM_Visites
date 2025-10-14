@@ -1,0 +1,2148 @@
+body, html {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+  height: 100%;
+  background: url('../img/background3.png') no-repeat center center fixed;
+  background-size: cover;
+  overflow-x: hidden !important;
+}
+
+/* Structure flexbox pour sticky footer */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Conteneur principal qui prend tout l'espace disponible */
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  position: relative;
+  flex: 1 0 auto; /* Prend tout l'espace disponible */
+  min-height: 0; /* Permet au contenu de se rétrécir si nécessaire */
+}
+
+/* Le footer reste en bas naturellement grâce au flexbox du body */
+
+/* === NOUVEAU : Styles pour la navigation entre les jours === */
+.visites-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.date-navigation {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px 16px;
+  border-radius: 25px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.nav-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(229, 57, 53, 0.8);
+  color: white;
+  border-radius: 50%;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.nav-arrow:hover {
+  background: rgba(229, 57, 53, 1);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(229, 57, 53, 0.4);
+}
+
+.current-date {
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  min-width: 120px;
+  text-align: center;
+}
+
+.pagination-info {
+  text-align: center;
+  margin-top: 15px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.rdv-count {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.dashboard-title {
+  position: absolute;
+  top: 5px;
+  left: 20px;
+  color: white;
+  font-size: 34px;
+  font-weight: bold;
+  margin-bottom: 30px;
+}
+
+.search-bar {
+  position: relative;
+  margin-top: 60px;
+  margin-bottom: 15px;
+  align-self: flex-start;
+  color: white;
+}
+
+.search-bar input {
+  position: relative;
+  z-index: 1;
+  padding-left: 36px;
+  width: 450px;
+  height: 38px;
+  border-radius: 20px;
+  color: #fff;
+  background: rgba(250, 250, 250, 0.18);
+  backdrop-filter: blur(6px);
+  border: 1.5px solid rgba(255,255,255,0.10);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.13);
+  font-size: 1.05rem;
+  font-weight: 400;
+  transition: background 0.18s, box-shadow 0.18s, border 0.18s, color 0.18s, transform 0.18s;
+}
+
+.search-bar input:hover, .search-bar input:focus {
+  box-shadow: 0 6px 24px rgba(229,57,53,0.18), 0 1.5px 8px rgba(0,0,0,0.10);
+  border: 1.5px solid #fff;
+  background: rgba(250,250,250,0.28);
+  color: #fff;
+  transform: scale(1.03);
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #fff;
+  pointer-events: none;
+  font-size: 16px;
+  opacity: 0.7;
+  z-index: 2;
+}
+
+.search-bar input::placeholder {
+  color: #fff;
+  opacity: 0.7;
+}
+
+.filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  align-self: flex-start;
+}
+
+.filter-button, .sort-button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  background-color: #e53935;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.18s, color 0.18s;
+}
+
+.filter-button i, .sort-button i {
+  margin-right: 10px;
+}
+
+.filter-button:hover, .sort-button:hover {
+  background-color: #cc2e2e;
+  color: #fff;
+}
+
+.cards {
+  display: flex;
+  gap: 32px;
+  align-items: stretch;
+}
+
+.card {
+  background-color: rgba(250, 250, 250, 0.219);
+  padding: 20px;
+  border-radius: 10px;
+  width: 600px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  color: white;
+  max-height: 600px;
+  overflow-y: auto;
+  overflow-x: visible !important;
+  padding-right: 8px;
+  scroll-behavior: smooth;
+  margin-top: 80px;
+}
+
+
+.card-list {
+  overflow-y: auto;
+  max-height: none;
+  padding: 20px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.18) transparent;
+  color: white;
+}
+.card-list::-webkit-scrollbar {
+  width: 7px;
+}
+.card-list::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.18);
+  border-radius: 8px;
+}
+.card-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(250, 250, 250, 0.18);
+  backdrop-filter: blur(6px);
+  border-radius: 20px;
+  padding: 10px 22px;
+  color: #fff;
+  min-width: 180px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.13);
+  border: 1.5px solid rgba(255,255,255,0.10);
+  font-weight: 400;
+  position: absolute;
+  top: 0;
+  right: 20px;
+  transform: translateY(42px);
+  transition: background 0.18s, box-shadow 0.18s, transform 0.18s, border 0.18s, color 0.18s;
+}
+
+.user-profile i {
+  font-size: 28px;
+  color: #bdbdbd;
+  background: rgba(255,255,255,0.10);
+  border-radius: 50%;
+  padding: 6px;
+}
+
+.user-name {
+  font-size: 1.05rem;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 1px;
+}
+
+.user-role {
+  font-size: 0.92rem;
+  color: #bdbdbd;
+  font-weight: 400;
+  margin-top: 0;
+}
+
+.user-profile:hover {
+  box-shadow: 0 6px 24px rgba(229,57,53,0.18), 0 1.5px 8px rgba(0,0,0,0.10);
+  border: 1.5px solid #fff;
+  background: rgba(250,250,250,0.28);
+  color: #fff;
+  transform: translateY(42px) scale(1.03);
+}
+
+.add-button {
+  position: relative;
+  bottom: auto;
+  right: auto;
+  background-color: #e53935;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.18s, color 0.18s;
+  margin: 0;
+  align-self: flex-end;
+}
+
+.add-button:hover {
+  background-color: #cc2e2e;
+  color: #fff;
+}
+
+.floating-actions {
+  position: relative;
+  bottom: auto;
+  right: auto;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  gap: 10px;
+  z-index: 999;
+  margin: 20px 0;
+  justify-content: flex-end;
+}
+
+.floating-menu {
+  display: none;
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
+  margin-right: 95px;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  border-radius: 12px;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+}
+
+.floating-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  color: white;
+  font-weight: 400;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.18s cubic-bezier(.4,1.3,.5,1), box-shadow 0.18s;
+}
+
+.floating-menu button:hover {
+  transform: scale(1.045);
+  box-shadow: 0 6px 24px rgba(229,57,53,0.10), 0 1.5px 8px rgba(0,0,0,0.13);
+  z-index: 2;
+}
+
+.user-container {
+  position: absolute;
+  top: 5px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.user-menu {
+  display: none;
+  position: relative;
+  top: 110px;
+  right: 25px;
+  background-color: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(6px);
+  padding: 10px 16px;
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  z-index: 999;
+  margin-right: 5px;
+  left: 1px;
+  margin-top: 8px;
+}
+
+.user-menu ul {
+  list-style: disc;
+  padding-left: 20px;
+  margin: 0;
+}
+
+.user-menu li {
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.user-menu li:last-child {
+  margin-bottom: 0;
+}
+
+.user-menu::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  right: 16px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 6px solid rgba(255, 255, 255, 0.9);
+}
+
+.user-menu ul li a,
+.floating-menu a {
+  color: white;
+  text-decoration: none;
+  display: block;
+  padding: 5px 0;
+}
+
+.user-menu ul li a:hover,
+.floating-menu a:hover {
+  text-decoration: underline;
+}
+
+.visit-entry, .upcoming-entry, .reminder-entry {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 15px;
+  padding: 10px 15px;
+  margin-bottom: 12px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(.4,1.3,.5,1), box-shadow 0.18s;
+  width: 92%;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.visit-entry:hover, .upcoming-entry:hover, .reminder-entry:hover {
+  transform: scale(1.035);
+  box-shadow: 0 6px 24px rgba(229,57,53,0.10), 0 1.5px 8px rgba(0,0,0,0.13);
+  z-index: 2;
+}
+
+.status {
+  color: #67cc6b;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.visit-date, .visit-date-futur, .visit-date-passed {
+  font-size: 14px;
+  color: #ddd;
+  text-align: left;
+}
+
+.status-à-venir {
+  color: #f3d344;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-à-rappeler {
+  color: #f55066;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card-title.success::after,
+.card-title-coming::after,
+.card-title-reminder::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  border-radius: 2px;
+}
+
+.card-title.success::after {
+  background-color: #4caf50;
+}
+
+.card-title-coming::after {
+  background-color: #f3d344;
+}
+
+.card-title-reminder::after {
+  background-color: #f55066;
+}
+
+.client-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.client-modal-content {
+  background: rgba(255, 255, 255, 0.18);
+  color: white;
+  padding: 32px;
+  border-radius: 12px;
+  width: 520px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 0 20px rgba(0,0,0,0.3);
+  position: relative;
+  text-align: center;
+}
+
+.close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  color: #e53935;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  box-sizing: border-box;
+  padding: 0;
+  z-index: 10;
+  line-height: 1;
+
+}
+.close-btn:hover {
+  background-color: #e53935;
+  color: #fff;
+}
+
+/* Supprimer le soulignement des liens */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.card-title-waiting::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  background-color: #f3f3f3;
+  border-radius: 2px;
+}
+
+.status-à-valider {
+  color: #ffc107;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+button {
+  background-color: #e53935;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.modal-buttons, #modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.action-button {
+  background-color: #e53935;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.action-button:hover {
+  background-color: #cc2e2e;
+}
+
+#clientDetails {
+  text-align: left;
+}
+
+.comment-card {
+  background: rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  color: #fff;
+  font-size: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  text-align: left;
+}
+.comment-meta {
+  font-size: 12px;
+  color: #e53935;
+  margin-bottom: 2px;
+  display: flex;
+  gap: 8px;
+}
+.comment-author {
+  color: #e3e3e3;
+  font-style: italic;
+}
+.comment-text {
+  color: #fff;
+}
+
+.filter-panel {
+  font-family: inherit;
+  color: #fff;
+  background-color: #222 !important;
+  backdrop-filter: blur(6px);
+  border-radius: 28px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  min-width: 340px;
+  max-width: 95vw;
+  padding: 32px 32px 24px 32px;
+  z-index: 2000;
+}
+
+.sort-dropdown {
+  font-size: 17px;
+  color: #fff;
+  background-color: rgba(250, 250, 250, 0.4) !important;
+  backdrop-filter: blur(6px);
+  border-radius: 22px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  min-width: 260px;
+  padding-bottom: 18px;
+  z-index: 1000;
+  border: 1px solid #444;
+  margin-top: 2px;
+}
+.sort-dropdown {
+  font-size: 17px;
+  color: #fff;
+  background: rgba(40, 40, 40, 0.98);
+  border-radius: 22px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  min-width: 260px;
+  padding-bottom: 18px;
+  z-index: 1000;
+  border: 1px solid #444;
+  margin-top: 2px;
+}
+.sort-dropdown-title {
+  font-size: 20px;
+  font-weight: bold;
+  padding: 18px 28px 10px 28px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+}
+.sort-option {
+  display: flex;
+  align-items: center;
+  padding: 14px 28px;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  border-radius: 16px;
+  margin: 0 10px 8px 10px;
+  font-size: 17px;
+  gap: 8px;
+}
+.sort-option.active {
+  background: rgba(229,57,53,0.13);
+  color: #e53935;
+}
+.sort-option.active .sort-check {
+  display: inline;
+}
+.sort-option:hover {
+  background: #e53935;
+  color: #fff;
+}
+.sort-check {
+  display: none;
+  color: #e53935;
+  font-size: 18px;
+}
+.statut-submenu {
+  font-size: 16px;
+  color: #fff;
+  background: rgba(40, 40, 40, 0.98);
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  min-width: 180px;
+  padding: 10px 0;
+  z-index: 1100;
+  border: 1px solid #444;
+  margin-left: 8px;
+}
+.statut-option {
+  padding: 12px 22px;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  border-radius: 12px;
+  margin: 0 8px 6px 8px;
+}
+.statut-option.selected, .statut-option:hover {
+  background: #e53935;
+  color: #fff;
+}
+.filter-panel {
+  font-family: inherit;
+  color: #fff;
+  background: rgba(40,40,40,0.98);
+  border-radius: 28px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  min-width: 340px;
+  max-width: 95vw;
+  padding: 32px 32px 24px 32px;
+  z-index: 2000;
+}
+.filter-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 18px;
+  font-size: 1rem;
+  color: #ccc;
+  margin-bottom: 6px;
+}
+.filter-checkbox input[type="checkbox"] {
+  accent-color: #e53935;
+  width: 18px;
+  height: 18px;
+}
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 38px;
+  height: 22px;
+}
+.switch input {display:none;}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #444;
+  border-radius: 22px;
+  transition: .4s;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: .4s;
+}
+input:checked + .slider {
+  background-color: #e53935;
+}
+input:checked + .slider:before {
+  transform: translateX(16px);
+}
+#clientFilter, #clientFilter option {
+  color: #222 !important;
+  background: #fff !important;
+  font-size: 1rem;
+}
+#clientFilter {
+  color: #222 !important;
+  background: #fff !important;
+  border: 1px solid #444;
+  border-radius: 10px;
+}
+
+.titre-colonne {
+  position: relative;
+  text-align: center;
+  margin-bottom: 24px;
+  padding-bottom: 8px;
+  font-size: 2rem;
+  font-weight: bold;
+}
+.titre-vert::after {
+  content: "";
+  display: block;
+  margin: 0 auto;
+  width: 60%;
+  height: 4px;
+  background: #4caf50;
+  border-radius: 2px;
+  margin-top: 6px;
+}
+.titre-orange::after {
+  content: "";
+  display: block;
+  margin: 0 auto;
+  width: 60%;
+  height: 4px;
+  background: linear-gradient(90deg, #ffb300, #ff9800);
+  border-radius: 2px;
+  margin-top: 6px;
+}
+.titre-rouge::after {
+  content: "";
+  display: block;
+  margin: 0 auto;
+  width: 60%;
+  height: 4px;
+  background: #e53935;
+  border-radius: 2px;
+  margin-top: 6px;
+}
+
+/* --- PATCH TOOLTIP GLOBAL --- */
+html, body {
+  overflow-x: hidden !important;
+}
+.cards {
+  overflow: visible !important;
+}
+/* .card {
+  overflow: visible !important;
+} */
+
+#tooltip-global-note {
+  max-width: 320px;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  pointer-events: none;
+  box-sizing: border-box;
+  z-index: 99999 !important;
+}
+/* --- FIN PATCH TOOLTIP GLOBAL --- */
+
+/* --- COULEURS STATUTS DASHBOARD --- */
+/* Statuts dans "Visites récentes" (surlignage vert) */
+.recent-visits .status.validée, 
+.recent-visits .status.validée i,
+.card.recent-visits .status.validée,
+.card.recent-visits .status.validée i {
+  color: #4caf50 !important;
+}
+
+/* Statuts dans "Visites à venir" (surlignage orange) */
+.upcoming-visits .status.à-venir, 
+.upcoming-visits .status.à-venir i,
+.card.upcoming-visits .status.à-venir,
+.card.upcoming-visits .status.à-venir i {
+  color: #ff9800 !important;
+}
+
+/* Statuts dans "À Rappeler" (surlignage rouge) */
+.reminders .status.à-rappeler, 
+.reminders .status.à-rappeler i,
+.card.reminders .status.à-rappeler,
+.card.reminders .status.à-rappeler i {
+  color: #e53935 !important;
+}
+
+/* Surcharge globale pour tous les statuts */
+.status.validée, .status.validée i {
+  color: #4caf50 !important;
+}
+.status.à-venir, .status.à-venir i {
+  color: #ff9800 !important;
+}
+.status.à-rappeler, .status.à-rappeler i {
+  color: #e53935 !important;
+}
+/* --- FIN COULEURS STATUTS DASHBOARD --- */
+
+/*
+#completerFormulaireBtn {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+*/
+#filterPanel i.fa-calendar-days,
+#filterPanel i.fa-calendar {
+  color: #fff !important;
+}
+
+#filterPanel .date-input-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  height: 38px; /* Ajuste si besoin selon la hauteur de ton input */
+}
+
+#filterPanel .date-input-wrapper input[type="date"] {
+  width: 100%;
+  padding-right: 32px; /* espace pour l’icône */
+  color: #fff;
+  background: rgba(255,255,255,0.04);
+  border-radius: 10px;
+  border: 1px solid #444;
+  height: 38px; /* même hauteur que le wrapper */
+  box-sizing: border-box;
+  font-size: 1rem;
+}
+
+#filterPanel .date-input-wrapper .fa-calendar-days {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #fff;
+  pointer-events: none;
+  font-size: 1.15em;
+  opacity: 0.85;
+  height: 20px;
+  line-height: 1;
+}
+.close-button {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  color: #e53935;
+  font-size: 16px;
+  display: flex
+;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  padding: 0;
+}
+
+.filter-button {
+  transition: transform 0.18s cubic-bezier(.4,0,.2,1);
+}
+
+.filter-button:hover {
+  transform: scale(1.08);
+  z-index: 2;
+}
+
+#recent-visits {
+  display: flex;
+  flex-direction: column;
+}
+#recent-visits .card-header {
+  flex: 0 0 auto;
+}
+#recent-visits-list.card-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  max-height: 600px; /* Valeur par défaut, sera ajustée dynamiquement */
+  padding: 20px;
+}
+
+#recent-visits-list.card-list::-webkit-scrollbar {
+  width: 7px;
+}
+#recent-visits-list.card-list::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.18);
+  border-radius: 8px;
+}
+#recent-visits-list.card-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#recent-visits-list.card-list {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.18) transparent;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.card-header {
+  flex: 0 0 auto;
+}
+.card-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  max-height: 600px;
+  padding: 20px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.18) transparent;
+}
+.card-list::-webkit-scrollbar {
+  width: 7px;
+}
+.card-list::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.18);
+  border-radius: 8px;
+}
+.card-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.filter-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #444;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 16px;
+  margin-left: 10px;
+  font-size: 1rem;
+  font-weight: 500;
+  gap: 6px;
+  transition: background 0.18s;
+}
+.filter-badge .remove-filter, .filter-badge .remove-filter:visited {
+  color: #ff5a5a;
+  margin-left: 8px;
+  font-weight: bold;
+  text-decoration: none;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: color 0.18s;
+}
+.filter-badge .remove-filter:hover {
+  color: #fff;
+  background: #e53935;
+  border-radius: 50%;
+  padding: 0 4px;
+}
+
+@keyframes pulse-alert {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.7);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 10px 5px rgba(229, 57, 53, 0.3);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.7);
+  }
+}
+
+.late-warning {
+  animation: pulse-alert 1.2s infinite;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(229,57,53,0.13);
+  color: #e53935;
+  font-weight: bold;
+  border-radius: 8px;
+  padding: 6px 14px;
+  margin-bottom: 8px;
+  font-size: 1.05em;
+}
+.late-warning i {
+  font-size: 1.2em;
+}
+
+.pdf-corner {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  z-index: 2;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pdf-corner:hover {
+  transform: scale(1.04) rotate(-2deg);
+}
+
+.commercial-card {
+  position: relative;
+  padding-bottom: 56px; /* Espace pour l'icône PDF en bas à droite */
+}
+
+.cookie-banner-center {
+    text-align: center;
+}
+
+.cookie-banner-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.cookie-banner-content ul {
+    display: block;
+    text-align: left;
+    margin: 10px auto 10px auto;
+    max-width: 700px;
+    padding-left: 30px;
+}
+
+.cookie-banner-text {
+    margin: 6px 0 0 0;
+    font-size: 1.05em;
+}
+
+.cookie-banner-center ul {
+    display: inline-block;
+    text-align: left;
+}
+
+/* Badge et couleur pour RDV gelé */
+.gele-rdv {
+  background: rgba(0, 128, 255, 0.5)!important;
+  border-left: 5px solid #2196f3 !important;
+  opacity: 1 !important;
+  color: #1a237e !important;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+.gele-rdv p,
+.gele-rdv strong,
+.gele-rdv .status-à-venir,
+.gele-rdv .visit-date-futur {
+  color: #1a237e !important;
+}
+.badge-gele {
+  background: #2196f3;
+  color: white;
+  border-radius: 8px;
+  padding: 2px 10px;
+  font-size: 0.95em;
+  font-weight: 600;
+  margin-right: 10px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(33,150,243,0.08);
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.dashboard-header-flex {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+@media (max-width: 900px) {
+  .dashboard-header-flex {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+}
+
+/* === MODAL DES FILTRES RESPONSIVE === */
+.filter-panel {
+  font-family: inherit;
+  color: #fff;
+  background: rgba(40,40,40,0.98);
+  border-radius: 28px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  min-width: 340px;
+  max-width: 95vw;
+  padding: 32px 32px 24px 32px;
+  z-index: 2000;
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+}
+
+/* Classes pour la structure de la modal */
+.filter-title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 18px;
+  color: #fff;
+}
+
+.filter-section {
+  margin-bottom: 18px;
+}
+
+.filter-section-title {
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #fff;
+}
+
+.date-range-container {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.date-separator {
+  color: #aaa;
+  font-weight: bold;
+}
+
+.filter-toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toggle-label {
+  color: #fff;
+  font-size: 1rem;
+}
+
+.reset-filters-link {
+  margin-left: auto;
+  color: #4dd0e1;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.reset-filters-link:hover {
+  color: #26c6da;
+  text-decoration: underline;
+}
+
+/* Styles pour les inputs de date */
+.filter-date {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #444;
+  background: rgba(255,255,255,0.04);
+  color: #fff;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.filter-date:focus {
+  outline: none;
+  border-color: #e53935;
+  background: rgba(255,255,255,0.08);
+}
+
+.date-input-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+.date-input-wrapper i {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #aaa;
+  pointer-events: none;
+}
+
+/* Responsive pour tablette */
+@media (max-width: 1366px) {
+  .filter-panel {
+    min-width: 300px;
+    max-width: 90vw;
+    padding: 28px 24px 20px 24px;
+    top: 50px;
+    border-radius: 24px;
+  }
+  
+  .filter-title {
+    font-size: 1.8rem !important;
+    margin-bottom: 16px !important;
+  }
+  
+  .filter-section {
+    margin-bottom: 16px !important;
+  }
+  
+  .filter-section-title {
+    font-size: 1rem !important;
+    margin-bottom: 6px !important;
+  }
+  
+  .filter-checkbox {
+    font-size: 0.95rem !important;
+    margin-right: 16px !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .filter-checkbox input[type="checkbox"] {
+    width: 16px !important;
+    height: 16px !important;
+  }
+  
+  .date-input-wrapper {
+    flex: 1 !important;
+  }
+  
+  .filter-date {
+    padding: 6px 10px !important;
+    font-size: 0.9rem !important;
+  }
+  
+  .switch {
+    width: 34px !important;
+    height: 20px !important;
+  }
+  
+  .slider:before {
+    height: 14px !important;
+    width: 14px !important;
+    left: 3px !important;
+    bottom: 3px !important;
+  }
+  
+  input:checked + .slider:before {
+    transform: translateX(14px) !important;
+  }
+}
+
+/* Responsive pour smartphone */
+@media (max-width: 480px) {
+  .filter-panel {
+    min-width: 280px;
+    max-width: 95vw;
+    padding: 24px 20px 16px 20px;
+    top: 40px;
+    border-radius: 20px;
+    left: 20px;
+    right: 20px;
+    transform: none;
+    width: calc(100vw - 40px);
+  }
+  
+  .filter-title {
+    font-size: 1.6rem !important;
+    margin-bottom: 14px !important;
+    text-align: center;
+  }
+  
+  .filter-section {
+    margin-bottom: 14px !important;
+  }
+  
+  .filter-section-title {
+    font-size: 0.95rem !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .filter-checkbox {
+    display: block !important;
+    font-size: 0.9rem !important;
+    margin-right: 0 !important;
+    margin-bottom: 10px !important;
+  }
+  
+  .filter-checkbox input[type="checkbox"] {
+    width: 18px !important;
+    height: 18px !important;
+  }
+  
+  .date-input-wrapper {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+  
+  .filter-date {
+    padding: 8px 12px !important;
+    font-size: 0.85rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  
+  .switch {
+    width: 36px !important;
+    height: 22px !important;
+  }
+  
+  .slider:before {
+    height: 16px !important;
+    width: 16px !important;
+    left: 3px !important;
+    bottom: 3px !important;
+  }
+  
+  input:checked + .slider:before {
+    transform: translateX(14px) !important;
+  }
+  
+  /* Ajuster l'espacement des éléments sur mobile */
+  .filter-toggle-container {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+  
+  .toggle-label {
+    margin-bottom: 4px !important;
+  }
+  
+  .reset-filters-link {
+    margin-left: 0 !important;
+    margin-top: 8px !important;
+    display: block !important;
+  }
+}
+
+/* Ajustements pour les inputs de date sur mobile */
+@media (max-width: 480px) {
+  .date-range-container {
+    flex-direction: column !important;
+    gap: 8px !important;
+    align-items: stretch !important;
+  }
+  
+  .date-separator {
+    display: none !important;
+  }
+  
+  .date-input-wrapper {
+    width: 100% !important;
+  }
+}
+
+/* Bouton de fermeture responsive */
+#closeFilterPanel {
+  position: absolute !important;
+  top: 16px !important;
+  right: 16px !important;
+  background: none !important;
+  border: none !important;
+  color: #e53935 !important;
+  font-size: 1.5rem !important;
+  cursor: pointer !important;
+  padding: 8px !important;
+  border-radius: 50% !important;
+  transition: all 0.2s ease !important;
+}
+
+#closeFilterPanel:hover {
+  background: rgba(229, 57, 53, 0.1) !important;
+  color: #e53935 !important;
+}
+
+@media (max-width: 1366px) {
+  #closeFilterPanel {
+    top: 14px !important;
+    right: 14px !important;
+    font-size: 1.3rem !important;
+    padding: 6px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  #closeFilterPanel {
+    top: 12px !important;
+    right: 12px !important;
+    font-size: 1.2rem !important;
+    padding: 8px !important;
+  }
+}
+
+/* === INTERFACE PC - 3 COLONNES CÔTE À CÔTE === */
+.cards.pc-only {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: stretch !important;
+  gap: 24px !important;
+  width: 100% !important;
+  max-width: 1400px !important;
+  margin: 0 auto !important;
+  margin-top: 20px !important;
+  margin-bottom: 40px !important;
+  flex: 1 0 auto !important;
+}
+
+/* Carte individuelle sur PC */
+.cards.pc-only .card {
+  flex: 1 !important;
+  min-width: 0 !important;
+  max-width: calc(33.333% - 16px) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+  border-radius: 16px !important;
+  padding: 24px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: fit-content !important;
+  min-height: 400px !important;
+}
+
+/* En-tête de carte sur PC */
+.cards.pc-only .card-header {
+  margin-bottom: 20px !important;
+}
+
+.cards.pc-only .visites-header {
+  margin-bottom: 20px !important;
+}
+
+/* Titre de colonne sur PC */
+.cards.pc-only .titre-colonne {
+  font-size: 1.8rem !important;
+  margin-bottom: 16px !important;
+  text-align: center !important;
+}
+
+/* Navigation des dates sur PC */
+.cards.pc-only .date-navigation {
+  margin-top: 12px !important;
+  justify-content: center !important;
+}
+
+/* Liste des éléments dans les cartes PC */
+.cards.pc-only .card-list {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  max-height: 300px !important;
+}
+
+/* Entrées de visite sur PC */
+.cards.pc-only .visit-entry,
+.cards.pc-only .upcoming-entry,
+.cards.pc-only .reminder-entry {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  margin-bottom: 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  transition: all 0.2s ease !important;
+}
+
+.cards.pc-only .visit-entry:hover,
+.cards.pc-only .upcoming-entry:hover,
+.cards.pc-only .reminder-entry:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Informations dans les entrées PC */
+.cards.pc-only .visit-entry p,
+.cards.pc-only .upcoming-entry p,
+.cards.pc-only .reminder-entry p {
+  margin: 6px 0 !important;
+  font-size: 0.95rem !important;
+  line-height: 1.4 !important;
+}
+
+.cards.pc-only .visit-entry strong,
+.cards.pc-only .upcoming-entry strong,
+.cards.pc-only .reminder-entry strong {
+  font-size: 1rem !important;
+  color: #fff !important;
+}
+
+/* Statuts sur PC */
+.cards.pc-only .status {
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+}
+
+/* Surcharge spécifique pour PC - Visites récentes (vert) */
+.cards.pc-only .recent-visits .status.validée,
+.cards.pc-only .recent-visits .status.validée i {
+  color: #4caf50 !important;
+}
+
+/* Surcharge spécifique pour PC - Visites à venir (orange) */
+.cards.pc-only .upcoming-visits .status.à-venir,
+.cards.pc-only .upcoming-visits .status.à-venir i {
+  color: #ff9800 !important;
+}
+
+/* Surcharge spécifique pour PC - À Rappeler (rouge) */
+.cards.pc-only .reminders .status.à-rappeler,
+.cards.pc-only .reminders .status.à-rappeler i {
+  color: #e53935 !important;
+}
+
+/* Fallback pour PC si les sélecteurs spécifiques ne marchent pas */
+.cards.pc-only .status.validée {
+  color: #4caf50 !important;
+}
+
+.cards.pc-only .status.à-venir {
+  color: #ff9800 !important;
+}
+
+.cards.pc-only .status.à-rappeler {
+  color: #e53935 !important;
+}
+
+/* Pagination sur PC */
+.cards.pc-only .pagination-info {
+  margin-top: 16px !important;
+  text-align: center !important;
+  padding: 12px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-radius: 8px !important;
+}
+
+/* Responsive pour grands écrans PC */
+@media (min-width: 1400px) {
+  .cards.pc-only {
+    max-width: 1600px !important;
+    gap: 32px !important;
+  }
+  
+  .cards.pc-only .card {
+    padding: 28px !important;
+    min-height: 450px !important;
+  }
+  
+  .cards.pc-only .titre-colonne {
+    font-size: 2rem !important;
+  }
+}
+
+/* Responsive pour écrans moyens PC */
+@media (min-width: 1200px) and (max-width: 1399px) {
+  .cards.pc-only {
+    max-width: 1200px !important;
+    gap: 20px !important;
+  }
+  
+  .cards.pc-only .card {
+    padding: 20px !important;
+    min-height: 380px !important;
+  }
+}
+
+/* Masquage du carrousel sur PC */
+@media (min-width: 1367px) {
+  .dashboard-carousel.mobile-only {
+    display: none !important;
+  }
+  
+  .cards.pc-only {
+    display: flex !important;
+  }
+}
+
+/* Masquage des cartes PC sur mobile/tablette */
+@media (max-width: 1366px) {
+  .cards.pc-only {
+    display: none !important;
+  }
+  
+  .dashboard-carousel.mobile-only {
+    display: block !important;
+  }
+}
+
+/* === OPTIMISATION FOOTER SANS SCROLL SUR PC === */
+@media (min-width: 1367px) {
+  /* Ajuster l'espacement pour éviter le scroll */
+  .dashboard {
+    padding-bottom: 20px !important;
+    margin-bottom: 0 !important;
+  }
+  
+  /* Optimiser la hauteur des cartes pour s'adapter à l'écran */
+  .cards.pc-only {
+    margin-bottom: 20px !important;
+    flex: 1 0 auto !important;
+    min-height: 0 !important;
+  }
+  
+  .cards.pc-only .card {
+    min-height: 350px !important;
+    max-height: 500px !important;
+    overflow: hidden !important;
+  }
+  
+  /* Ajuster la hauteur de la liste pour éviter le débordement */
+  .cards.pc-only .card-list {
+    max-height: 250px !important;
+    overflow-y: auto !important;
+  }
+  
+  /* Réduire l'espacement des éléments pour optimiser l'espace */
+  .cards.pc-only .visit-entry,
+  .cards.pc-only .upcoming-entry,
+  .cards.pc-only .reminder-entry {
+    padding: 12px !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .cards.pc-only .visit-entry p,
+  .cards.pc-only .upcoming-entry p,
+  .cards.pc-only .reminder-entry p {
+    margin: 4px 0 !important;
+    font-size: 0.9rem !important;
+  }
+  
+  /* Optimiser l'espacement des titres */
+  .cards.pc-only .titre-colonne {
+    margin-bottom: 12px !important;
+    font-size: 1.6rem !important;
+  }
+  
+  .cards.pc-only .card-header,
+  .cards.pc-only .visites-header {
+    margin-bottom: 16px !important;
+  }
+  
+  /* Ajuster la navigation des dates */
+  .cards.pc-only .date-navigation {
+    margin-top: 8px !important;
+  }
+  
+  /* Optimiser la pagination */
+  .cards.pc-only .pagination-info {
+    margin-top: 12px !important;
+    padding: 8px !important;
+  }
+  
+  /* === CENTRAGE TITRE ET POSITIONNEMENT DATE SUR PC === */
+  /* Centrer le titre "Visites à venir" */
+  .cards.pc-only .upcoming-visits .titre-colonne {
+    text-align: center !important;
+    margin-bottom: 8px !important;
+  }
+  
+  /* Positionner la date juste en dessous du titre */
+  .cards.pc-only .upcoming-visits .date-navigation {
+    justify-content: center !important;
+    margin-top: 0 !important;
+    margin-bottom: 16px !important;
+    order: 1 !important; /* Placer la date après le titre */
+  }
+  
+  /* Ajuster l'espacement de l'en-tête des visites à venir */
+  .cards.pc-only .upcoming-visits .visites-header {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    margin-bottom: 20px !important;
+  }
+  
+  /* Style de la date centrée */
+  .cards.pc-only .upcoming-visits .current-date {
+    font-size: 1rem !important;
+    color: #fff !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    padding: 6px 12px !important;
+    border-radius: 20px !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  }
+  
+  /* Ajuster les flèches de navigation */
+  .cards.pc-only .upcoming-visits .nav-arrow {
+    margin: 0 8px !important;
+  }
+}
+
+/* Ajustement pour très grands écrans */
+@media (min-width: 1600px) {
+  .cards.pc-only .card {
+    min-height: 400px !important;
+    max-height: 600px !important;
+  }
+  
+  .cards.pc-only .card-list {
+    max-height: 300px !important;
+  }
+}
+
+/* === POSITIONNEMENT BARRE DE RECHERCHE SUR PC === */
+@media (min-width: 1367px) {
+  /* Ajuster l'espacement du titre pour éviter le chevauchement */
+  .dashboard-title {
+    margin-bottom: 25px !important;
+    z-index: 10 !important;
+    margin-left: 30px;
+  }
+  
+  /* Conteneur de recherche sur PC */
+  .search-container {
+    align-self: flex-start !important;
+    margin-left: 20px !important;
+    margin-right: auto !important;
+    margin-bottom: 20px !important;
+    width: auto !important;
+    max-width: 400px !important;
+    margin-top: 0 !important;
+    position: relative !important;
+    z-index: 5 !important;
+  }
+  
+  /* Barre de recherche sur PC */
+  .search-container .search-bar {
+    width: 100% !important;
+    max-width: 400px !important;
+    margin: 0 !important;
+    text-align: left !important;
+    position: relative !important;
+  }
+  
+  /* Boutons de filtres sur PC */
+  .filters {
+    justify-content: flex-start !important;
+    margin-left: 20px !important;
+    margin-right: auto !important;
+    width: auto !important;
+    max-width: 400px !important;
+    gap: 12px !important;
+    margin-top: 0 !important;
+  }
+  
+  /* Espacement entre la barre de recherche et les cartes */
+  .search-container + .filters {
+    margin-bottom: 20px !important;
+  }
+  
+  /* Ajuster la position du dashboard pour éviter les conflits */
+  .dashboard {
+    padding-top: 80px !important; /* Augmenter l'espace en haut pour le titre */
+  }
+}
+
+/* === MENU BOUTON + SUR PC === */
+@media (min-width: 1367px) {
+  /* Positionnement du menu sur la droite du bouton + */
+  .add-button-container .add-menu {
+    position: absolute !important;
+    top: 0 !important;
+    left: 100% !important;
+    right: auto !important;
+    margin-left: 8px !important;
+    margin-top: 0 !important;
+    min-width: 220px !important;
+    background: rgba(255, 255, 255, 0.18) !important;
+    border-radius: 12px !important;
+    padding: 8px !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    backdrop-filter: blur(10px) !important;
+    z-index: 1000 !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+    /* Réinitialiser les styles mobile/tablette */
+    transform: none !important;
+    margin-right: 0 !important;
+  }
+  
+  /* Flèche pointant vers le bouton sur PC */
+  .add-button-container .add-menu::before {
+    content: '' !important;
+    position: absolute !important;
+    left: -6px !important;
+    top: 20px !important;
+    width: 0 !important;
+    height: 0 !important;
+    border-top: 6px solid transparent !important;
+    border-bottom: 6px solid transparent !important;
+    border-right: 6px solid rgba(255, 255, 255, 0.18) !important;
+    /* Réinitialiser les styles mobile/tablette */
+    right: auto !important;
+    border-left: none !important;
+    border-bottom: none !important;
+    border-top: 6px solid transparent !important;
+  }
+  
+  /* Style des liens du menu sur PC */
+  .add-button-container .add-menu a {
+    display: block !important;
+    padding: 12px 16px !important;
+    color: white !important;
+    text-decoration: none !important;
+    border-radius: 8px !important;
+    transition: all 0.2s ease !important;
+    font-size: 0.95rem !important;
+    font-weight: 500 !important;
+  }
+  
+  .add-button-container .add-menu a:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    transform: translateX(4px) !important;
+  }
+  
+  /* Icônes dans le menu sur PC */
+  .add-button-container .add-menu i {
+    margin-right: 10px !important;
+    width: 16px !important;
+    text-align: center !important;
+  }
+  
+  /* Désactiver les classes mobile/tablette sur PC */
+  .add-button-container .add-menu.menu-right,
+  .add-button-container .add-menu.menu-above {
+    position: absolute !important;
+    top: 0 !important;
+    left: 100% !important;
+    right: auto !important;
+    margin-left: 8px !important;
+    margin-top: 0 !important;
+    margin-right: 0 !important;
+    margin-bottom: 0 !important;
+    transform: none !important;
+  }
+  
+  .add-button-container .add-menu.menu-right::before,
+  .add-button-container .add-menu.menu-above::before {
+    content: '' !important;
+    position: absolute !important;
+    left: -6px !important;
+    top: 20px !important;
+    width: 0 !important;
+    height: 0 !important;
+    border-top: 6px solid transparent !important;
+    border-bottom: 6px solid transparent !important;
+    border-right: 6px solid rgba(255, 255, 255, 0.18) !important;
+    right: auto !important;
+    border-left: none !important;
+    border-bottom: none !important;
+    border-top: 6px solid transparent !important;
+  }
+}
+
+/* === REPOSITIONNEMENT BOUTON + SUR MOBILE/TABLETTE === */
+@media (max-width: 1366px) {
+  /* Conteneur des filtres en mode mobile/tablette */
+  .filters {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 auto !important;
+    margin-top: 15px !important;
+  }
+  
+  /* Bouton filtre à gauche */
+  .filter-button {
+    order: 1 !important;
+    margin: 0 !important;
+    align-self: flex-start !important;
+  }
+  
+  /* Filtres actifs au centre (optionnel) */
+  #activeFiltersDashboard {
+    order: 2 !important;
+    margin: 0 auto !important;
+    flex: 1 !important;
+    text-align: center !important;
+  }
+  
+  /* Bouton + repositionné à droite, aligné verticalement avec le bouton filtre */
+  .add-button-container {
+    order: 3 !important;
+    align-self: flex-end !important;
+    margin: 0 !important;
+    position: relative !important;
+  }
+  
+  /* Style du bouton + sur mobile/tablette */
+  .add-button-container .add-button {
+    width: 50px !important;
+    height: 50px !important;
+    border-radius: 50% !important;
+    background: #e53935 !important;
+    color: white !important;
+    border: none !important;
+    font-size: 20px !important;
+    cursor: pointer !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  }
+  
+  .add-button-container .add-button:hover {
+    background: #cc2e2e !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  }
+  
+  /* MENU ADAPTATIF - S'OUVRE À GAUCHE DU BOUTON SUR MOBILE/TABLETTE */
+  .add-button-container .add-menu {
+    position: absolute !important;
+    top: 0 !important;
+    right: 100% !important;
+    left: auto !important;
+    transform: none !important;
+    margin-right: 8px !important;
+    margin-top: 0 !important;
+    min-width: 220px !important;
+    max-width: calc(100vw - 40px) !important;
+    background: rgba(255, 255, 255, 0.18) !important;
+    border-radius: 12px !important;
+    padding: 8px !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    backdrop-filter: blur(10px) !important;
+    z-index: 9999 !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+    overflow: visible !important;
+  }
+  
+  /* SOLUTION SIMPLE POUR MOBILE/TABLETTE - Menu à gauche du bouton */
+  @media (max-width: 1366px) {
+    .add-button-container .add-menu {
+      /* Positionnement simple - à gauche du bouton */
+      position: absolute !important;
+      top: 0 !important;
+      right: 100% !important;
+      left: auto !important;
+      transform: none !important;
+      margin-right: 8px !important;
+      margin-top: 0 !important;
+      
+      /* Largeur adaptative */
+      width: auto !important;
+      min-width: 200px !important;
+      max-width: calc(100vw - 100px) !important;
+      
+      /* S'assurer que le menu ne déborde pas */
+      box-sizing: border-box !important;
+    }
+    
+    /* Sur très petits écrans */
+    @media (max-width: 480px) {
+      .add-button-container .add-menu {
+        max-width: calc(100vw - 80px) !important;
+        min-width: 180px !important;
+      }
+    }
+    
+    /* Sur tablettes moyennes */
+    @media (min-width: 481px) and (max-width: 768px) {
+      .add-button-container .add-menu {
+        max-width: calc(100vw - 100px) !important;
+        min-width: 200px !important;
+      }
+    }
+    
+    /* Sur grandes tablettes */
+    @media (min-width: 769px) and (max-width: 1366px) {
+      .add-button-container .add-menu {
+        max-width: calc(100vw - 120px) !important;
+        min-width: 220px !important;
+      }
+    }
+  }
+  
+  /* Flèche pointant vers la droite (vers le bouton) sur mobile/tablette */
+  .add-button-container .add-menu::before {
+    content: '' !important;
+    position: absolute !important;
+    right: -6px !important;
+    top: 20px !important;
+    transform: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    border-top: 6px solid transparent !important;
+    border-bottom: 6px solid transparent !important;
+    border-left: 6px solid rgba(255, 255, 255, 0.18) !important;
+  }
+  
+  /* Flèche quand le menu est à droite (fallback) */
+  .add-button-container .add-menu.menu-right::before {
+    content: '' !important;
+    position: absolute !important;
+    left: -6px !important;
+    top: 20px !important;
+    transform: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    border-top: 6px solid transparent !important;
+    border-bottom: 6px solid transparent !important;
+    border-right: 6px solid rgba(255, 255, 255, 0.18) !important;
+  }
+  
+  /* Style des liens du menu sur mobile/tablette */
+  .add-button-container .add-menu a {
+    display: block !important;
+    padding: 12px 16px !important;
+    color: white !important;
+    text-decoration: none !important;
+    border-radius: 8px !important;
+    transition: all 0.2s ease !important;
+    font-size: 0.95rem !important;
+    font-weight: 500 !important;
+    text-align: center !important;
+    /* S'assurer que le texte est lisible */
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  
+  .add-button-container .add-menu a:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    transform: translateY(-2px) !important;
+  }
+  
+  /* Icônes dans le menu mobile/tablette */
+  .add-button-container .add-menu i {
+    margin-right: 10px !important;
+    width: 16px !important;
+    text-align: center !important;
+  }
+}
+
+/* === TITRE DASHBOARD SUR MOBILE/TABLETTE === */
+@media (max-width: 1366px) {
+  .dashboard-title {
+    text-align: left !important;
+    align-self: flex-start !important;
+    margin-left: 0 !important;
+    margin-right: auto !important;
+    width: 100% !important;
+    padding-left: 20px !important;
+  }
+}

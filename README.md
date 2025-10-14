@@ -21,14 +21,14 @@ Solution CRM pour planifier, optimiser et suivre les rendez‑vous commerciaux, 
   - Statuts: à venir, validé, annulé, gelé
   - Créneaux matin uniquement: 09:00 → 12:00 (toutes les 30 min). Aucun slot après 12:30
   - Jours ouvrés uniquement (week‑ends exclus) + jours fériés FR (lib `holidays` ou liste manuelle)
-  - Plafond: 7 RDV/jour/commercial
+  - Plafond: 6 RDV/jour/commercial
   - Idempotence: aucune duplication à l’exécution
 
 - Planification automatique (J → J+28)
   - Déclenchée automatiquement au premier login de la journée (verrou cache 1×/jour)
   - Respect des objectifs annuels par client (A=10, B=5, C=1, vide=1) et des visites déjà validées
   - Prend en compte les absences des commerciaux (aucune création)= statut gelé. 
-  - Sélection géographique: filtre par rayon autour du point de départ, clustering par proximité, puis sélection des RDV (les 7 plus proches les uns des autres en partant du départ)
+  - Sélection géographique: filtre par rayon autour du point de départ, clustering par proximité, puis sélection des RDV (les 6 plus proches les uns des autres en partant du départ)
 
 - Optimisation d’itinéraires
   - Ordre optimisé via Nearest Neighbor + amélioration 2‑opt
@@ -149,14 +149,14 @@ Ouvrir `http://127.0.0.1:8000`.
 
 - Déclenchée par un signal `user_logged_in` avec un verrou cache (1×/jour)
 - Appelle `front.services.ensure_visits_next_4_weeks`
-- Respecte: jours ouvrés, fériés, 7 rdv/jour, objectifs annuels, absences
+- Respecte: jours ouvrés, fériés, 6 rdv/jour, objectifs annuels, absences
 - Slots réassignés chaque jour à: 09:00, 09:30, 10:00, 10:30, 11:00, 11:30, 12:00
 
 Mode “essai à blanc” (ne crée rien en BDD): mettre `GENERATION_AUTO_DRY_RUN=True`.
 
 ## 🗺️ Optimisation d’itinéraires
 
-- Sélection “poche” : points filtrés par rayon, cluster le plus dense/proche du départ, puis chaîne (plus proche du précédent) jusqu’à 7
+- Sélection “poche” : points filtrés par rayon, cluster le plus dense/proche du départ, puis chaîne (plus proche du précédent) jusqu’à 6
 - Ordre final amélioré par 2‑opt (coût Haversine interne, gratuit)
 - Coût final (estimation minutes) :
   - Mapbox Matrix one‑to‑many prioritaire (économe en éléments)
@@ -253,7 +253,8 @@ Un système de gestion de la relation client (CRM) pour les commerciaux, permett
 - [Utilisation](#-utilisation)
 - [Structure du projet](#-structure-du-projet)
 - [Commandes de gestion](#-commandes-de-gestion)
-- [API Endpoints](#-api-endpoints)
+- [Routes web (pages)](#-routes-web-pages)
+- [API REST (JSON)](#-api-rest-json)
 - [Bonnes pratiques production](#-bonnes-pratiques-production)
 - [Contribuer](#-contribuer)
 - [Licence](#-licence)
@@ -282,7 +283,7 @@ Un système de gestion de la relation client (CRM) pour les commerciaux, permett
 ### 📅 Rendez-vous
 - **Planification** (statuts: à venir, validé, annulé, gelé)
 - **Historique** et commentaires
-- **Planification auto J+28** (idempotente, jours ouvrés, plafond 7rdv/jour)
+- **Planification auto J+28** (idempotente, jours ouvrés, plafond 6rdv/jour)
 
 ### 👤 Clients
 - **Fichier client** `/client_file/`
@@ -327,7 +328,7 @@ python -m venv venv
 # Windows
 venv\Scripts\activate
 # Linux/Mac
-# source venv/bin/activate
+source venv/bin/activate
 ```
 
 ### 3) Mettre à jour pip (recommandé)
@@ -353,7 +354,7 @@ Le projet utilise **django-environ**. Créez un fichier `.env` à la racine, à 
 
 ```env
 # Django
-DJANGO_SECRET_KEY=votre-cle-secrete-longue-et-aleatoire
+DJANGO_SECRET_KEY=votre-cle-secrete
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 CSRF_TRUSTED_ORIGINS=http://127.0.0.1:8000
@@ -407,7 +408,7 @@ python manage.py runserver
 
 ### Génération automatique des RDV (au login)
 - À chaque connexion d’un utilisateur, un job quotidien se déclenche (verrou cache par jour) et appelle `ensure_visits_next_4_weeks`.
-- Ce job planifie jusqu’à J+28 en jours ouvrés, plafond 7 RDV/jour/commercial, en sélectionnant d’abord une zone proche (rayon + clustering), puis en optimisant l’ordre (Mapbox + 2‑opt) et en réassignant les créneaux.
+- Ce job planifie jusqu’à J+28 en jours ouvrés, plafond 6 RDV/jour/commercial, en sélectionnant d’abord une zone proche (rayon + clustering), puis en optimisant l’ordre (Mapbox + 2‑opt) et en réassignant les créneaux.
 - Le processus est idempotent (pas de doublon).
 
 ### Visualiser rapidement l’itinéraire d’un commercial
@@ -512,32 +513,37 @@ Lancer avec base MySQL dans Docker et hot-reload :
 ```bash
 docker compose up -d
 
-## 🌐 API Endpoints
+## 🌐 Routes web (pages)
 
-### Principaux
-- `GET /dashboard/` — Dashboard commercial
-- `GET /dashboard-responsable/` — Dashboard responsable
-- `GET /objectif-annuel/` — Objectifs annuels
-- `GET /historique_rdv/` — Historique des rendez-vous
-- `GET /historique_rdv_resp/` — Historique responsable
-- `GET /add_rdv/` — Ajouter un rendez-vous
-- `GET /client_file/` — Fichier client
-- `GET /profils_commerciaux/` — Profils commerciaux
-- `GET /fiche_commercial/<id>/` — Détail commercial
-- `GET /route_optimisee/` — Itinéraire optimisé
-- `GET /geocoder_adresses/` — Géocodage
-- `GET /satisfaction_b2b/` — Questionnaires
+- `GET /dashboard/` — Dashboard commercial (HTML)
+- `GET /dashboard-responsable/` — Dashboard responsable (HTML)
+- `GET /objectif-annuel/` — Objectifs annuels (HTML)
+- `GET /historique_rdv/` — Historique des rendez-vous (HTML)
+- `GET /historique_rdv_resp/` — Historique responsable (HTML)
+- `GET /add_rdv/` — Formulaire d’ajout de rendez-vous (HTML)
+- `GET /client_file/` — Fichier client (HTML)
+- `GET /profils_commerciaux/` — Profils commerciaux (HTML)
+- `GET /fiche_commercial/<id>/` — Détail commercial (HTML)
+- `GET /route_optimisee/` — Vue Itinéraire optimisé (HTML)
+- `GET /geocoder_adresses/` — Outil de géocodage (HTML)
+- `GET /satisfaction_b2b/` — Questionnaires (HTML)
 
-### API REST
-- `GET /api/client-details/<int:client_id>/`
-- `GET /api/rdv-counters/`
-- `GET /api/rdv-counters-by-client/`
-- `GET /api/rdvs-a-venir/`
-- `GET /api/clients-by-commercial/`
-- `GET /api/commerciaux/`
-- `GET /api/satisfaction-stats/`
-- `GET /api/route-optimisee/<str:date>/`
-- `GET /api/search-rdv-historique/`
+## 🧩 API REST (JSON)
+
+- `GET /api/client-details/<int:client_id>/` — Détails client (lecture)
+- `GET /api/rdv-counters/` — Compteurs RDV globaux (lecture)
+- `GET /api/rdv-counters-by-client/` — Compteurs RDV par client (lecture)
+- `GET /api/rdvs-a-venir/` — RDV à venir (liste, lecture)
+- `GET /api/clients-by-commercial/` — Clients d’un commercial (lecture)
+- `GET /api/commerciaux/` — Liste des commerciaux (lecture)
+- `GET /api/satisfaction-stats/` — Statistiques satisfaction (lecture)
+- `GET /api/route-optimisee/<str:date>/` — Itinéraire optimisé JSON pour une date (lecture)
+- `GET /api/search-rdv-historique/` — Recherche dans l’historique RDV (lecture)
+- `GET /api/capacity/` — Jours ouvrés et capacité (lecture) — params: year, month, daily_quota, cap_to_four_weeks
+
+Méthodes HTTP: sauf mention contraire, ces endpoints sont en GET (lecture seule). Les opérations d’écriture (création/modification/suppression) sont réalisées via les vues web sécurisées (CSRF + login), pas d’API publique POST/PUT/DELETE exposée à ce jour.
+
+Note: versionner l’API (`/api/v1/...`) avant d’introduire des changements incompatibles.
 
 ## 🔐 Bonnes pratiques production
 - Mettre `DEBUG=False`, compléter `ALLOWED_HOSTS` et `CSRF_TRUSTED_ORIGINS` dans `.env`

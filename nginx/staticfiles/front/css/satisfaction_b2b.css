@@ -1,0 +1,107 @@
+body {
+  background: #f7f7fa;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+.satisfaction-container {
+  max-width: 950px;
+  margin: 40px auto;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+  padding: 38px 32px 32px 32px;
+}
+.satisfaction-container h1 {
+  text-align: center;
+  color: #000000;
+  margin-bottom: 10px;
+  font-size: 2.1rem;
+}
+.satisfaction-container .intro {
+  text-align: center;
+  color: #444;
+  margin-bottom: 28px;
+  font-size: 0.8rem;
+  margin-bottom: 60px;
+}
+.satisfaction-form .form-group {
+  margin-bottom: 22px;
+}
+.satisfaction-form .form-group label {
+  font-weight: 500;
+  color: #222;
+  display: block;
+  margin-bottom: 7px;
+}
+.satisfaction-form .form-group.required label:after {
+  content: '';
+}
+.radio-group, .note-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-bottom: 2px;
+}
+.radio-group label, .note-group label {
+  font-weight: 400;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.satisfaction-form input[type="radio"],
+.satisfaction-form input[type="checkbox"] {
+  accent-color: #e53935;
+  width: 18px;
+  height: 18px;
+  margin-right: 4px;
+  margin-top: 20px;
+  margin-bottom: 30px;
+}
+.satisfaction-form textarea,
+.satisfaction-form input[type="text"] {
+  width: 95%;
+  border-radius: 8px;
+  border: 1.5px solid #e0e0e0;
+  padding: 8px 12px;
+  font-size: 1.04rem;
+  color: #222;
+  background: #fafbfc;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  resize: vertical;
+  transition: border 0.18s;
+  margin-bottom: 40px;
+}
+.satisfaction-form textarea:focus,
+.satisfaction-form input[type="text"]:focus {
+  border: 1.5px solid #000000;
+  outline: none;
+}
+.form-actions {
+  text-align: center;
+  margin-top: 30px;
+}
+.submit-btn {
+  background: #e53935;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 38px;
+  font-size: 1.13rem;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(229,57,53,0.08);
+  transition: background 0.18s, box-shadow 0.18s;
+}
+.submit-btn:hover {
+  background: #cc2e2e;
+  box-shadow: 0 4px 16px rgba(229,57,53,0.13);
+}
+@media (max-width: 700px) {
+  .satisfaction-container {
+    padding: 18px 4vw 18px 4vw;
+  }
+} 

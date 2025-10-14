@@ -3,6 +3,7 @@ import re
 from datetime import date, time, timedelta
 from .models import Rendezvous, Commercial, FrontClient, Adresse
 import math
+import calendar
 
 def analyze_sentiment_french(text):
     """
@@ -335,9 +336,37 @@ def is_jour_ferie_france(d):
     return d in jours_feries
 
 
+def business_days_in_month(year: int, month: int) -> int:
+    """
+    Retourne le nombre de jours ouvrés (lundi→vendredi) d'un mois civil donné,
+    en excluant les jours fériés français connus par is_jour_ferie_france.
+    """
+    # Premier jour du mois et nombre de jours
+    _, nb_days = calendar.monthrange(year, month)
+    count = 0
+    for day in range(1, nb_days + 1):
+        d = date(year, month, day)
+        if d.weekday() < 5 and not is_jour_ferie_france(d):  # 0..4 = lun..ven
+            count += 1
+    return count
+
+
+def monthly_rdv_capacity(year: int, month: int, daily_quota: int = 6, cap_to_four_weeks: bool = False) -> int:
+    """
+    Calcule la capacité de RDV du mois:
+    - Compte les jours ouvrés réels du mois (week-ends + fériés exclus)
+    - Multiplie par le quota journalier (6 par défaut)
+    - Option cap_to_four_weeks=True: borne à (4 semaines × 5 jours ouvrés = 20 jours)
+    """
+    wd = business_days_in_month(year, month)
+    if cap_to_four_weeks:
+        wd = min(wd, 20)
+    return wd * max(0, int(daily_quota))
+
+
 def generer_rendezvous_automatiques(date_cible=None):
     """
-    Génère 7 RDV optimisés pour chaque commercial actif pour la date donnée (ou aujourd'hui).
+    Génère 6 RDV optimisés pour chaque commercial actif pour la date donnée (ou aujourd'hui).
     Ne crée rien le week-end ou les jours fériés. Retourne le nombre de RDV créés.
     """
     if date_cible is None:
@@ -345,7 +374,7 @@ def generer_rendezvous_automatiques(date_cible=None):
     if date_cible.weekday() >= 5 or is_jour_ferie_france(date_cible):
         return 0  # Ne rien faire le week-end ou les jours fériés
 
-    creneaux = [time(8,0), time(8,35), time(9,10), time(9,45), time(10,20), time(10,55), time(11,30)]
+    creneaux = [time(9,0), time(9,30), time(10,0), time(10,30), time(11,0), time(11,30), time(12,0)]
     rdv_crees = 0
     # Point de départ générique (à adapter par commercial si besoin)
     point_depart = [-0.3807202, 43.3482402]  # Lons
@@ -387,7 +416,7 @@ def generer_rendezvous_automatiques(date_cible=None):
         points_disponibles = [p for p in points_a_visiter if p['client_id'] not in clients_recemment_visites]
         
         # Si pas assez de clients disponibles, réduire la période d'exclusion
-        if len(points_disponibles) < 7:
+        if len(points_disponibles) < 6:
             date_limite = date_cible - timedelta(days=3)
             clients_recemment_visites = set(
                 Rendezvous.objects.filter(
@@ -399,7 +428,7 @@ def generer_rendezvous_automatiques(date_cible=None):
             points_disponibles = [p for p in points_a_visiter if p['client_id'] not in clients_recemment_visites]
         
         # Si toujours pas assez, prendre tous les clients disponibles
-        if len(points_disponibles) < 7:
+        if len(points_disponibles) < 6:
             points_disponibles = points_a_visiter
         
         # Point de départ = dernier client visité la veille
@@ -428,8 +457,8 @@ def generer_rendezvous_automatiques(date_cible=None):
         random.shuffle(points_disponibles)
         points_disponibles.sort(key=lambda x: x['distance_from_start'])
         
-        # Prendre les 7 premiers clients disponibles
-        tournee = points_disponibles[:7]
+        # Prendre les 6 premiers clients disponibles
+        tournee = points_disponibles[:6]
         
         for idx, rdv in enumerate(tournee):
             if idx >= len(creneaux):
@@ -452,7 +481,7 @@ def generer_rendezvous_automatiques(date_cible=None):
 
 def generer_rendezvous_simples(date_cible=None, commercial=None):
     """
-    Génère 7 RDV simples pour un commercial donné à une date donnée.
+    Génère 6 RDV simples pour un commercial donné à une date donnée.
     Version simplifiée sans optimisation géographique.
     """
     if date_cible is None:
@@ -461,7 +490,7 @@ def generer_rendezvous_simples(date_cible=None, commercial=None):
     if date_cible.weekday() >= 5 or is_jour_ferie_france(date_cible):
         return 0  # Ne rien faire le week-end ou les jours fériés
 
-    creneaux = [time(8,0), time(8,35), time(9,10), time(9,45), time(10,20), time(10,55), time(11,30)]
+    creneaux = [time(9,0), time(9,30), time(10,0), time(10,30), time(11,0), time(11,30), time(12,0)]
     rdv_crees = 0
     
     # Si un commercial spécifique est fourni, on ne traite que celui-ci
@@ -471,16 +500,16 @@ def generer_rendezvous_simples(date_cible=None, commercial=None):
         commerciaux = Commercial.objects.filter(role='commercial')
 
     for commercial_obj in commerciaux:
-        # Objectif: 7 RDV par JOUR et par commercial via la génération automatique.
+        # Objectif: 6 RDV par JOUR et par commercial via la génération automatique.
         # On calcule la capacité restante pour la date cible uniquement.
         rdv_existants_jour = Rendezvous.objects.filter(
             commercial=commercial_obj,
             date_rdv=date_cible,
             statut_rdv='a_venir'
         ).count()
-        capacite_restante = max(0, 7 - rdv_existants_jour)
+        capacite_restante = max(0, 6 - rdv_existants_jour)
         if capacite_restante == 0:
-            # Déjà 7 RDV ce jour-là: ne rien ajouter pour ce commercial
+            # Déjà 6 RDV ce jour-là: ne rien ajouter pour ce commercial
             continue
         
         # Récupérer TOUS les clients de ce commercial
@@ -503,7 +532,7 @@ def generer_rendezvous_simples(date_cible=None, commercial=None):
         clients_disponibles = [c for c in clients_commercial if c.id not in clients_recemment_visites]
         
         # Si pas assez de clients disponibles, réduire la période d'exclusion
-        if len(clients_disponibles) < 7:
+        if len(clients_disponibles) < 6:
             date_limite = date_cible - timedelta(days=3)
             clients_recemment_visites = set(
                 Rendezvous.objects.filter(
@@ -515,15 +544,15 @@ def generer_rendezvous_simples(date_cible=None, commercial=None):
             clients_disponibles = [c for c in clients_commercial if c.id not in clients_recemment_visites]
         
         # Si toujours pas assez, prendre tous les clients disponibles
-        if len(clients_disponibles) < 7:
+        if len(clients_disponibles) < 6:
             clients_disponibles = list(clients_commercial)
         
         # NOUVEAU : Ajouter un facteur aléatoire pour éviter la répétition exacte
         import random
         random.shuffle(clients_disponibles)
         
-        # Prendre au plus la capacité restante (<= 7 - déjà planifiés ce jour)
-        clients_selectionnes = clients_disponibles[:min(7, capacite_restante)]
+        # Prendre au plus la capacité restante (<= 6 - déjà planifiés ce jour)
+        clients_selectionnes = clients_disponibles[:min(6, capacite_restante)]
         
         # Créer les RDV
         for idx, client_obj in enumerate(clients_selectionnes):

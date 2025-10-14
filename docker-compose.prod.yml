@@ -1,11 +1,10 @@
 services:
   nginx:
-    image: nginx:alpine
+    build: ./nginx
     depends_on:
       - web
     ports:
-      - "80:80"                       # http://localhost
-      # - "443:443"                   # plus tard pour HTTPS
+      - "80:80"                    # change en "8080:80" si le port 80 est déjà pris (Laragon)
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - staticfiles:/app/staticfiles:ro
@@ -14,49 +13,29 @@ services:
     restart: unless-stopped
 
   web:
-    # image/build hérité du compose de base
     env_file: .env.prod
-    depends_on:
-      db:
-        condition: service_healthy
-    ports: []
+    # ❌ plus de depends_on: db
+    ports: []                      # pas d'exposition directe, nginx reverse-proxy
     expose:
-      - "8000"                        # visible par nginx sur le réseau interne
+      - "8000"
     volumes:
       - staticfiles:/app/staticfiles
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8000/ || exit 1"]
+      test:
+        - CMD-SHELL
+        - python -c "import sys, urllib.request as u; r=u.urlopen('http://127.0.0.1:8000/', timeout=3); sys.exit(0 if 200 <= r.status < 400 else 1)"
       interval: 15s
       timeout: 5s
-      retries: 10
+      retries: 20
+      start_period: 90s
     networks:
       - app_net
     restart: unless-stopped
-
-  db:
-    image: mysql:8.0
-    environment:
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-    command: --default-authentication-plugin=mysql_native_password --sql-mode="STRICT_TRANS_TABLES"
-    ports:
-      - "3307:3306"                   # optionnel
-    volumes:
-      - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-    networks:
-      - app_net
-    restart: unless-stopped
+    # Utile si tu fais tourner la DB sur ta machine (Laragon) et que tu testes en local
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
-  mysql_data:
   staticfiles:
 
 networks:

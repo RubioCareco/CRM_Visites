@@ -93,7 +93,7 @@ class Command(BaseCommand):
             return
 
         # Créneaux horaires du matin (à déclarer ici pour éviter NameError)
-        creneaux = [time(8,0), time(8,35), time(9,10), time(9,45), time(10,20), time(10,55), time(11,30)]
+        creneaux = [time(9,0), time(9,30), time(10,0), time(10,30), time(11,0), time(11,30), time(12,0)]
         today = date.today()
 
         rdv_crees = 0

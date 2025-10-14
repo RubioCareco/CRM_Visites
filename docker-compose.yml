@@ -1,37 +1,25 @@
 services:
-  db:
-    image: mysql:8.0
-    restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-    command: --default-authentication-plugin=mysql_native_password --sql-mode="STRICT_TRANS_TABLES"
-
-    ports:
-      - "3307:3306" 
-    volumes:
-      - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${DB_ROOT_PASSWORD} --silent || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 30           # un peu plus large
-      start_period: 30s     # laisse à MySQL le temps de s'initialiser
-
-
   web:
     build: .
     restart: unless-stopped
     env_file: .env
-    depends_on:
-      db:
-        condition: service_healthy
     expose:
       - "8000"
     volumes:
       - .:/app
+    # utile surtout en Linux natif ; inoffensif sur Windows/WSL
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
-volumes:
-  mysql_data:
+  # Optionnel : phpMyAdmin en Docker (UI sur http://localhost:8081)
+  phpmyadmin:
+    image: phpmyadmin:5-apache
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8081:80"
+    environment:
+      PMA_HOST: host.docker.internal   # cible MySQL Laragon
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 256M
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

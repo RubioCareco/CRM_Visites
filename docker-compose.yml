@@ -1,4 +1,30 @@
 services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      # on réutilise directement tes DB_* pour éviter le doublon de variables
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_0900_ai_ci
+      --default-authentication-plugin=caching_sha2_password
+      --sql-mode=STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3307:3306"  # côté hôte 3307 pour éviter le conflit avec ton 3306 local
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks:
+      - app_net
+
   web:
     build: .
     restart: unless-stopped
@@ -7,19 +33,36 @@ services:
       - "8000"
     volumes:
       - .:/app
-    # utile surtout en Linux natif ; inoffensif sur Windows/WSL
+    depends_on:
+      db:
+        condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - app_net
+    ports:
+      - "127.0.0.1:8000:8000"
 
-  # Optionnel : phpMyAdmin en Docker (UI sur http://localhost:8081)
+  # UI DB (phpMyAdmin) sur http://localhost:8081 (profil optionnel)
   phpmyadmin:
+    profiles: ["devtools"]
     image: phpmyadmin:5-apache
     restart: unless-stopped
     ports:
       - "127.0.0.1:8081:80"
     environment:
-      PMA_HOST: host.docker.internal   # cible MySQL Laragon
+      PMA_HOST: db
       PMA_PORT: 3306
       UPLOAD_LIMIT: 256M
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app_net
+
+volumes:
+  db_data:
+
+networks:
+  app_net:
+    driver: bridge

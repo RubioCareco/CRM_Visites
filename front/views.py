@@ -65,6 +65,22 @@ def api_rdvs_by_date(request):
                         'code_postal': adr.code_postal or '',
                         'ville': adr.ville or ''
                     }
+            
+            # Vérifier s'il y a un PDF de satisfaction pour ce RDV
+            pdf_info = None
+            if statut == 'valide':  # Seulement pour les RDV validés
+                try:
+                    from .models import SatisfactionB2B
+                    satisfaction = SatisfactionB2B.objects.filter(rdv=rdv).first()
+                    if satisfaction and satisfaction.uuid:
+                        pdf_info = {
+                            'exists': True,
+                            'uuid': str(satisfaction.uuid),
+                            'url': f'/download-satisfaction/{satisfaction.uuid}/'
+                        }
+                except Exception:
+                    pass
+            
             results.append({
                 'uuid': str(rdv.uuid),
                 'heure': rdv.heure_rdv.strftime('%H:%M') if rdv.heure_rdv else '',
@@ -76,6 +92,7 @@ def api_rdvs_by_date(request):
                 } if client else None,
                 'adresse': adresse,
                 'statut': rdv.statut_rdv,
+                'pdf': pdf_info,
             })
         return JsonResponse({'date': target_date.isoformat(), 'statut': statut, 'rdvs': results})
     except Exception as e:
@@ -164,7 +181,7 @@ def login_view(request):
             if commercial.role in ['responsable', 'admin']:
                 return redirect('dashboard_responsable')
             else:
-                return redirect('dashboard')
+                return redirect('dashboard_test')
         else:
             erreur = True
     return render(request, 'front/login.html', {'erreur': erreur})
@@ -173,6 +190,9 @@ def login_view(request):
 def logout_view(request):
     request.session.flush()
     return redirect('login')
+@login_required
+def dashboard_test(request):
+    return render(request, 'front/dashboard_test.html', {})
 
 reset_tokens = {}
 
@@ -1580,8 +1600,14 @@ def get_client_comments(request, client_id):
 def get_client_rdv(request, client_id):
     statut = request.GET.get('statut')
     qs = Rendezvous.objects.filter(client_id=client_id)
-    if statut:
+    
+    # Filtrer uniquement les statuts autorisés : valide, annule, a_venir
+    statuts_autorises = ['valide', 'annule', 'a_venir']
+    qs = qs.filter(statut_rdv__in=statuts_autorises)
+    
+    if statut and statut in statuts_autorises:
         qs = qs.filter(statut_rdv=statut)
+    
     rdvs = qs.order_by('-date_rdv', '-heure_rdv')
     
     # Récupérer le nom du client
@@ -1590,13 +1616,18 @@ def get_client_rdv(request, client_id):
     
     data = []
     for rdv in rdvs:
+        # Ne pas afficher le message automatique, retourner None si l'objet est vide ou contient le message automatique
+        objet_value = rdv.objet or ''
+        if objet_value.startswith('Visite planifiée automatiquement') or objet_value.startswith('Visite planifié automatiquement'):
+            objet_value = ''
+        
         data.append({
             'date_rdv': rdv.date_rdv.strftime('%d/%m/%Y'),
             'heure_rdv': rdv.heure_rdv.strftime('%H:%M') if rdv.heure_rdv else '',
             'statut_rdv': rdv.statut_rdv,
             'commentaire': rdv.notes or '',
             'commercial': str(rdv.commercial),
-            'objet': rdv.objet or '',
+            'objet': objet_value,
         })
     
     return JsonResponse({

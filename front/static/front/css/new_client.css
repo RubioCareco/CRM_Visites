@@ -2,8 +2,7 @@ body {
     margin: 0;
     padding: 0;
     font-family: 'Segoe UI', Arial, sans-serif;
-    background: #1a0508 url('/static/front/img/background3.png') no-repeat center center fixed;
-    background-size: cover;
+    background-color: #f5f7fb;
   }
   
   .nc-modal-bg {
@@ -13,17 +12,17 @@ body {
     align-items: center;
     justify-content: center;
     z-index: 100;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.103);
   }
   
   .nc-card {
-    background: rgba(255, 255, 255, 0.18);
+    background: rgb(255, 255, 255);
     border-radius: 16px;
     box-shadow: 0 8px 32px 0 rgba(0,0,0,0.45);
     width: 600px;
     max-width: 96vw;
     position: relative;
-    color: #fff;
+    color:#666;
     padding: 64px 64px 32px 64px;
     display: flex;
     flex-direction: column;
@@ -84,7 +83,7 @@ body {
     font-size: 1.15em;
     font-weight: 600;
     padding: 22px 32px 12px 32px;
-    color: #fff;
+    color: #666;
     background: none;
     user-select: none;
     gap: 10px;
@@ -182,7 +181,7 @@ body {
     margin-top: 10px;
   }
   .nc-action-btn {
-    background: #d32f2f;
+    background: #ff3b3b;
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -229,7 +228,7 @@ body {
   .nc-card-title {
     font-size: 1.45em;
     font-weight: 600;
-    color: #fff;
+    color: #666;
     letter-spacing: 0.5px;
     text-align: center;
     flex: 1;

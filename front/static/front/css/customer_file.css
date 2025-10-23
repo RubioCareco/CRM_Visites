@@ -4,8 +4,7 @@ body, html {
     padding: 0;
     font-family: 'Segoe UI', sans-serif;
     height: 100%;
-    background: url('../img/background3.png') no-repeat center center fixed;
-    background-size: cover;
+    background: #dddddd7a;
   }
   
   .customer-modal {
@@ -16,17 +15,17 @@ body, html {
   }
   
   .customer-box {
-    background-color: rgba(250, 250, 250, 0.15);
+    background-color: rgb(250, 250, 250);
     padding: 30px;
     border-radius: 16px;
     width: 600px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 18%);
     text-align: left;
     backdrop-filter: blur(6px);
   }
   
   .customer-avatar {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: #666;
     border-radius: 50%;
     width: 70px;
     height: 70px;
@@ -40,7 +39,7 @@ body, html {
   }
   
   .customer-box h2 {
-    color: white;
+    color: #666;
     margin-bottom: 30px;
     text-align: center;
   }
@@ -72,13 +71,13 @@ body, html {
     top: 50%;
     left: 14px;
     transform: translateY(-50%);
-    color: #ffffff;
+    color: #ffffff21;
     font-size: 16px;
     opacity: 1;
   }
   
   .input-icon-group i {
-    color: rgba(255, 255, 255, 0.6);
+    color: #e53935;
     opacity: 0.8;
   }
 
@@ -87,16 +86,15 @@ body, html {
     padding: 12px 40px 12px 40px;
     border-radius: 10px;
     border: none;
-    background-color: rgba(255, 255, 255, 0.1);
-    color: white;
+    background-color: #25222228;
+    color: black;
     font-size: 15px;
-    backdrop-filter: blur(6px);
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
     transition: box-shadow 0.3s ease, background-color 0.3s ease;
   }
   
   .input-icon-group input::placeholder {
-    color: rgba(255, 255, 255, 0.5);
+    color:#666;
   }
   
   .input-icon-group input:disabled {
@@ -132,6 +130,8 @@ body, html {
     display: flex;
     justify-content: center;
     margin-top: 10px;
+    background: #25222228;
+    color: #666;
   }
   
   .comment-centered {
@@ -147,23 +147,23 @@ body, html {
     border-radius: 10px;
     border: none;
     resize: none;
-    background-color: rgba(255, 255, 255, 0.1);
-    color: white;
+    background-color: #25222228;
+    color: #666;
     font-size: 15px;
     height: 90px;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 18%);
     transition: box-shadow 0.3s ease, background-color 0.3s ease;
   }
   
   .comment-centered textarea::placeholder {
-    color: rgba(255, 255, 255, 0.5);
+    color:#000000;
   }
   
   .comment-centered i {
     position: absolute;
     top: 18px;
     left: 14px;
-    color: rgba(255, 255, 255, 0.6);
+    color: #666;
     font-size: 16px;
   }
   
@@ -211,23 +211,22 @@ body, html {
     border-radius: 10px;
     border: none;
     resize: none;
-    background-color: rgba(255, 255, 255, 0.1);
-    color: white;
+    background-color: #25222228;
+    color: #666;
     font-size: 15px;
     height: 90px;
-    backdrop-filter: blur(6px);
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
   }
   
   .comment-centered textarea::placeholder {
-    color: rgba(255, 255, 255, 0.5);
+    color: #00000096;
   }
   
   .comment-centered i {
     position: absolute;
     top: 18px;
     left: 14px;
-    color: rgba(255, 255, 255, 0.6);
+    color: #e53935;
     font-size: 16px;
   }
   
@@ -270,21 +269,20 @@ body, html {
 
       .close-button {
         position: absolute;
-        top: 16px;
-        right: 16px;
-        width: 32px;
-        height: 32px;
-        border: 2px solid #e53935;
-        border-radius: 50%;
-        background: transparent;
+        top: 18px;
+        right: 18px;
+        background: none;
+        border: none;
+        font-size: 1.7rem;
         color: #e53935;
-        font-size: 16px;
+        cursor: pointer;
+        transition: color 0.2s, background 0.2s;
+        width: 40px;
+        height: 40px;
         display: flex;
         align-items: center;
         justify-content: center;
-        cursor: pointer;
-        transition: background-color 0.3s ease, color 0.3s ease;
-        box-sizing: border-box;
+        border-radius: 50%;
         padding: 0;
       }
       

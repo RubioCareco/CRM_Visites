@@ -1019,12 +1019,27 @@ def ensure_visits_next_4_weeks(run_date: Optional[date] = None, *, dry_run: bool
             objectif_annuel = _get_objectif_annuel(cli, commercial, annee)
             visites_valides = _get_visites_valides_annee(cli, commercial, annee)
             reste_annuel = max(0, objectif_annuel - visites_valides)
-            if reste_annuel <= 0:
-                continue
 
             classement = (cli.classement_client or '').upper().strip()
-            cible_28 = CLASSEMENT_TO_TARGET_28D.get(classement, 1)
-            cible_28_effective = min(cible_28, reste_annuel)
+            
+            # Améliorer la reconnaissance des classements avec couleurs
+            if classement.startswith('A '):
+                classement_normalise = 'A'
+            elif classement.startswith('B '):
+                classement_normalise = 'B'
+            elif classement.startswith('C '):
+                classement_normalise = 'C'
+            else:
+                classement_normalise = classement
+            
+            cible_28 = CLASSEMENT_TO_TARGET_28D.get(classement_normalise, 1)
+            
+            # NOUVEAU : Si l'objectif annuel est atteint, on recommence avec la cible 28 jours
+            if reste_annuel <= 0:
+                # Client a atteint son objectif annuel, on peut recommencer avec la cible 28 jours
+                cible_28_effective = cible_28
+            else:
+                cible_28_effective = min(cible_28, reste_annuel)
 
             deja_planifies = _get_already_planned_in_horizon(cli, commercial, start, end)
             manquants = max(0, cible_28_effective - deja_planifies)
@@ -1161,7 +1176,7 @@ def ensure_visits_next_4_weeks(run_date: Optional[date] = None, *, dry_run: bool
                         client=client,
                         commercial=commercial,
                         date_rdv=d,
-                        defaults={'heure_rdv': dtime(hour=9, minute=0), 'statut_rdv': 'a_venir', 'objet': 'Visite planifiée automatiquement'},
+                        defaults={'heure_rdv': dtime(hour=9, minute=0), 'statut_rdv': 'a_venir', 'objet': ''},
                     )
                     if created:
                         # contrôle distance journalière estimée (après insertion)

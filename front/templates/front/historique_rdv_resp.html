@@ -26,17 +26,28 @@
   </style>
 </head>
 <body>
-  <div class="dashboard">
-    <h1 class="dashboard-title">Historique des rendez-vous (Responsable)</h1>
-    <div class="search-bar" style="position:relative; margin-top: 60px; margin-bottom: 48px; display:flex; align-items:center; gap:12px;">
-        <i class="fa fa-search search-icon"></i>
-        <input type="text" id="historiqueSearch" placeholder="Rechercher par clients, entreprises ..." autocomplete="off">
-        <ul id="historiqueSearchSuggestions" class="autocomplete-results" style="position:absolute;left:0;right:0;top:38px;z-index:10;background:rgba(30,30,30,0.95);color:#fff;border-radius:0 0 8px 8px;max-height:180px;overflow-y:auto;display:none;"></ul>
-        <div class="filters-container">
-            <button id="openFilterPanelBtn" class="back-login" style="display:flex;align-items:center;gap:8px;font-size:1.15rem;padding:8px 22px;border-radius:8px;box-shadow:0 2px 8px rgba(255,255,255,0.10);backdrop-filter:blur(6px);border:none;text-decoration:none;background:#e53935;color:#fff;">
-                <i class="fa fa-filter"></i> Filtres
-            </button>
-        </div>
+  <div><H1 class="Title">Historique rendez-vous</H1></div>
+  <div class="actions-row">
+    <div class="filters-container">
+      <button id="openFilterPanelBtn" class="back-login">
+        <i class="fa fa-filter"></i> Filtres
+      </button>
+    </div>
+  
+    <div class="search-client" role="search">
+      <i class="fa fa-search search-icon" aria-hidden="true"></i>
+      <input
+        type="search"
+        class="search-client"
+        id="historiqueSearch"
+        placeholder="Rechercher par clients, entreprises …"
+        autocomplete="off"
+      />
+      <ul id="historiqueSearchSuggestions" class="autocomplete-results"></ul>
+    </div>
+  </div>
+  
+  
         {% if date_label %}
           <span class="filter-badge">
             {{ date_label }}
@@ -51,7 +62,7 @@
         {% endif %}
     </div>
     <div class="cards" style="margin-top:10px;justify-content:center;align-items:flex-start;">
-      <div class="card" style="width:100%;max-width:1600px;margin:auto;min-height:750px;padding-top:0;padding-left:0;padding-right:0;border-radius:12px;overflow:hidden;">
+      <div class="card" style="width:100%;max-width:1600px;margin:auto;min-height:750px;padding-top:0;padding-left:0;padding-right:0;border-radius:12px;overflow:hidden;margin-bottom: 5px;">
         <div class="tabs-container">
           <button class="tab-btn active" onclick="showTab('general')">Historique général</button>
           <button class="tab-btn" onclick="showTab('recent')">Rendez-vous validés</button>
@@ -77,10 +88,10 @@
 
                   <div class="info-container">
                     {% if rdv.statut_rdv == 'valide' and rdv.date_statut %}
-                      <p class="infos-adresse" style="color:#6ee77a;">
+                      <p class="infos-adresse" style="color:rgb(76, 175, 80);">
                         Validé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
-                        <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
-                        <span style="color:#ccc; margin-left: 12px;">
+                        <span style="color:#5e5a5a; margin-left: 24px; font-weight: 400;">|</span>
+                        <span style="color:#5e5a5a; margin-left: 12px;">
                           Dernières visites le : 
                           {% if rdv.derniere_visite %}
                             {{ rdv.derniere_visite|date:"d/m/Y" }}
@@ -97,8 +108,8 @@
                     {% elif rdv.statut_rdv == 'annule' and rdv.date_statut %}
                       <p class="infos-adresse" style="color:#ff5a5a;">
                         Annulé le : {{ rdv.date_statut|date:'d/m/Y H:i' }}
-                        <span style="color:#ccc; margin-left: 24px; font-weight: 400;">|</span>
-                        <span style="color:#ccc; margin-left: 12px;">
+                        <span style="color:#5e5a5a; margin-left: 24px; font-weight: 400;">|</span>
+                        <span style="color:#5e5a5a; margin-left: 12px;">
                           Dernières visites le : 
                           {% if rdv.derniere_visite %}
                             {{ rdv.derniere_visite|date:"d/m/Y" }}
@@ -674,9 +685,9 @@
             } else if (rdv.statut_rdv === 'annule') {
               statutClass = 'statut-annule';
               statutLabel = 'Annulé';
-            } else {
-              statutClass = 'statut-autre';
-              statutLabel = rdv.statut_rdv;
+            } else if (rdv.statut_rdv === 'a_venir') {
+              statutClass = 'statut-a-venir';
+              statutLabel = 'À venir';
             }
             
             html += `<tr>

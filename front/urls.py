@@ -14,6 +14,7 @@ urlpatterns = [
 
     # Tableaux de bord
     path("dashboard/", views.dashboard, name="dashboard"),
+    path("dashboard-test/", views.dashboard_test, name="dashboard_test"),
     path("dashboard-responsable/", views.dashboard_responsable, name="dashboard_responsable"),
 
     # Clients / RDV
@@ -74,4 +75,6 @@ urlpatterns = [
 
     # Géocodage
     path("geocoder-adresses/", views.geocoder_adresses, name="geocoder_adresses"),
+
+    path("export-satisfactions-excel/", views.export_satisfactions_excel, name="export_satisfactions_excel"),
 ]

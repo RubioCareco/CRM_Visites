@@ -1,9 +1,7 @@
 /* profils_commerciaux.css */
 body {
-    background: url('../img/background3.png') no-repeat center center fixed;
-    background-size: cover;
     font-family: 'Segoe UI', sans-serif;
-    color: #fff;
+    background-color: #f5f7fb;
     margin: 0;
     padding: 20px;
     display: flex;
@@ -15,12 +13,14 @@ body {
 
 .main-container {
     max-width: 1200px;
+    box-shadow: 0 2px 8px #5555556b;
     margin: auto;
-    background: rgba(255, 255, 255, 0.18);
+    background: #fff;
     backdrop-filter: blur(10px);
     border-radius: 20px;
     padding: 30px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    
+
 }
 
 header {
@@ -34,6 +34,8 @@ header {
 header h1 {
     margin: 0;
     font-size: 2rem;
+    color: #e35d5b
+    ;
 }
 
 footer {
@@ -88,6 +90,7 @@ footer {
 .commercial-card {
     background: rgba(255, 255, 255, 0.08);
     border-radius: 15px;
+    border: 1px solid #e5393514;
     padding: 25px;
     text-align: center;
     text-decoration: none;
@@ -105,7 +108,7 @@ footer {
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    background: #555;
+    background: #666;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -122,7 +125,7 @@ footer {
 
 .commercial-email {
     font-size: 0.9rem;
-    color: #ccc;
+    color: #ee4d4d;
 }
 
 .absent-commercial {

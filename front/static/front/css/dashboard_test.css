@@ -1,0 +1,616 @@
+/* ==========================================================================
+   Dashboard (dbt-*) — version SANS variables CSS
+   Couleurs clés à modifier:
+   - Fond app:           #f5f7fb
+   - Texte:              #1b1b1b
+   - Texte atténué:      #8a96a3
+   - Carte blanche:      #ffffff
+   - Bordure:            #e7ecf5
+   - Bordure soft:       #edf1f7
+   - Accent (onglet 1):  #2563eb  (bleu)
+   - Accent (onglet 2):  #16a34a  (vert)
+   - Accent (onglet 3):  #e11d48  (rouge)
+   - Hover cell:         #fff8f5  (orange clair)
+   - Alerte orange:      #ff7043
+   ========================================================================== */
+
+/* --------- Base --------- */
+.dbt-body{
+    background:#f5f7fb;
+    margin:0;
+    font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:#1b1b1b;
+    overflow-x:hidden;
+    width:100%;
+    max-width:100vw;
+    box-sizing:border-box;
+  }
+  
+  /* Masquer la scrollbar horizontale */
+  .dbt-body::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .dbt-body {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  .dbt-wrapper{
+    max-width:1300px;
+    margin:24px auto;
+    padding:0 20px;
+    width:100%;
+    box-sizing:border-box;
+    overflow-x:hidden;
+  }
+  
+  /* Masquer la scrollbar sur le wrapper */
+  .dbt-wrapper::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .dbt-wrapper {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  /* --------- Header / user --------- */
+  .dbt-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:14px}
+
+  .dbt-title{
+    margin:0;
+    font-size: 45px;
+    color:#666}
+
+  .dbt-user{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:#ffffff;
+    border:1px solid #e7ecf5;
+    padding:6px 10px;
+    border-radius:16px;
+    cursor:pointer;
+  }
+
+  .dbt-user i{
+    color:#9aa7b1;
+    font-size: 25px;
+    margin-left: 10px;
+    margin-right: 10px;
+
+}
+
+  .dbt-user-name{
+    font-weight:600;
+    font-size:20px}
+
+  .dbt-user-role{
+    font-size:18px;
+    color:#8a96a3;
+    margin-top:2px}
+  
+  /* --------- Search & actions --------- */
+  .dbt-search-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom:12px}
+
+  .dbt-search{
+    flex:1;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:#ffffff;
+    border:1px solid #e7ecf5;
+    border-radius:12px;
+    padding:10px 12px
+  }
+
+  .dbt-search input{
+    border:none;
+    outline:none;
+    flex:1;
+    background:transparent;
+    color:#333}
+
+  .dbt-actions{
+    display:flex;
+    gap:8px}
+
+  .dbt-btn{
+    background: #ef4444;
+    border:1px solid #f71c1c;
+    border-radius:10px;
+    padding:8px 12px;
+    cursor:pointer;
+    color:#ffffff;
+    margin-top: 20px;
+    margin-bottom: 20px;
+  }
+  .dbt-btn:hover{
+    background:#ffffff;
+    color:#ef4444;
+    border-color: #ffffff;
+}
+
+  .dbt-btn-filter{
+    color:#ffffff;
+    border-color:#ef444440;
+    background:#ef4444;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 18%);
+}
+
+  .dbt-btn-plus{
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center}
+  
+  /* --------- Links / badges --------- */
+  .dbt-link{
+    color:#ef4444;
+    text-decoration:none;
+    font-size:14px;
+    font-weight:500;
+  }
+
+  .dbt-link:hover{
+    text-decoration:underline}
+  
+  .dbt-footer-links{
+    display:flex;
+    gap:16px;
+    align-items:center;
+    margin:14px 2px;
+    color:#8a96a3;
+    justify-content:center;
+    width:100%;
+    box-sizing:border-box;
+    position:relative;
+    z-index:10;
+  }
+  
+  .dbt-badges{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap}
+
+  .dbt-badge{
+    background:#eef2f7;
+    border:1px solid #dfe6ef;
+    border-radius:20px;
+    padding:6px 10px;
+    font-size:12px}
+
+  .dbt-badge .remove{
+    margin-left:6px;
+    cursor:pointer}
+  
+  /* --------- Tabs (intégrés à la carte) — COULEURS EXPLICITES --------- */
+  .dbt-tabs{gap:8px}
+  .dbt-tabs.inside{
+    display:grid !important;
+    grid-template-columns: repeat(3, 1fr);
+    gap:12px;
+  }
+  
+  .dbt-tabs.inside .dbt-tab{
+    position:relative;
+    border:1px solid #dfe6ef;
+    background:#f3f6fb;
+    color:#334155;                 /* couleur texte par défaut */
+    border-radius:12px;
+    padding:12px 16px;
+    font-size:1.1rem;
+    text-align:center;
+    cursor:pointer;
+    transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
+  }
+
+  .dbt-tabs.inside .dbt-tab[data-statut="a_venir"].dbt-tab-active{
+    color:#ff8f00; 
+    background: #ffffff; 
+    border-color: #ffb25e; 
+    box-shadow: 0 2px 8px rgba(0,0,0, 18%);
+  }
+  
+  .dbt-tabs.inside .dbt-tab[data-statut="valide"].dbt-tab-active{
+    color:#10b981; 
+    background:#ffffff; 
+    border-color:#12e19d; 
+    box-shadow: 0 2px 8px rgba(0,0,0, 18%);
+  }
+  
+  /* — Onglet "À rappeler" (rouge) */
+  .dbt-tabs.inside .dbt-tab[data-statut="annule"].dbt-tab-active{
+    color:#ff0000; 
+    background: #ffffff; 
+    border-color:#ff5b5b; 
+    box-shadow: 0 2px 8px rgba(0,0,0, 18%);
+  }
+  /* --------- Carte calendrier --------- */
+  .dbt-calendar-card{
+    background:#ffffff;
+    border:1px solid #e7ecf5;
+    border-radius:18px;
+    padding:24px 24px 26px 24px;
+    box-shadow:0 10px 40px rgba(22,39,94,0.07);
+    width:100%;
+    box-sizing:border-box;
+  }
+  .dbt-calendar-toolbar{display:grid;
+    grid-template-columns:1fr;
+    grid-template-rows:auto auto;
+    gap:12px;
+    margin-bottom:12px}
+
+  .dbt-calendar-head{display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:12px;
+    margin:0}
+
+  .dbt-cal-title{font-weight:800;color:#3a3a3a;font-size:18px}
+  .dbt-cal-nav{background:#ffffff;border:1px solid #e7ecf5;border-radius:12px;padding:8px 12px;cursor:pointer}
+  .dbt-cal-nav:hover{background:#f8fafc}
+  
+  /* Grille */
+  .dbt-cal-grid{display:block;width:100%;overflow-x:hidden;max-width:100%;box-sizing:border-box}
+  .dbt-row{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin:12px 0;width:100%;max-width:100%;box-sizing:border-box}
+  .dbt-row.head span{font-size:13px;color:#8895a7;text-align:center;font-weight:600}
+  
+  /* Cases (grandes) */
+  .dbt-cell{
+    min-height:130px;                 /* hauteur des cases équilibrée */
+    background:#ffffff;border:1px solid #edf1f7;
+    border-radius:12px;display:flex;align-items:center;justify-content:center;
+    color:#1b1b1b;font-size:16px;line-height:1;font-weight:600;
+    width:100%;                       /* largeur complète */
+    box-sizing:border-box;            /* inclure padding/border */
+    max-width:100%;                   /* ne pas dépasser le conteneur */
+    overflow:hidden;                  /* éviter le débordement */
+  }
+  .dbt-cell.day{
+    cursor:pointer;
+    transition:background .15s,border-color .15s,box-shadow .15s
+}
+
+  .dbt-cell.day:hover{
+    border-color:#ff4343;
+    background:#fff8f5;
+    box-shadow:0 6px 20px rgba(255, 67, 67, 0.384);
+}
+  .dbt-cell.empty{
+    background:transparent;
+    border:none
+}
+  
+  /* --------- Autocomplete (recherche) --------- */
+  .autocomplete-results{list-style:none;
+    margin:0;padding:0;
+    border-radius:10px;
+    border:1px solid #e7ecf5}
+
+  .autocomplete-results li{
+    padding:8px 10px}
+
+  .autocomplete-results li:hover{
+    background:#f8fafc}
+  
+  /* --------- Modale JOUR --------- */
+  .dbt-day-modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.42);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:5000
+  }
+  .dbt-day-modal-content{
+    background:#ffffff;
+    border:1px solid #e7ecf5;
+    border-radius:18px;
+    min-width:360px;
+    max-width:640px;
+    width:min(92vw,640px);
+    padding:18px 18px 12px 18px;
+    box-shadow:0 16px 60px rgba(0,0,0,0.25);
+    position:relative
+  }
+
+  .dbt-day-close{
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: transparent;
+    color: #ef4444;
+    font-size: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+    padding: 0;
+    border: #ffffff;
+}
+
+  .dbt-day-close:hover{
+    background-color: #ef4444;
+    color: #ffffff;
+  }
+
+  .dbt-day-title{
+    font-size: 1.4rem;
+    color:#666;
+    margin-bottom:10px;
+    text-align: center;
+    justify-content: center;
+    font-weight: 800;
+}
+
+  .dbt-day-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    max-height:60vh;
+    overflow:auto}
+
+  .dbt-day-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background: #25222228;
+    border:1px solid #eef2f7;
+    border-radius:14px;
+    padding:12px
+  }
+
+
+  .dbt-day-ttl{
+    font-weight:700;
+    color:#1b1b1b}
+  
+  /* --------- Modale CLIENT --------- */
+  .dbt-client-modal{position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.45);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:9000}
+
+  .dbt-client-modal-card{
+    background:#ffffff;
+    color:#111;
+    min-width:360px;
+    max-width:640px;
+    width:min(92vw,640px);
+    border:1px solid #e7ecf5;
+    border-radius:18px;
+    padding:18px;
+    box-shadow:0 16px 60px rgba(0,0,0,.25);
+    position:relative
+  }
+
+  .dbt-client-close{
+    position:absolute;
+    top:16px;
+    right:16px;
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    color:#ef4444;
+    background: transparent;
+    font-size:28px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    transition:all .3s ease;
+    box-sizing:border-box;
+    padding:0;
+    border:none;
+  }
+
+  .dbt-client-close:hover{
+    background-color: #ef4444;
+    color:#ffffff
+  }
+
+  .clientTitle{
+    justify-content: center;
+    align-items: center;
+    color: #666;
+  }
+
+
+  .dbt-action-button{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    border:1px solid #e7ecf5;
+    border-radius:10px;
+    padding:10px 12px;
+    background:#e53935;
+    cursor:pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 18%);
+    color: #ffffff;
+  }
+
+  .dbt-action-button:hover{
+    transform: translateY(10px);
+    transition: transform 0.3s ease;
+  }
+
+  .dbt-pdf-icon{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:42px;
+    height:42px;
+    border:none;
+    background:none;
+    cursor:pointer}
+
+  .dbt-pdf-icon img{
+    height:28px}
+  
+  /* --------- Panneau filtres & menu user --------- */
+  .dbt-filter-panel{
+    position:fixed;
+    right:18px;
+    top:110px;
+    background:#ffffff;
+    border:1px solid #e7ecf5;
+    border-radius:16px;
+    padding:14px 16px;
+    z-index:9500;
+    min-width:260px;
+    display:none;
+    box-shadow:0 18px 36px rgba(0,0,0,.12)
+  }
+
+  .dbt-filter-title {
+    font-weight:800;
+    margin-bottom:8px;
+    color:#666;
+    }
+
+  .dbt-filter-section {
+    margin: 12px;
+    justify-content:center
+    }
+
+  .dbt-filter-section-title{
+    font-weight:700;
+    margin-bottom:6px;
+    justify-content: center;
+    text-align: center;
+    color:#e53935 ;
+    }
+    
+  .dbt-filter-date{
+    padding: 6px 16px;
+    border-radius: 15px;
+    
+  }
+  .dbt-filter-row{
+    display:flex;
+    align-items:center;
+    justify-content: center;
+    gap:8px;
+    margin:6px 0
+}
+  
+  /* --------- Responsive --------- */
+  @media (max-width: 768px){
+    .dbt-wrapper{max-width:100%; padding:0 12px}
+    .dbt-cal-title{font-size:16px}
+    .dbt-tabs.inside .dbt-tab{padding:10px 12px}
+  }
+  
+  /* --------- Utilitaires --------- */
+  .dbt-link-muted{border:none;background:none;color:#8a96a3;cursor:pointer}
+  
+  /* ====== WIDE FIX : pleine largeur + colonnes larges ====== */
+  body .dbt-wrapper{
+    max-width:1300px !important;
+    width:100% !important;
+    padding:0 20px !important;
+    box-sizing:border-box !important;
+    overflow-x:hidden !important;
+  }
+
+  body .dbt-calendar-card{
+    width:100% !important;
+    max-width:100% !important;
+    overflow-x:hidden !important;
+    padding:20px !important;
+    box-sizing:border-box !important;
+  }
+
+  .dbt-row{
+    grid-template-columns: repeat(7, 1fr) !important;
+    gap:8px !important;
+    width:100% !important;
+    max-width:100% !important;
+    box-sizing:border-box !important;
+  }
+  .dbt-cell{
+    min-height:120px !important;
+    font-size:15px !important;
+    width:100% !important;
+    max-width:100% !important;
+    box-sizing:border-box !important;
+    overflow:hidden !important;
+  }
+  .dbt-tabs.inside{
+    gap:12px !important;
+  }
+  .dbt-tabs.inside .dbt-tab{
+    padding:10px 14px !important;
+    font-size:1rem !important;
+  }
+  
+  /* ====== RESPONSIVE : petits écrans ====== */
+  @media (max-width: 1024px) {
+    .dbt-wrapper {
+      max-width: 100% !important;
+      padding: 0 8px !important;
+    }
+    .dbt-row {
+      gap: 4px !important;
+      margin: 8px 0 !important;
+    }
+    .dbt-cell {
+      min-height: 90px !important;
+      font-size: 13px !important;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .dbt-wrapper {
+      padding: 0 6px !important;
+      margin: 8px auto !important;
+    }
+    .dbt-row {
+      gap: 3px !important;
+      margin: 6px 0 !important;
+    }
+    .dbt-cell {
+      min-height: 75px !important;
+      font-size: 12px !important;
+      border-radius: 8px !important;
+    }
+    .dbt-row.head span {
+      font-size: 10px !important;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .dbt-wrapper {
+      padding: 0 4px !important;
+    }
+    .dbt-row {
+      gap: 2px !important;
+    }
+    .dbt-cell {
+      min-height: 65px !important;
+      font-size: 11px !important;
+    }
+  }
+  

@@ -10,14 +10,21 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os, environ
 from pathlib import Path
-import environ
-
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-env = environ.Env(DEBUG=(bool, True))         # déclare le type de DEBUG
-# Important: autoriser le fichier .env à surcharger les variables d'environnement
-environ.Env.read_env(BASE_DIR / ".env", overwrite=True)
+ENV = os.getenv("ENV", "dev")
+env = environ.Env(DEBUG=(bool, True))
+
+# Charger .env en DEV
+if ENV == "dev":
+    environ.Env.read_env(BASE_DIR / ".env", overwrite=True)
+
+# (Optionnel) surcharge locale quand on lance Django hors Docker
+local_env = BASE_DIR / ".env.local"
+if local_env.exists():
+    environ.Env.read_env(local_env, overwrite=True)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -25,18 +32,14 @@ environ.Env.read_env(BASE_DIR / ".env", overwrite=True)
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env('DJANGO_SECRET_KEY')
 
-#'django-insecure-3ti*w9ne5)$*%%5oig9!y)k3-8o+ie#%4e!d^ckm!%qmsz4xo@'
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool('DEBUG', default=True)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 
-
 SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=not DEBUG)
 SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=not DEBUG)
 CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=not DEBUG)
-
 
 # Application definition
 
@@ -81,7 +84,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'crm_visites.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 DATABASES = {
@@ -92,7 +94,7 @@ DATABASES = {
         "PASSWORD": env("DB_PASSWORD", default="apppass"),
         "HOST": env("DB_HOST", default="db"),
         "PORT": env("DB_PORT", default="3306"),
-        "OPTIONS": {"charset": "utf8mb4",},
+        "OPTIONS": {"charset": "utf8mb4"},
     }
 }
 
@@ -100,32 +102,19 @@ DATABASES = {
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',},
 ]
-
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
 LANGUAGE_CODE = 'fr-fr'
-
 TIME_ZONE = 'Europe/Paris'
-
 USE_I18N = True
-
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
@@ -133,24 +122,18 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-#Dossier de sources (developpement)
-STATICFILES_DIRS = [BASE_DIR / "front" / "static"]
+# ⚠️ Important : ne pas re-déclarer front/static ici pour éviter les doublons
+# Django détecte déjà 'front/static' via AppDirectoriesFinder (INSTALLED_APPS)
+STATICFILES_DIRS = []  # ou commente complètement cette ligne si tu préfères
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-# settings.py
-CSRF_USE_SESSIONS = False  # tu peux garder ce choix
-CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=["http://127.0.0.1:8000"])
-
-
-#if not DEBUG:  # prod
- #   SECURE_SSL_REDIRECT = True
- #   SESSION_COOKIE_SECURE = True
-  #  CSRF_COOKIE_SECURE = True
-#else:          # dev local
- #   SESSION_COOKIE_SECURE = False
- #   CSRF_COOKIE_SECURE = False
+# CSRF / Sécurité
+CSRF_USE_SESSIONS = False
+CSRF_TRUSTED_ORIGINS = env.list(
+    "CSRF_TRUSTED_ORIGINS",
+    default=["http://127.0.0.1:8000", "http://localhost:8000"]
+)
 
 EMAIL_BACKEND = env(
     "EMAIL_BACKEND",
@@ -158,6 +141,7 @@ EMAIL_BACKEND = env(
 )
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="no-reply@rubio.fr")
 SITE_BASE_URL = env("SITE_BASE_URL", default="http://127.0.0.1:8000")
+
 # paramètres SMTP – à ne pas changer tant que le backend console
 EMAIL_HOST = env("EMAIL_HOST", default="")
 EMAIL_PORT = env.int("EMAIL_PORT", default=587)
@@ -165,46 +149,36 @@ EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
 
-
 # Configuration des sessions pour la sécurité
-SESSION_COOKIE_AGE = 1800  # 30 minutes 
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Session expire à la fermeture du navigateur
-SESSION_SAVE_EVERY_REQUEST = True  # Sauvegarde la session à chaque requête
+SESSION_COOKIE_AGE = 1800  # 30 minutes
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_SAVE_EVERY_REQUEST = True
 
 # Limites d'upload (10 Mo)
 MAX_UPLOAD_SIZE = 10 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 
-GENERATION_AUTO_ENABLED = env.bool("GENERATION_AUTO_ENABLED", default=False)
-GENERATION_AUTO_DRY_RUN  = env.bool("GENERATION_AUTO_DRY_RUN",  default=True)
+GENERATION_AUTO_ENABLED = env.bool("GENERATION_AUTO_ENABLED", default=True)
+GENERATION_AUTO_DRY_RUN  = env.bool("GENERATION_AUTO_DRY_RUN",  default=False)
 
-#cash-busting -> # Production only
-STATICFILES_STORAGE ="whitenoise.storage.CompressedManifestStaticFilesStorage"
+# Cache-busting / WhiteNoise
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# settings.py
+# Jours fériés / Config métier
 PUBLIC_HOLIDAYS = env.list("PUBLIC_HOLIDAYS", default=[])  # ex: ["2025-01-01", "2025-05-01"]
 HOLIDAYS_COUNTRY = env("HOLIDAYS_COUNTRY", default="FR")
 HOLIDAYS_YEARS = env("HOLIDAYS_YEARS", default="2025,2026")
 
-# Mapbox (prioritaire)
+# Mapbox
 MAPBOX_ACCESS_TOKEN = env("MAPBOX_ACCESS_TOKEN", default="")
 
-# Contraintes géographiques pour la sélection
+# Contraintes géographiques / Algorithmes
 MAX_RADIUS_KM = env.int("MAX_RADIUS_KM", default=40)
 MAX_DAILY_DISTANCE_KM = env.int("MAX_DAILY_DISTANCE_KM", default=220)
-
-# Clustering proximité (km) pour grouper les RDV d'une même zone
 CLUSTER_RADIUS_KM = env.int("CLUSTER_RADIUS_KM", default=10)
-
-# Distance max autorisée entre les points (rdv)
 SAME_DAY_MAX_SPREAD_KM = env.int("SAME_DAY_MAX_SPREAD_KM", default=15)
-
 SAME_DAY_SPREAD_KM = env.float("SAME_DAY_SPREAD_KM", default=15.0)
-
 SAME_DAY_CLUSTER_SEED_LIMIT = env.int("SAME_DAY_CLUSTER_SEED_LIMIT", default=60)
-
-# Vitesse moyenne (km/h) pour le fallback Haversine (optimisation d'itinéraire)
 ROUTING_AVG_SPEED_KMH = env.int("ROUTING_AVG_SPEED_KMH", default=50)
-
 HORIZON_MAX_VISITS_PER_CLIENT = env.int("HORIZON_MAX_VISITS_PER_CLIENT", default=1)

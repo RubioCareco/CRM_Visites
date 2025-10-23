@@ -4,7 +4,7 @@ services:
     depends_on:
       - web
     ports:
-      - "80:80"                    # change en "8080:80" si le port 80 est déjà pris (Laragon)
+      - "80:80"                    # change en "8080:80" si le port 80 est déjà pris
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - staticfiles:/app/staticfiles:ro
@@ -13,8 +13,11 @@ services:
     restart: unless-stopped
 
   web:
+    build: .
     env_file: .env.prod
-    # ❌ plus de depends_on: db
+    # ✅ on rétablit la dépendance à la DB
+    depends_on:
+      - db
     ports: []                      # pas d'exposition directe, nginx reverse-proxy
     expose:
       - "8000"
@@ -31,9 +34,13 @@ services:
     networks:
       - app_net
     restart: unless-stopped
-    # Utile si tu fais tourner la DB sur ta machine (Laragon) et que tu testes en local
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+  # ✅ On place aussi 'db' sur le réseau app_net en prod (hérite du service 'db' du fichier de base)
+  db:
+    networks:
+      - app_net
 
 volumes:
   staticfiles:

@@ -92,7 +92,7 @@
         toast.classList.add('show');
         setTimeout(function() {
           toast.classList.remove('show');
-          window.location.href = '/dashboard';
+          window.location.href = '/dashboard_test/';
         }, 2000);
       }
     });
@@ -166,7 +166,8 @@
       const form = document.querySelector("form");
       const cancelBtn = document.getElementById("cancelBtn");
       const inputs = form.querySelectorAll("input, textarea, select");
-      const nextUrl = document.querySelector("input[name='next']").value || "/dashboard";
+      let nextUrl = document.querySelector("input[name='next']").value || "/dashboard";
+      if (nextUrl && !nextUrl.startsWith('/')) nextUrl = '/' + nextUrl;
       const role = '{{ request.session.role|default:"" }}';
       const dashboardRespUrl = "/dashboard-responsable/";
 
@@ -262,7 +263,8 @@
       const form = document.querySelector("form");
       const cancelBtn = document.getElementById("cancelBtn");
       const inputs = form.querySelectorAll("input, textarea, select");
-      const nextUrl = document.querySelector("input[name='next']").value || "/dashboard";
+      let nextUrl = document.querySelector("input[name='next']").value || "/dashboard_test/";
+      if (nextUrl && !nextUrl.startsWith('/')) nextUrl = '/' + nextUrl;
       const role = '{{ request.session.role|default:"" }}';
       const dashboardRespUrl = "/dashboard-responsable/";
 

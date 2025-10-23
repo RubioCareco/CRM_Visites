@@ -1,0 +1,6 @@
+# docker-compose.nomount.yml
+services:
+  web:
+    volumes: []                    # on vide d’abord
+    volumes:
+      - staticfiles:/app/staticfiles

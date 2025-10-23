@@ -5,8 +5,8 @@ body, html {
   padding: 0;
   font-family: 'Segoe UI', sans-serif;
   height: 100%;
-  background: url('../img/background3.png') no-repeat center center fixed;
-  background-size: cover;
+  background:#f5f7fb;
+  ;
   overflow-x: hidden !important;
   box-sizing: border-box;
 }
@@ -45,7 +45,7 @@ body {
   align-items: center;
   gap: 15px;
   margin-bottom: 15px;
-  background: rgba(250, 250, 250, 0.1);
+  background: rgb(250, 250, 250);
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 12px 18px;
@@ -57,7 +57,7 @@ body {
   width: 45px;
   height: 45px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #e1e1e1, #ffffff30);
+  background:#666;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -68,14 +68,14 @@ body {
 }
 
 .header-info h1 {
-  color: white;
+  color: #666;
   margin: 0 0 5px 0;
   font-size: 20px;
   font-weight: bold;
 }
 
 .header-info .commercial-name {
-  color: rgba(255, 255, 255, 0.8);
+  color: #666;
   font-size: 13px;
   margin: 0;
 }
@@ -89,11 +89,11 @@ body {
 }
 
 .btn-filtres {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255, 255, 255);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 25px;
   padding: 12px 24px;
-  color: white;
+  color: #666;
   font-size: 16px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -138,12 +138,12 @@ body {
 
 /* Cartes KPI */
 .kpi-card {
-  background: rgba(250, 250, 250, 0.1);
+  background: #fff;;
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 20px 30px;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 18%);
   text-align: center;
   flex: 1;
   min-width: 150px;
@@ -157,14 +157,14 @@ body {
 .kpi-value {
   font-size: 36px;
   font-weight: bold;
-  color: white;
+  color: #666;
   margin-bottom: 8px;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .kpi-label {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
+  color: #666;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 500;
@@ -191,12 +191,12 @@ body {
 
 /* Jauge de progression circulaire */
 .progress-section {
-  background: rgba(250, 250, 250, 0.1);
+  background: rgb(250, 250, 250);
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 20px 30px;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 18%);
   margin-bottom: 0;
   text-align: center;
   width: auto;
@@ -213,7 +213,7 @@ body {
 }
 
 .progress-title {
-  color: white;
+  color: #666;
   font-size: 14px;
   font-weight: 600;
   margin: 0 0 5px 0;
@@ -246,7 +246,7 @@ body {
 }
 
 .progress-bg {
-  stroke: rgba(255, 255, 255, 0.2);
+  stroke: rgb(199, 191, 191);
 }
 
 .progress-fill {
@@ -260,7 +260,7 @@ body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: white;
+  color: #666;
   font-size: 28px;
   font-weight: bold;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
@@ -270,19 +270,19 @@ body {
 
 /* Section tableau clients */
 .clients-section {
-  background: rgba(250, 250, 250, 0.1);
+  background: #fff;
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 30px;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 18%);
   max-width: 80%;
   overflow: hidden;
   margin: 0 auto;
 }
 
 .clients-section h2 {
-  color: white;
+  color: #666;
   margin: 0 0 25px 0;
   font-size: 24px;
   text-align: center;
@@ -295,7 +295,7 @@ body {
   overflow-x: auto;
   border-radius: 10px;
   background: rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgb(255, 255, 255);
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
@@ -310,7 +310,7 @@ body {
   width: 100%;
   max-width: 100%;
   border-collapse: collapse;
-  color: white;
+  color: black;
   margin: 0;
   table-layout: fixed;
   box-sizing: border-box;
@@ -323,7 +323,7 @@ body {
 .clients-table td {
   padding: 12px 8px;
   text-align: left;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgb(255, 255, 255);
   font-size: 14px;
   vertical-align: middle;
   white-space: nowrap;
@@ -367,7 +367,7 @@ body {
 }
 
 .table-container::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
+  background: #666;
   border-radius: 4px;
 }
 
@@ -386,7 +386,7 @@ body {
   padding: 10px 5px;
   text-align: left;
   font-weight: 600;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 2px solid rgb(255, 255, 255);
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -398,7 +398,7 @@ body {
 
 .clients-table td {
   padding: 10px 5px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgb(255, 255, 255);
   font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
@@ -459,8 +459,8 @@ body {
 }
 
 .btn-planifier.disabled {
-  background: rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.6);
+  background: rgba(15, 15, 15, 0.5);
+  color: #201f1f;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;

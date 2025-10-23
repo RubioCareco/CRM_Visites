@@ -13,10 +13,10 @@
       margin: 0 auto 12px auto;
       display: block;
       padding: 8px 12px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(0, 0, 0, 0.1);
       border-radius: 6px;
-      background: rgba(255, 255, 255, 0.05);
-      color: #fff;
+      background: rgb(255, 255, 255);
+      color: #000000;
       font-size: 0.95rem;
       transition: all 0.3s ease;
     }
@@ -31,18 +31,18 @@
     #filterPanelClient input:focus {
       outline: none;
       background: rgba(255, 255, 255, 0.15);
-      border-color: rgba(229, 57, 53, 0.5);
-      box-shadow: 0 0 0 2px rgba(229, 57, 53, 0.18);
+      border-color: rgba(30, 30, 30, 0.5);
+      box-shadow: 0 0 0 2px rgba(160, 156, 156, 0.18);
       transform: translateY(-2px);
     }
 
     #filterPanelClient input::placeholder {
-      color: rgba(255,255,255,0.85);
+      color: rgba(0, 0, 0, 0.85);
       transition: color 0.3s ease;
     }
 
     #filterPanelClient input:hover::placeholder {
-      color: rgba(255,255,255,0.92);
+      color: rgba(0, 0, 0, 0.92);
     }
 
     #filterPanelClient input:focus::placeholder {
@@ -120,6 +120,9 @@
       text-align: left;
       margin-top: 24px;
     }
+    #dashboard{
+      background-color: #f5f7fb;
+    }
   </style>
 </head>
 <body class="dashboard">
@@ -134,7 +137,7 @@
   </div>
 
   <div class="cards" style="display:flex;justify-content:center;align-items:flex-start;min-height:10vh;">
-    <div class="card" style="width:95%;max-width:1600px;margin-top:40px;min-height:750px;">
+    <div class="card" style="width:95%;max-width:1600px;margin-top:40px;min-height:750px;background-color: rgb(250, 250, 250);color: #444444e3;box-shadow: 0 26px 72px rgba(15, 23, 42, .14), 0 6px 16px rgba(15, 23, 42, .06);">
       <h2 style="text-align:center;margin-bottom:24px;">
         Liste des clients
       </h2>
@@ -211,7 +214,7 @@
       <div class="table-container" style="max-height: 850px; overflow-y: auto; padding-right: 8px; margin-top: 16px;">
         <table class="client-table" style="width: 100%; table-layout: fixed;">
           <thead>
-            <tr style="background:transparent;">
+            <tr style="background:transparent;border:1px solid #e53935">
               <th style="width: 8%;">Civilité</th>
               <th style="width: 22%;">Raison sociale</th>
               <th style="width: 15%;">Prénom</th>
@@ -306,7 +309,8 @@
     </div>
   </div>
 
-  <a href="{% if role == 'responsable' or role == 'admin' %}{% url 'dashboard_responsable' %}{% else %}{% url 'dashboard' %}{% endif %}" class="back-login" id="backDashboardBtn" style="position:fixed;left:24px;bottom:20px;z-index:9999;display:flex;align-items:center;gap:8px;color:#fff;font-size:1.15rem;padding:8px 22px;border-radius:8px;box-shadow:0 2px 8px rgba(255, 255, 255, 0.1);backdrop-filter:blur(6px);border:none;text-decoration:none;"><i class="fa fa-arrow-left"></i> Retour</a>
+  <a href="{% if role == 'responsable' or role == 'admin' %}{% url 'dashboard_responsable' %}{% else %}{% url 'dashboard_test' %}{% endif %}" class="back-login" id="backDashboardBtn" style="position:fixed;left:24px;bottom:20px;z-index:9999;display:flex;align-items:center;gap:8px;color:#000000;font-size:1.15rem;padding:8px 22px;border-radius:8px;box-shadow:0 2px 8px rgba(255, 255, 255, 0.1);backdrop-filter:blur(6px);border: 1px solid rgba(0,0,0, 0.1);text-decoration:none;"><i class="
+    fa-fa arrow"></i> Retour</a>
 
 </body>
 <script>

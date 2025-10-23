@@ -399,8 +399,8 @@
               if (data.rdvs.length === 0) {
                 html = '<p class="no-rdv-message">Aucun rendez-vous pour ce client.</p>';
               } else {
-                // Filtrer uniquement les statuts "Validé" et "Annulé"
-                const rdvsFiltres = data.rdvs.filter(rdv => rdv.statut_rdv === 'valide' || rdv.statut_rdv === 'annule');
+                // Filtrer uniquement les statuts "Validé", "Annulé" et "À venir"
+                const rdvsFiltres = data.rdvs.filter(rdv => rdv.statut_rdv === 'valide' || rdv.statut_rdv === 'annule' || rdv.statut_rdv === 'a_venir');
                 
                 if (rdvsFiltres.length === 0) {
                   html = '<p class="no-rdv-message">Aucun rendez-vous validé ou annulé pour ce client.</p>';
@@ -426,6 +426,9 @@
                     } else if (rdv.statut_rdv === 'annule') {
                       statutClass = 'statut-annule';
                       statutLabel = 'Annulé';
+                    } else if (rdv.statut_rdv === 'a_venir') {
+                      statutClass = 'statut-a-venir';
+                      statutLabel = 'À venir';
                     }
                     html += `<tr>
                       <td>${rdv.date_rdv}</td>
@@ -465,8 +468,8 @@
               if (data.rdvs.length === 0) {
                 html = '<p class="no-rdv-message">Aucun rendez-vous validé pour ce client.</p>';
               } else {
-                // Filtrer uniquement les statuts "Validé" et "Annulé"
-                const rdvsFiltres = data.rdvs.filter(rdv => rdv.statut_rdv === 'valide' || rdv.statut_rdv === 'annule');
+                // Filtrer uniquement les statuts "Validé", "Annulé" et "À venir"
+                const rdvsFiltres = data.rdvs.filter(rdv => rdv.statut_rdv === 'valide' || rdv.statut_rdv === 'annule' || rdv.statut_rdv === 'a_venir');
                 
                 if (rdvsFiltres.length === 0) {
                   html = '<p class="no-rdv-message">Aucun rendez-vous validé ou annulé pour ce client.</p>';
@@ -492,6 +495,9 @@
                     } else if (rdv.statut_rdv === 'annule') {
                       statutClass = 'statut-annule';
                       statutLabel = 'Annulé';
+                    } else if (rdv.statut_rdv === 'a_venir') {
+                      statutClass = 'statut-a-venir';
+                      statutLabel = 'À venir';
                     }
                     html += `<tr>
                       <td>${rdv.date_rdv}</td>

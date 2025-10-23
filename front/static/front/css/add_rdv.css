@@ -3,8 +3,7 @@ body, html {
   padding: 0;
   font-family: 'Segoe UI', sans-serif;
   height: 100vh;
-  background: url('../img/background3.png') no-repeat center center fixed;
-  background-size: cover;
+  background: #f5f7fb;
 }
 
 .rdv-modal {
@@ -15,19 +14,20 @@ body, html {
 }
 
 .rdv-box {
-  background-color: rgba(255, 255, 255, 0.13);
+  background-color: rgb(255, 255, 255);
   padding: 48px 54px 44px 54px;
   border-radius: 22px;
   width: 480px;
   min-width: 320px;
   max-width: 98vw;
-  box-shadow: 0 12px 48px rgba(0,0,0,0.35);
+  box-shadow: 0 12px 48px rgba(0,0,0,18%);
   backdrop-filter: blur(10px);
-  color: white;
+  color: #666;
   transition: box-shadow 0.25s, transform 0.25s;
   display: flex;
   flex-direction: column;
   align-items: center;
+  transition: all 0.2s, ease-in-out;
 }
 
 .rdv-box form {
@@ -41,7 +41,7 @@ body, html {
 h2 {
   text-align: center;
   margin-bottom: 40px;
-  color: white;
+  color: #666;
 }
 
 .rdv-field {
@@ -56,7 +56,7 @@ h2 {
   top: 50%;
   left: 16px;
   transform: translateY(-50%);
-  color: white;
+  color: #e53935;
   font-size: 16px;
   pointer-events: none;
   z-index: 2;
@@ -73,15 +73,15 @@ h2 {
   font-size: 1.13rem;
   padding: 14px 18px 14px 44px;
   border-radius: 12px;
-  background: rgba(255,255,255,0.13);
-  color: #fff;
+  background: #25222228 ;
+  color: #666;
   border: 1.5px solid rgba(255,255,255,0.13);
   transition: box-shadow 0.18s, border 0.18s, background 0.18s, transform 0.18s;
 }
 
 .rdv-field input::placeholder,
 .rdv-field textarea::placeholder {
-  color: rgba(255, 255, 255, 0.6);
+  color: #25222228;
 }
 
 .rdv-actions {
@@ -133,8 +133,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .rdv-select {
-  color: #fff;
-  background-color: rgba(255, 255, 255, 0.2);
+  color: #666;
+  background-color:#25222228;
   transition: color 0.2s;
 }
 
@@ -153,7 +153,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   top: 50%;
   left: 12px;
   transform: translateY(-50%);
-  color: white;
+  color: #e53935;
   font-size: 14px;
   pointer-events: none;
   z-index: 0;
@@ -188,8 +188,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .autocomplete-container input[type="text"] {
-  background: rgba(255,255,255,0.13);
-  color: #fff;
+  background: #25222228;
+  color: #666;
   border: 1.5px solid rgba(255,255,255,0.13);
   border-radius: 12px;
   font-size: 1.13rem;
@@ -201,7 +201,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .autocomplete-container input[type="text"]:focus {
-  background: rgba(255,255,255,0.22);
+  background: rgba(223, 55, 55, 0.534);
   border: 1.5px solid #fff;
   box-shadow: 0 4px 18px #fff3;
   outline: none;
@@ -218,7 +218,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   top: 50%;
   left: 12px;
   transform: translateY(-50%);
-  color: rgb(255, 255, 255);
+  color: #e53935;
   font-size: 14px;
   pointer-events: none;
 }
@@ -261,7 +261,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .rdv-field input:focus,
 .rdv-field textarea:focus,
 .rdv-select:focus {
-  background: rgba(255,255,255,0.22);
+  background: #25222228;
   border: 1.5px solid #fff;
   box-shadow: 0 4px 18px #fff3;
   outline: none;
@@ -283,7 +283,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   background: none;
   border: none;
   font-size: 1.7rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: #e53935;
   cursor: pointer;
   transition: color 0.2s, background 0.2s;
   width: 40px;

@@ -1,0 +1,828 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tableau de bord</title>
+
+  <!-- Styles principaux -->
+  <link rel="stylesheet" href="{% static 'front/css/dashboard_test.css' %}">
+  <link rel="stylesheet" href="{% static 'front/css/footer.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- Compléments locaux (menu user, modales, badges) -->
+  <style>
+    .dbt-modal-commentaires{max-height:180px;overflow:auto;margin-top:8px;padding-right:8px}
+    .dbt-modal-commentaires::-webkit-scrollbar{width:6px}
+    .dbt-modal-commentaires::-webkit-scrollbar-thumb{background:rgba(0,0,0,.2);border-radius:5px}
+
+    .dbt-pdf-icon{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border:none;background:none;cursor:pointer}
+    .dbt-pdf-icon img{height:26px}
+
+    .dbt-day-modal{z-index:5000 !important;}
+    .dbt-client-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:9000 !important;}
+    .dbt-client-modal-card{background:#fff;color:#111;min-width:360px;max-width:640px;width:min(92vw,640px);border:1px solid #e7ecf5;border-radius:16px;padding:18px;box-shadow:0 16px 60px rgba(0,0,0,.25);position:relative}
+
+    .dbt-filter-panel{position:fixed;right:18px;top:110px;background:#fff;border:1px solid #e7ecf5;border-radius:16px;padding:14px 16px;z-index:4800;min-width:260px;display:none;box-shadow:0 18px 36px rgba(0,0,0,.12)}
+    .dbt-filter-title{font-weight:700;margin-bottom:8px}
+    .dbt-filter-section{margin:12px 0}
+    .dbt-filter-section-title{font-weight:600;margin-bottom:6px}
+    .dbt-filter-row{display:flex;align-items:center;gap:8px;margin:6px 0}
+    .dbt-badges{display:flex;flex-wrap:wrap;gap:8px}
+    .dbt-badge{background:#eef2f7;border:1px solid #dfe6ef;border-radius:20px;padding:6px 10px;font-size:12px}
+    .dbt-badge .remove{margin-left:6px;cursor:pointer}
+
+    .dbt-user-wrap{position:relative}
+    .dbt-user-menu{
+      position:absolute; right:0; top:46px; display:none;
+      background:#fff; border:1px solid #e7ecf5; border-radius:12px;
+      min-width:220px; box-shadow:0 12px 28px rgba(22,39,94,.12); padding:8px 0; z-index:9500;
+    }
+    .dbt-user-menu a{display:block;padding:10px 14px;text-decoration:none;color:#111}
+    .dbt-user-menu a:hover{background:#f8fafc}
+    .dbt-user-menu a.logout{color:#e11d48}
+
+    /* Badges jour */
+    .dbt-cell.day{position:relative;}
+    .dbt-bullet{
+      position:absolute; top:8px; left:8px;
+      min-width:22px; height:22px; padding:0 6px;
+      display:inline-flex; align-items:center; justify-content:center;
+      border-radius:50%; font-size:12px; font-weight:700; line-height:1;
+      color:#fff; box-shadow:0 2px 6px rgba(0,0,0,.15);
+      pointer-events:none; user-select:none;
+    }
+    .dbt-bullet.green{ background:#10b981; }
+    .dbt-bullet.red{   background:#ef4444; }
+    
+    /* Surbrillance pour RDV non validés */
+    .dbt-cell.day.has-unvalidated{
+      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+      border: 2px solid #fca5a5;
+      box-shadow: 0 0 0 1px #ef4444;
+      animation: pulse-unvalidated 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    .dbt-cell.day.has-unvalidated:hover{
+      background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+      animation: none; /* Arrêter l'animation au survol */
+    }
+    
+    /* Animation de battement pour RDV non validés */
+    @keyframes pulse-unvalidated {
+      0%, 100% {
+        box-shadow: 0 0 0 2px #ef4444, 0 0 0 0 rgba(239, 68, 68, 0.8);
+        transform: scale(1);
+      }
+      25% {
+        box-shadow: 0 0 0 2px #ef4444, 0 0 0 6px rgba(239, 68, 68, 0.4);
+        transform: scale(1.03);
+      }
+      50% {
+        box-shadow: 0 0 0 2px #ef4444, 0 0 0 12px rgba(239, 68, 68, 0.2);
+        transform: scale(1.05);
+      }
+      75% {
+        box-shadow: 0 0 0 2px #ef4444, 0 0 0 8px rgba(239, 68, 68, 0.3);
+        transform: scale(1.02);
+      }
+    }
+    
+    /* Couleurs de survol selon l'onglet actif */
+    .dbt-cell.day:hover{
+      transition: all 0.2s ease;
+    }
+    
+    /* Ombres et survol sur onglet "À venir" (orange) */
+    body:has(.dbt-tab[data-statut="a_venir"].dbt-tab-active) .dbt-cell.day{
+      box-shadow: 0 2px 8px rgba(249, 115, 22, 0.2);
+    }
+    body:has(.dbt-tab[data-statut="a_venir"].dbt-tab-active) .dbt-cell.day:hover{
+      background: rgba(249, 115, 22, 0.15) !important;
+      border-color: rgba(249, 115, 22, 0.3) !important;
+      box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+    }
+    
+    /* Ombres et survol sur onglet "Validé" (vert) */
+    body:has(.dbt-tab[data-statut="valide"].dbt-tab-active) .dbt-cell.day{
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+    }
+    body:has(.dbt-tab[data-statut="valide"].dbt-tab-active) .dbt-cell.day:hover{
+      background: rgba(16, 185, 129, 0.15) !important;
+      border-color: rgba(16, 185, 129, 0.3) !important;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    
+    /* Ombres et survol sur onglet "Annulé" (rouge) */
+    body:has(.dbt-tab[data-statut="annule"].dbt-tab-active) .dbt-cell.day{
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+    }
+    body:has(.dbt-tab[data-statut="annule"].dbt-tab-active) .dbt-cell.day:hover{
+      background: rgba(239, 68, 68, 0.15) !important;
+      border-color: rgba(239, 68, 68, 0.3) !important;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+    
+    /* Tooltip pour RDV non validés */
+    .dbt-cell.day[data-unvalidated-count]{
+      position: relative;
+    }
+    .dbt-cell.day[data-unvalidated-count]:hover::after{
+      content: attr(data-unvalidated-count) " rendez-vous à valider";
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1f2937;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      white-space: nowrap;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      margin-bottom: 4px;
+    }
+    .dbt-cell.day[data-unvalidated-count]:hover::before{
+      content: "";
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 4px solid transparent;
+      border-top-color: #1f2937;
+      z-index: 1000;
+    }
+  </style>
+</head>
+
+<body class="dbt-body">
+  <div class="dbt-wrapper">
+    <!-- Header -->
+    <div class="dbt-header">
+      <h1 class="dbt-title">Tableau de bord</h1>
+
+      <div class="dbt-user-wrap" id="dbtUserWrap">
+        <div class="dbt-user" id="dbtUserBtn" role="button" aria-haspopup="true" aria-expanded="false">
+          <i class="fa fa-user"></i>
+          <div class="dbt-user-info">
+            <div class="dbt-user-name">{{ commercial.prenom|default:'Nelson' }}</div>
+            <div class="dbt-user-role">{{ commercial.commercial|default:'Commercial 2' }}</div>
+          </div>
+          <i class="fa fa-chevron-down" style="margin-left:6px;color:#9aa7b1;font-size:15px;align-items:center;"></i>
+        </div>
+
+        <nav id="dbtUserMenu" class="dbt-user-menu" aria-label="Menu utilisateur">
+          <a href="{% url 'profil' %}">Profil</a>
+          <a href="{% url 'client_file' %}">Fichier Clients</a>
+          <a href="{% url 'historique_rdv' %}">Historique RDV</a>
+          <a href="{% url 'objectif_annuel' %}">Objectifs annuels</a>
+          <a href="{% url 'logout' %}" class="logout">Se déconnecter</a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Search + Actions -->
+    <div class="dbt-search-row">
+      <div class="dbt-search" style="position:relative">
+        <i class="fa fa-search"></i>
+        <input id="dbtSearch" type="text" placeholder="Rechercher par clients, entreprises ..." autocomplete="off"/>
+        <ul id="dbtSearchBox" class="autocomplete-results"
+            style="position:absolute;left:10px;right:10px;top:42px;z-index:10;background:#fff;border:1px solid #e7ecf5;border-radius:10px;max-height:220px;overflow:auto;display:none;padding:4px 0"></ul>
+      </div>
+      <div class="dbt-actions">
+        <button class="dbt-btn dbt-btn-filter" id="dbtFilterBtn"><i class="fa fa-sliders"></i> Filtres</button>
+        <div style="position:relative">
+          <button class="dbt-btn dbt-btn-plus" id="dbtAddBtn" {% if commercial.is_absent %}disabled title="Indisponible pendant votre absence"{% endif %}><i class="fa fa-plus"></i></button>
+          <div id="dbtAddMenu" style="z-index:1;display:none;position:absolute;top:110%;right:0;background:#fff;border:1px solid #e7ecf5;border-radius:12px;padding:8px;box-shadow:0 10px 24px rgba(0,0,0,.1);min-width:220px">
+            <a href="{% url 'new_client' %}" class="dbt-link" style="display:block;padding:8px 10px">➕ Ajouter un nouveau client</a>
+            <a href="{% url 'add_rdv' %}" class="dbt-link" style="display:block;padding:8px 10px">🗓️ Ajouter un RDV</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Badges de filtres actifs -->
+    <div id="dbtActiveFilters" class="dbt-badges" style="margin-bottom:8px"></div>
+
+    <!-- Carte Calendrier -->
+    <div class="dbt-calendar-card">
+      <div class="dbt-calendar-toolbar">
+        <div class="dbt-tabs inside" id="dbtTabs">
+          <button class="dbt-tab dbt-tab-active" data-statut="a_venir">Visites à venir</button>
+          <button class="dbt-tab" data-statut="valide">Visites récentes</button>
+          <button class="dbt-tab" data-statut="annule">Visites annulées</button>
+        </div>
+
+        <div class="dbt-calendar-head">
+          <button id="dbtPrev" class="dbt-cal-nav" aria-label="Mois précédent">◀</button>
+          <div id="dbtTitle" class="dbt-cal-title">Octobre 2025</div>
+          <button id="dbtNext" class="dbt-cal-nav" aria-label="Mois suivant">▶</button>
+        </div>
+      </div>
+
+      <div class="dbt-cal-grid" id="dbtCalGrid"></div>
+    </div>
+
+    <div class="dbt-footer-links">
+      <a href="/mentions-legales" class="dbt-link">Mentions légales</a>
+      <a href="/politique-confidentialite" class="dbt-link">Politique de confidentialité</a>
+    </div>
+  </div>
+
+  <!-- Modale JOUR -->
+  <div id="dbtDayModal" class="dbt-day-modal" style="display:none;">
+    <div class="dbt-day-modal-content">
+      <button id="dbtCloseDay" class="dbt-day-close" aria-label="Fermer">×</button>
+      <div id="dbtDayTitle" class="dbt-day-title">Jour</div>
+      <div id="dbtDayList" class="dbt-day-list"></div>
+      <div class="dbt-day-actions">
+        <button hidden id="dbtCloseDay2" class="dbt-btn">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale CLIENT -->
+  <div id="dbtClientModal" class="dbt-client-modal">
+    <div class="dbt-client-modal-card">
+      <button class="dbt-client-close" id="dbtClientClose">×</button>
+      <h3 id="dbtClientTitle" class="clientTitle" style="margin:0 0 6px 0">Client</h3>
+      <div id="dbtClientInfo" style="color:#444"></div>
+
+      <label for="dbtComment" style="display:block;margin:12px 0 6px">Commentaire :</label>
+      <textarea id="dbtComment" rows="4" style="width:100%;border:1px solid #e7ecf5;border-radius:8px;padding:8px"></textarea>
+
+      <div id="dbtPDFContainer" style="text-align:center;margin:10px 0"></div>
+
+      <div id="dbtModalActions" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;align-items:center;justify-content:center;">
+        <!-- Onglet A VENIR -->
+        <button class="dbt-action-button" id="dbtBtnValider"><i class="fa fa-check"></i> Valider le rendez-vous</button>
+        <button class="dbt-action-button" id="dbtBtnAnnuler"><i class="fa fa-xmark"></i> Annuler le rendez-vous</button>
+        <button class="dbt-action-button" id="dbtBtnForm" style="display:none"><i class="fa fa-clipboard-list"></i> Compléter le formulaire</button>
+        <!-- Onglets VALIDE / ANNULE -->
+        <button class="dbt-action-button" id="dbtBtnSaveComment" style="display:none"><i class="fa fa-comment-dots"></i> Valider le commentaire</button>
+        <button class="dbt-action-button" id="dbtBtnNewRDV" style="display:none"><i class="fa fa-calendar-plus"></i> Ajouter un rendez-vous</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panneau Filtres -->
+  <div id="dbtFilterPanel" class="dbt-filter-panel" role="dialog" aria-label="Filtres">
+    <div class="dbt-filter-title">Filtres</div>
+
+    <div class="dbt-filter-section">
+      <div class="dbt-filter-section-title">Statut du rendez-vous</div>
+      <label class="dbt-filter-row"><input type="checkbox" class="dbt-statut-filter" value="a_venir"> À venir</label>
+      <label class="dbt-filter-row"><input type="checkbox" class="dbt-statut-filter" value="valide"> Validé</label>
+      <label class="dbt-filter-row"><input type="checkbox" class="dbt-statut-filter" value="annule"> Annulé</label>
+    </div>
+
+    <div class="dbt-filter-section">
+      <div class="dbt-filter-section-title">Date</div>
+      <div class="dbt-filter-row"><input type="date" id="dbtDateFrom" class="dbt-filter-date"></div>
+      <div class="dbt-filter-row"><input type="date" id="dbtDateTo" class="dbt-filter-date"></div>
+    </div>
+
+    <div class="dbt-filter-section">
+      <label class="dbt-filter-row" style="gap:6px">
+        <input type="checkbox" id="dbtRdvAValider"> RDV à valider
+      </label>
+      <a href="#" id="dbtResetFilters" class="dbt-link">Réinitialiser</a>
+    </div>
+
+    <button id="dbtFilterClose" class="dbt-btn" style="width:100%;margin-top:8px"><i class="fa fa-xmark"></i> Fermer</button>
+  </div>
+
+  <script>
+  (function(){
+    const grid         = document.getElementById('dbtCalGrid');
+    const titleEl      = document.getElementById('dbtTitle');
+    const prev         = document.getElementById('dbtPrev');
+    const next         = document.getElementById('dbtNext');
+    const tabs         = document.querySelectorAll('#dbtTabs .dbt-tab');
+
+    const dayModal     = document.getElementById('dbtDayModal');
+    const dayTitle     = document.getElementById('dbtDayTitle');
+    const dayList      = document.getElementById('dbtDayList');
+    const dayClose1    = document.getElementById('dbtCloseDay');
+    const dayClose2    = document.getElementById('dbtCloseDay2');
+
+    const filterBtn    = document.getElementById('dbtFilterBtn');
+    const filterPanel  = document.getElementById('dbtFilterPanel');
+    const filterClose  = document.getElementById('dbtFilterClose');
+    const activeBadges = document.getElementById('dbtActiveFilters');
+
+    const addBtn       = document.getElementById('dbtAddBtn');
+    const addMenu      = document.getElementById('dbtAddMenu');
+
+    const userBtn      = document.getElementById('dbtUserBtn');
+    const userMenu     = document.getElementById('dbtUserMenu');
+
+    const searchInput  = document.getElementById('dbtSearch');
+    const searchBox    = document.getElementById('dbtSearchBox');
+
+    const clientModal  = document.getElementById('dbtClientModal');
+    const clientClose  = document.getElementById('dbtClientClose');
+    const clientTitle  = document.getElementById('dbtClientTitle');
+    const clientInfo   = document.getElementById('dbtClientInfo');
+    const commentEl    = document.getElementById('dbtComment');
+    const pdfBox       = document.getElementById('dbtPDFContainer');
+    const btnValider   = document.getElementById('dbtBtnValider');
+    const btnAnnuler   = document.getElementById('dbtBtnAnnuler');
+    const btnForm      = document.getElementById('dbtBtnForm');
+    const btnSaveCom   = document.getElementById('dbtBtnSaveComment');
+    const btnNewRDV    = document.getElementById('dbtBtnNewRDV');
+
+    const statutCbs    = document.querySelectorAll('.dbt-statut-filter');
+    const dateFromEl   = document.getElementById('dbtDateFrom');
+    const dateToEl     = document.getElementById('dbtDateTo');
+    const rdvAValiderEl= document.getElementById('dbtRdvAValider');
+    const resetFilters = document.getElementById('dbtResetFilters');
+
+    let view            = new Date();
+    let statut          = 'a_venir';
+    let currentRDV      = null;
+    let currentDayISO   = null;
+    let suggestions     = [];
+    const monthCache    = {};
+
+    const fmtTitle = new Intl.DateTimeFormat('fr-FR',{month:'long',year:'numeric'});
+    const fmtDay   = new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
+    const week     = ['Lu','Ma','Me','Je','Ve','Sa','Di'];
+    const pad      = n => n<10?'0'+n:''+n;
+    const ymKey    = (d= view) => d.getFullYear()+'-'+pad(d.getMonth()+1);
+    const ADD_RDV_URL = "{% url 'add_rdv' %}";
+
+    function getCSRF(){
+      const m = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+      return m ? decodeURIComponent(m[1]) : '';
+    }
+
+    /* ========== Calendrier ========== */
+    function renderCal(){
+      titleEl.textContent = fmtTitle.format(view);
+      const y=view.getFullYear(), m=view.getMonth();
+      const first=new Date(y,m,1), last=new Date(y,m+1,0).getDate();
+      const start=(first.getDay()+6)%7;
+
+      grid.innerHTML='';
+      const headRow=document.createElement('div');
+      headRow.className='dbt-row head';
+      week.forEach(lbl=>{ const s=document.createElement('span'); s.textContent=lbl; headRow.appendChild(s); });
+      grid.appendChild(headRow);
+
+      const cells=[];
+      for(let i=0;i<start;i++){ const e=document.createElement('span'); e.className='dbt-cell empty'; cells.push(e); }
+      for(let d=1;d<=last;d++){
+        const b=document.createElement('button');
+        b.className='dbt-cell day';
+        b.textContent=String(d);
+        b.dataset.date=`${y}-${pad(m+1)}-${pad(d)}`;
+        b.addEventListener('click',()=>openDay(b.dataset.date));
+        cells.push(b);
+      }
+      while(cells.length%7) { const e=document.createElement('span'); e.className='dbt-cell empty'; cells.push(e); }
+
+      for(let i=0;i<cells.length;i+=7){
+        const row=document.createElement('div'); row.className='dbt-row';
+        cells.slice(i,i+7).forEach(c=>row.appendChild(c)); grid.appendChild(row);
+      }
+      decorateBadgesForMonth();
+      // Marquer les RDV non validés sur l'onglet "À venir"
+      markUnvalidatedRDVs();
+      // Si une recherche est active, ne montrer que les jours avec RDV pour ce client
+      if ((searchInput.value||'').trim()) {
+        applyCalendarFilterByClient(searchInput.value);
+      }
+    }
+
+    function clearBadges(){ 
+      document.querySelectorAll('.dbt-cell.day .dbt-bullet').forEach(b=>b.remove());
+      // Nettoyer aussi les marqueurs de RDV non validés
+      document.querySelectorAll('.dbt-cell.day').forEach(cell=>{
+        cell.classList.remove('has-unvalidated');
+        cell.removeAttribute('data-unvalidated-count');
+      });
+    }
+    function addBadge(cell, count, color){
+      if(!cell || count<=0) return;
+      let b = cell.querySelector('.dbt-bullet');
+      if(!b){ b=document.createElement('span'); b.className='dbt-bullet '+color; cell.appendChild(b); }
+      else{ b.classList.toggle('green', color==='green'); b.classList.toggle('red', color==='red'); }
+      b.textContent = count;
+    }
+    
+    // Fonction pour marquer les RDV non validés
+    function markUnvalidatedRDVs(){
+      if(statut !== 'a_venir') return; // Seulement sur l'onglet "À venir"
+      
+      const dayCells = document.querySelectorAll('.dbt-cell.day');
+      const promises = [];
+      const cellsWithData = [];
+      
+      dayCells.forEach(cell=>{
+        const iso = cell.dataset.date;
+        if(!iso) return;
+        
+        const promise = fetch(`/api/rdvs-by-date/?date=${iso}&statut=a_venir`)
+          .then(r=>r.json())
+          .then(d=>{
+            const rdvs = d.rdvs || [];
+            const unvalidatedCount = rdvs.length;
+            
+            if(unvalidatedCount > 0){
+              cellsWithData.push({cell, count: unvalidatedCount});
+            }
+          })
+          .catch(err=>{
+            console.error(`Erreur pour ${iso}:`, err);
+          });
+        
+        promises.push(promise);
+      });
+      
+      // Attendre que toutes les requêtes soient terminées
+      Promise.all(promises).then(()=>{
+        // Appliquer les classes et démarrer l'animation en même temps
+        cellsWithData.forEach(({cell, count}) => {
+          cell.classList.add('has-unvalidated');
+          cell.setAttribute('data-unvalidated-count', count);
+        });
+        
+        // Démarrer l'animation synchronisée après un petit délai
+        setTimeout(() => {
+          cellsWithData.forEach(({cell}) => {
+            cell.style.animation = 'none';
+            // Forcer un reflow pour redémarrer l'animation
+            cell.offsetHeight;
+            cell.style.animation = 'pulse-unvalidated 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite';
+          });
+        }, 100);
+      });
+    }
+    function decorateBadgesForMonth(){
+      clearBadges();
+      if(statut!=='valide' && statut!=='annule') return;
+      const color = (statut==='valide') ? 'green' : 'red';
+      const cacheKey = ymKey()+':'+statut;
+      if(!monthCache[cacheKey]) monthCache[cacheKey]={};
+
+      document.querySelectorAll('.dbt-cell.day').forEach(cell=>{
+        const date=cell.dataset.date;
+        const cached=monthCache[cacheKey][date];
+        if(typeof cached==='number'){ addBadge(cell,cached,color); return; }
+        fetch(`/api/rdvs-by-date/?date=${date}&statut=${encodeURIComponent(statut)}`)
+          .then(r=>r.json())
+          .then(d=>{
+            const n = Array.isArray(d.rdvs)? d.rdvs.length:0;
+            monthCache[cacheKey][date]=n;
+            addBadge(cell,n,color);
+          }).catch(()=>{});
+      });
+    }
+    // Filtre d'affichage des jours selon le rs_nom saisi
+    let __filterSeq = 0; // évite conditions de course entre fetch successifs
+    function applyCalendarFilterByClient(rsNom){
+      const q = (rsNom||'').trim().toLowerCase();
+      const dayCells = document.querySelectorAll('.dbt-cell.day');
+      const mySeq = ++__filterSeq;
+      if(!q){
+        dayCells.forEach(c=> { c.style.display=''; });
+        return;
+      }
+      dayCells.forEach(cell=>{
+        const iso = cell.dataset.date;
+        fetch(`/api/rdvs-by-date/?date=${iso}&statut=${encodeURIComponent(statut)}`)
+          .then(r=>r.json())
+          .then(d=>{
+            if(mySeq !== __filterSeq) return; // un nouveau filtre est arrivé entre temps
+            const rdvs = d.rdvs || [];
+            const has = rdvs.some(r => {
+              const nom = (r.client?.rs_nom || r.client?.nom || '')+'';
+              const civ = (r.client?.civilite || '')+'';
+              const withCiv = (civ? civ+' ' : '') + nom;
+              return nom.toLowerCase().includes(q) || 
+                     civ.toLowerCase().includes(q) || 
+                     withCiv.toLowerCase().includes(q);
+            });
+            cell.style.display = has ? '' : 'none';
+          })
+          .catch(()=>{ if(mySeq === __filterSeq) cell.style.display='none'; });
+      });
+    }
+
+    /* ========== Modale Jour ========== */
+    function openDay(isoDate){
+      currentDayISO = isoDate;
+      dayTitle.textContent = fmtDay.format(new Date(isoDate+'T00:00:00'));
+      dayList.innerHTML = '<div class="dbt-day-item" style="justify-content:center;background:#fff;border:none">Chargement…</div>';
+      dayModal.style.display='flex';
+
+      fetch(`/api/rdvs-by-date/?date=${isoDate}&statut=${encodeURIComponent(statut)}`)
+        .then(r=>r.json()).then(data=>{
+          const rdvs = data.rdvs || [];
+          const q = (searchInput.value||'').trim().toLowerCase();
+          const dataset = q ? rdvs.filter(r=>{
+            const nom = (r.client?.rs_nom || r.client?.nom || '')+'';
+            const civ = (r.client?.civilite || '')+'';
+            const withCiv = (civ? civ+' ' : '') + nom;
+            return nom.toLowerCase().includes(q) || 
+                   civ.toLowerCase().includes(q) || 
+                   withCiv.toLowerCase().includes(q);
+          }) : rdvs;
+          if(!dataset.length){ dayList.innerHTML='<div style="padding:10px;color:#777">Aucun rendez-vous</div>'; return; }
+          dayList.innerHTML='';
+          dataset.forEach(r=>{
+            const nom = r.client?.rs_nom || r.client?.nom || '(Sans raison sociale)';
+            const heure = r.heure || '';
+            const addr = r.adresse ? `${r.adresse.adresse||''} ${r.adresse.code_postal||''} ${r.adresse.ville||''}`.trim() : '';
+            // Suggestions: rs_nom et variante civilité + rs_nom
+            const civ = r.client?.civilite || '';
+            const withCiv = (civ? civ+' ' : '') + nom;
+            suggestions.push(nom);
+            if(withCiv && withCiv!==nom) suggestions.push(withCiv);
+
+            const item=document.createElement('div');
+            item.className='dbt-day-item';
+            
+            // Ajouter le lien PDF si disponible (seulement pour les RDV validés)
+            let pdfLink = '';
+            if (r.pdf && r.pdf.exists && statut === 'valide') {
+              pdfLink = `
+                <div style="margin-top:4px">
+                  <a href="${r.pdf.url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;color:#ef4444;text-decoration:none;font-size:12px;font-weight:500">
+                    <i class="fa fa-file-pdf" style="color:#ef4444"></i>
+                    Questionnaire PDF
+                  </a>
+                </div>
+              `;
+            }
+            
+            item.innerHTML=`
+              <div class="dbt-day-left">
+                <div class="dbt-day-ttl">${heure?heure+' • ':''}${nom}</div>
+                <div style="color:#64748b;font-size:12px">${addr}</div>
+                ${pdfLink}
+              </div>
+              <div><button class="dbt-btn" data-open="${r.uuid}">Ouvrir</button></div>`;
+            dayList.appendChild(item);
+
+            item.querySelector('[data-open]').addEventListener('click',(ev)=>{
+              ev.stopPropagation();
+              openClientModal({
+                uuid: r.uuid,
+                civilite: r.client?.civilite || '',
+                rs_nom : r.client?.rs_nom || r.client?.nom || '',
+                client_id: r.client?.id || null,
+                adresse: r.adresse?.adresse || '',
+                cp     : r.adresse?.code_postal || '',
+                ville  : r.adresse?.ville || '',
+                telephone: r.client?.telephone || '',
+                email    : r.client?.email || '',
+                code_comptable: r.client?.code_comptable || '',
+                classement: r.client?.classement_client || '',
+                statut  : r.statut || statut,
+                date    : isoDate,
+                heure   : r.heure || ''
+              });
+            });
+          });
+          suggestions=[...new Set(suggestions)];
+        }).catch(()=>{ dayList.innerHTML='<div style="padding:10px;color:#a33">Erreur de chargement</div>'; });
+    }
+
+    /* ========== Modale Client ========== */
+    function setupActionsByTab(){
+      // cache tout
+      btnValider.style.display='none';
+      btnAnnuler.style.display='none';
+      btnForm.style.display='none';
+      btnSaveCom.style.display='none';
+      btnNewRDV.style.display='none';
+
+      if(statut==='a_venir'){
+        btnValider.style.display='inline-flex';
+        btnAnnuler.style.display='inline-flex';
+        // le bouton formulaire ne concerne que l’onglet à venir
+        fetch(`/check-satisfaction/${currentRDV.uuid}/`).then(r=>r.json()).then(d=>{
+          btnForm.style.display = d.exists ? 'none' : 'inline-flex';
+        });
+      }else if(statut==='valide'){
+        // rendez-vous déjà validé -> commentaire uniquement
+        btnSaveCom.style.display='inline-flex';
+      }else if(statut==='annule'){
+        // rendez-vous annulé -> commentaire + possibilité de replanifier
+        btnSaveCom.style.display='inline-flex';
+        btnNewRDV.style.display='inline-flex';
+      }
+    }
+
+    function openClientModal(rdv){
+      currentRDV = rdv;
+      clientTitle.textContent = (rdv.civilite ? rdv.civilite+' ' : '') + (rdv.rs_nom || '(Sans raison sociale)');
+      clientInfo.innerHTML = `
+        <div><b>Adresse :</b> ${rdv.adresse||''} ${rdv.cp||''} ${rdv.ville||''}</div>
+        <div><b>Téléphone :</b> ${rdv.telephone||'N/A'}</div>
+        <div><b>Email :</b> ${rdv.email||'N/A'}</div>
+        <div><b>Statut :</b> ${rdv.statut||'N/A'}</div>
+        <div><b>Code comptable :</b> ${rdv.code_comptable||'N/A'}</div>
+        <div><b>Type de client :</b> ${rdv.classement||'N/A'}</div>
+        <div style="margin-top:8px;color:#64748b"><b>Rendez-vous :</b> ${rdv.date||''} ${rdv.heure? 'à '+rdv.heure : ''}</div>
+        <div style="margin-top:10px"><b>Commentaires :</b><div id="dbtComments" class="dbt-modal-commentaires"><em>Chargement…</em></div></div>
+      `;
+      pdfBox.innerHTML=''; commentEl.value='';
+
+      // commentaires existants
+      fetch(`/get-rdv-info/${rdv.uuid}/`).then(r=>r.json()).then(data=>{
+        const zone=document.getElementById('dbtComments');
+        const cs=data.commentaires||[];
+        zone.innerHTML = cs.length ? cs.map(c=>`
+          <div style="background:#f8fafc;border:1px solid #eef2f7;border-radius:10px;padding:10px;margin:6px 0">
+            <div>${c.texte}</div>
+            <div style="color:#94a3b8;font-size:12px;margin-top:6px">${c.date}${c.auteur && c.auteur!=='Système' ? ' — '+c.auteur : ''}</div>
+          </div>`).join('') : '<span style="color:#9ca3af">Aucun commentaire</span>';
+      });
+
+      // PDF si dispo (inchangé)
+      fetch(`/check-satisfaction-exists/${rdv.uuid}/`).then(r=>r.json()).then(d=>{
+        if(d.exists && d.satisfaction_uuid){
+          pdfBox.innerHTML = `<a class="dbt-pdf-icon" target="_blank" href="/download-satisfaction/${d.satisfaction_uuid}/" title="Télécharger"><img src="{% static 'front/img/PDF.svg' %}" alt="PDF"></a>`;
+        }
+      });
+
+      // Actions (handlers)
+      btnValider.onclick = ()=> updateStatut(rdv.uuid,'valider');
+      btnAnnuler.onclick = ()=> updateStatut(rdv.uuid,'annuler');
+      btnForm.onclick    = ()=>{
+        const rs = clientTitle.textContent.trim();
+        const url = `/satisfaction-b2b/?rs_nom=${encodeURIComponent(rs)}&rdv_id=${rdv.uuid}`;
+        const win = window.open(url,'_blank','noopener,noreferrer');
+        if(!win) alert("La fenêtre a été bloquée. Autorisez les popups.");
+      };
+      btnSaveCom.onclick = ()=> saveComment(rdv.uuid);
+      btnNewRDV.onclick  = ()=>{
+        const next = '/dashboard_test/';
+        if (currentRDV && currentRDV.client_id) {
+          const url = `${ADD_RDV_URL}?client_id=${encodeURIComponent(currentRDV.client_id)}&next=${encodeURIComponent(next)}`;
+          window.open(url,'_blank','noopener,noreferrer');
+        } else {
+          // Fallback par nom si pas d'id (mieux que rien)
+          const rs = clientTitle.textContent.trim();
+          const url = `${ADD_RDV_URL}?next=${encodeURIComponent(next)}`;
+          window.open(url,'_blank','noopener,noreferrer');
+        }
+      };
+
+      setupActionsByTab();
+      clientModal.style.display='flex';
+    }
+
+    function invalidateMonthCaches(){
+      const base = ymKey();
+      delete monthCache[base+':valide'];
+      delete monthCache[base+':annule'];
+    }
+
+    function updateStatut(uuid, action){
+      const body = JSON.stringify({ commentaire: commentEl.value });
+      fetch(`/update-statut/${uuid}/${action}/`, {
+        method:'POST',
+        headers:{'X-CSRFToken':getCSRF(),'Content-Type':'application/json'},
+        body
+      }).then(r=>r.json()).then(data=>{
+        if(data.status==='ok'){
+          clientModal.style.display='none';
+          if(dayModal.style.display==='flex' && currentDayISO){ openDay(currentDayISO); }
+          invalidateMonthCaches();
+          decorateBadgesForMonth();
+          alert('Mise à jour effectuée.');
+        }else{
+          alert('Erreur lors de la mise à jour.');
+        }
+      }).catch(()=>alert('Erreur réseau.'));
+    }
+
+    function saveComment(uuid){
+      const body = JSON.stringify({ commentaire: commentEl.value });
+      fetch(`/update-statut/${uuid}/commentaire/`, {
+        method:'POST',
+        headers:{'X-CSRFToken':getCSRF(),'Content-Type':'application/json'},
+        body
+      }).then(r=>r.json()).then(data=>{
+        if(data.status==='ok'){
+          clientModal.style.display='none';
+          if(dayModal.style.display==='flex' && currentDayISO){ openDay(currentDayISO); }
+          alert('Commentaire enregistré.');
+        }else{
+          alert('Erreur lors de l’enregistrement du commentaire.');
+        }
+      }).catch(()=>alert('Erreur réseau.'));
+    }
+
+    /* ========== Filtres (visuels) ========== */
+    function toggleFilter(){ filterPanel.style.display = (filterPanel.style.display==='block'?'none':'block'); }
+    function updateBadgesVisuals(){
+      activeBadges.innerHTML='';
+      const selected = Array.from(statutCbs).filter(c=>c.checked).map(c=>c.value);
+      if(selected.length){
+        const b=document.createElement('span'); b.className='dbt-badge'; b.innerHTML='Statut: '+selected.join(', ')+' <span class="remove">×</span>';
+        b.querySelector('.remove').onclick=()=>{ statutCbs.forEach(c=>c.checked=false); updateBadgesVisuals(); };
+        activeBadges.appendChild(b);
+      }
+      if(dateFromEl.value || dateToEl.value){
+        const b=document.createElement('span'); b.className='dbt-badge';
+        b.innerHTML=`Date: ${dateFromEl.value||'…'} – ${dateToEl.value||'…'} <span class="remove">×</span>`;
+        b.querySelector('.remove').onclick=()=>{ dateFromEl.value=''; dateToEl.value=''; updateBadgesVisuals(); };
+        activeBadges.appendChild(b);
+      }
+      if(rdvAValiderEl.checked){
+        const b=document.createElement('span'); b.className='dbt-badge';
+        b.innerHTML='RDV à valider <span class="remove">×</span>';
+        b.querySelector('.remove').onclick=()=>{ rdvAValiderEl.checked=false; updateBadgesVisuals(); };
+        activeBadges.appendChild(b);
+      }
+    }
+
+    /* ========== Recherche ========== */
+    function showSuggestions(v){
+      const q=v.trim().toLowerCase();
+      const uniq=[...new Set(suggestions)];
+      if(!q){
+        // Affiche 8 suggestions récentes par défaut
+        const base = uniq.slice(0,8);
+        if(!base.length){ searchBox.style.display='none'; searchBox.innerHTML=''; return; }
+        searchBox.innerHTML = base.map(s=>`<li style="padding:8px 10px;cursor:pointer">${s}</li>`).join('');
+        searchBox.style.display='block';
+      } else {
+        const list = uniq.filter(s=> (s||'').toLowerCase().includes(q) ).slice(0,25);
+        if(!list.length){ searchBox.style.display='none'; searchBox.innerHTML=''; return; }
+        searchBox.innerHTML = list.map(s=>`<li style="padding:8px 10px;cursor:pointer">${s}</li>`).join('');
+        searchBox.style.display='block';
+      }
+      Array.from(searchBox.children).forEach(li=>{
+        li.onmousedown = (e)=>{ e.preventDefault(); searchInput.value=li.textContent; searchBox.style.display='none'; applyCalendarFilterByClient(li.textContent); };
+      });
+    }
+
+    /* ========== Events ========== */
+    tabs.forEach(t=> t.addEventListener('click',()=>{
+      tabs.forEach(x=>x.classList.remove('dbt-tab-active'));
+      t.classList.add('dbt-tab-active');
+      statut = t.getAttribute('data-statut');
+      if(dayModal.style.display==='flex' && currentDayISO){ openDay(currentDayISO); }
+      decorateBadgesForMonth();
+      markUnvalidatedRDVs(); // Marquer les RDV non validés
+      if ((searchInput.value||'').trim()) { applyCalendarFilterByClient(searchInput.value); }
+    }));
+
+    prev.onclick = ()=>{ view.setMonth(view.getMonth()-1); renderCal(); };
+    next.onclick = ()=>{ view.setMonth(view.getMonth()+1); renderCal(); };
+
+    dayClose1.onclick = ()=> dayModal.style.display='none';
+    dayClose2.onclick = ()=> dayModal.style.display='none';
+    dayModal.addEventListener('click',e=>{ if(e.target===dayModal) dayModal.style.display='none'; });
+
+    filterBtn.addEventListener('click', (e)=>{ e.stopPropagation(); toggleFilter(); });
+    filterClose.addEventListener('click', ()=> filterPanel.style.display='none');
+    document.addEventListener('click',e=>{
+      if(filterPanel.style.display==='block' && !filterPanel.contains(e.target) && !filterBtn.contains(e.target)) filterPanel.style.display='none';
+      if(addMenu.style.display==='block'    && !addMenu.contains(e.target)    && !addBtn.contains(e.target))     addMenu.style.display='none';
+      if(userMenu.style.display==='block'   && !userMenu.contains(e.target)   && !userBtn.contains(e.target))     userMenu.style.display='none';
+    });
+    [dateFromEl,dateToEl,rdvAValiderEl].forEach(el=> el && el.addEventListener('input',updateBadgesVisuals));
+    statutCbs.forEach(cb=> cb.addEventListener('change',updateBadgesVisuals));
+    resetFilters.addEventListener('click', (e)=>{ e.preventDefault(); statutCbs.forEach(c=>c.checked=false); dateFromEl.value=''; dateToEl.value=''; rdvAValiderEl.checked=false; updateBadgesVisuals(); });
+
+    addBtn.addEventListener('click', (e)=>{ if(addBtn.disabled) return; e.stopPropagation(); addMenu.style.display = (addMenu.style.display==='block'?'none':'block'); });
+    userBtn.addEventListener('click', (e)=>{ e.stopPropagation(); const open = userMenu.style.display==='block'; userMenu.style.display = open ? 'none' : 'block'; userBtn.setAttribute('aria-expanded', (!open).toString()); });
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ userMenu.style.display='none'; filterPanel.style.display='none'; } });
+
+    clientClose.addEventListener('click', ()=> clientModal.style.display='none');
+    clientModal.addEventListener('click',e=>{ if(e.target===clientModal) clientModal.style.display='none'; });
+
+    searchInput.addEventListener('input', e=>{ showSuggestions(e.target.value); applyCalendarFilterByClient(e.target.value); if(dayModal.style.display==='flex' && currentDayISO){ openDay(currentDayISO); } });
+    searchInput.addEventListener('focus', e=> showSuggestions(e.target.value));
+    searchInput.addEventListener('blur', ()=> setTimeout(()=>{searchBox.style.display='none';},120) );
+
+    // Précharge des noms de clients (rs_nom) pour les suggestions
+    fetch('/api/rdvs-a-venir/')
+      .then(r=>r.json())
+      .then(d=>{
+        (d.rdvs||[]).forEach(r=>{
+          const nom = r?.client?.rs_nom || r?.client?.nom;
+          const civ = r?.client?.civilite || '';
+          if(nom) {
+            suggestions.push(nom);
+            const withCiv = (civ? civ+' ' : '') + nom;
+            if(withCiv && withCiv!==nom) suggestions.push(withCiv);
+          }
+        });
+      })
+      .finally(()=>{ suggestions=[...new Set(suggestions)]; });
+
+    renderCal();
+  })();
+  </script>
+</body>
+</html>
+

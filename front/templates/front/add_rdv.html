@@ -166,7 +166,7 @@
       const form = document.querySelector("form");
       const cancelBtn = document.getElementById("cancelBtn");
       const inputs = form.querySelectorAll("input, textarea, select");
-      let nextUrl = document.querySelector("input[name='next']").value || "/dashboard";
+      let nextUrl = document.querySelector("input[name='next']").value || (role === 'responsable' || role === 'admin' ? '/dashboard-responsable/' : '/dashboard-test/');
       if (nextUrl && !nextUrl.startsWith('/')) nextUrl = '/' + nextUrl;
       const role = '{{ request.session.role|default:"" }}';
       const dashboardRespUrl = "/dashboard-responsable/";

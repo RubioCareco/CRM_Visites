@@ -137,7 +137,7 @@
   .dbt-btn:hover{
     background:#ffffff;
     color:#ef4444;
-    border-color: #ffffff;
+    border-color: #ef4444;
 }
 
   .dbt-btn-filter{
@@ -185,11 +185,13 @@
     flex-wrap:wrap}
 
   .dbt-badge{
-    background:#eef2f7;
-    border:1px solid #dfe6ef;
+    color:#fff;
+    background:rgb(239 68 68 / 77%);
+    border:1px solid #ef44446b;
     border-radius:20px;
     padding:6px 10px;
-    font-size:12px}
+    font-size:12px;
+    font: caption;}
 
   .dbt-badge .remove{
     margin-left:6px;

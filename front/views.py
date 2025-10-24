@@ -651,7 +651,8 @@ def new_client(request):
     return render(request, 'front/new_client.html', {
         'client_temp': client_temp,
         'rdv_temp': rdv_temp,
-        'success': success
+        'success': success,
+        'role': request.session.get('role')
     })
 
 # ➕ Nouveau rendez-vous
@@ -726,7 +727,7 @@ def add_rdv(request):
             next_url = request.POST.get('next') or request.GET.get('next')
             if next_url:
                 return redirect(next_url)
-            return redirect('dashboard')
+            return redirect('dashboard_test')
 
         except FrontClient.DoesNotExist:
             error_message = "Le client sélectionné est introuvable."
@@ -745,7 +746,9 @@ def add_rdv(request):
                     where=["REPLACE(UPPER(commercial), ' ', '') = %s"], params=[nom_normalise]
                 )
     client_temp = request.session.get('client_temp') if from_new_client else None
-    next_url = request.GET.get('next', '/dashboard')
+    # Valeur par défaut du next_url selon le rôle
+    default_next = '/dashboard-responsable/' if role in ['responsable', 'admin'] else '/dashboard-test/'
+    next_url = request.GET.get('next', default_next)
 
     return render(request, 'front/add_rdv.html', {
         'clients': clients,
@@ -770,7 +773,7 @@ def profils_commerciaux(request):
     # Assurez-vous que seul un responsable ou admin peut voir cette page
     role = request.session.get('role')
     if role not in ['responsable', 'admin']:
-        return redirect('dashboard') # Rediriger si pas les droits
+        return redirect('dashboard_test') # Rediriger si pas les droits
 
     commerciaux = Commercial.objects.filter(role='commercial')
     return render(request, 'front/profils_commerciaux.html', {'commerciaux': commerciaux})
@@ -876,7 +879,7 @@ def profil(request, commercial_id=None):
             if role in ['responsable', 'admin']:
                 return redirect('dashboard_responsable')
             else:
-                return redirect('dashboard')
+                return redirect('dashboard_test')
 
     # On passe une variable pour savoir si on peut éditer (le user peut éditer son profil, ou un responsable peut éditer un commercial)
     can_edit = (not commercial_id) or (request.session.get('role') in ['responsable', 'admin'])

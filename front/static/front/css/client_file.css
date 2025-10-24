@@ -1,14 +1,18 @@
 /* Styles spécifiques à client_file.html */
+body.dashboard { background: #f5f7fb !important; background-image: none !important; }
+
 .dashboard{
   background-color: #f5f7fb;
 }
 
 .dashboard-title{
+  margin-left: 375px;
   color: #666;
 }
 
 .search-bar input{
   position: relative;
+  color: #e53935;
   z-index: 1;
   margin-left: 27px;
   padding-left: 36px;
@@ -21,11 +25,16 @@
   box-shadow: 0 2px 12px rgba(196, 98, 98, 0.13);
   font-size: 1.05rem;
   font-weight: 400;
+  margin-left: 375px;
   transition: background 0.18s, box-shadow 0.18s, border 0.18s, color 0.18s, transform 0.18s;
 }
 
+.search-bar input::placeholder{
+  color: #e53935;
+}
+
 .search-icon{
-  margin-left: 30px;
+  margin-left: 375px;
   color:#e53935;
 }
 

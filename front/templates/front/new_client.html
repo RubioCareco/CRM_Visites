@@ -79,7 +79,9 @@
     document.addEventListener('DOMContentLoaded', function() {
       document.querySelector('.success-message').style.display = 'block';
       setTimeout(function() {
-        window.location.href = '/dashboard';
+        const role = '{{ role|default:"" }}';
+        const target = (role === 'responsable' || role === 'admin') ? '/dashboard-responsable/' : '/dashboard-test/';
+        window.location.href = target;
       }, 2000);
     });
   </script>

@@ -30,7 +30,6 @@
     .dbt-filter-section-title{font-weight:600;margin-bottom:6px}
     .dbt-filter-row{display:flex;align-items:center;gap:8px;margin:6px 0}
     .dbt-badges{display:flex;flex-wrap:wrap;gap:8px}
-    .dbt-badge{background:#eef2f7;border:1px solid #dfe6ef;border-radius:20px;padding:6px 10px;font-size:12px}
     .dbt-badge .remove{margin-left:6px;cursor:pointer}
 
     .dbt-user-wrap{position:relative}
@@ -56,42 +55,36 @@
     .dbt-bullet.green{ background:#10b981; }
     .dbt-bullet.red{   background:#ef4444; }
     
-    /* Surbrillance pour RDV non validés */
+    /* Surbrillance pour RDV non validés (animation très subtile) */
     .dbt-cell.day.has-unvalidated{
-      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+      position: relative;
+      background: linear-gradient(135deg,#fef2f2 0%,#fee2e2 100%);
       border: 2px solid #fca5a5;
-      box-shadow: 0 0 0 1px #ef4444;
-      animation: pulse-unvalidated 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      animation: pulse-subtle 2.2s ease-in-out infinite;
     }
-    .dbt-cell.day.has-unvalidated:hover{
-      background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
-      animation: none; /* Arrêter l'animation au survol */
+    /* Supprimer l'utilisation de ::after pour éviter le conflit avec le tooltip */
+    .dbt-cell.day.has-unvalidated:hover{ animation-play-state:paused; }
+
+    @keyframes pulse-subtle{
+      0%,100%{ transform:translateZ(0) scale(1); }
+      50%    { transform:translateZ(0) scale(1.006); }
     }
-    
-    /* Animation de battement pour RDV non validés */
-    @keyframes pulse-unvalidated {
-      0%, 100% {
-        box-shadow: 0 0 0 2px #ef4444, 0 0 0 0 rgba(239, 68, 68, 0.8);
-        transform: scale(1);
-      }
-      25% {
-        box-shadow: 0 0 0 2px #ef4444, 0 0 0 6px rgba(239, 68, 68, 0.4);
-        transform: scale(1.03);
-      }
-      50% {
-        box-shadow: 0 0 0 2px #ef4444, 0 0 0 12px rgba(239, 68, 68, 0.2);
-        transform: scale(1.05);
-      }
-      75% {
-        box-shadow: 0 0 0 2px #ef4444, 0 0 0 8px rgba(239, 68, 68, 0.3);
-        transform: scale(1.02);
-      }
+    @media (prefers-reduced-motion: reduce){
+      .dbt-cell.day.has-unvalidated{ animation:none; }
     }
     
     /* Couleurs de survol selon l'onglet actif */
     .dbt-cell.day:hover{
       transition: all 0.2s ease;
     }
+
+    /* Jours atténués (quand filtre RDV à valider est actif) */
+    .dbt-cell.day.dbt-muted{
+      opacity: .35;
+      filter: grayscale(1) saturate(.3);
+      pointer-events: none; /* non cliquable */
+    }
+    .dbt-cell.day.dbt-muted:hover{ box-shadow: none !important; }
     
     /* Ombres et survol sur onglet "À venir" (orange) */
     body:has(.dbt-tab[data-statut="a_venir"].dbt-tab-active) .dbt-cell.day{
@@ -124,35 +117,8 @@
     }
     
     /* Tooltip pour RDV non validés */
-    .dbt-cell.day[data-unvalidated-count]{
-      position: relative;
-    }
-    .dbt-cell.day[data-unvalidated-count]:hover::after{
-      content: attr(data-unvalidated-count) " rendez-vous à valider";
-      position: absolute;
-      bottom: 100%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #1f2937;
-      color: white;
-      padding: 6px 10px;
-      border-radius: 6px;
-      font-size: 12px;
-      white-space: nowrap;
-      z-index: 1000;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      margin-bottom: 4px;
-    }
-    .dbt-cell.day[data-unvalidated-count]:hover::before{
-      content: "";
-      position: absolute;
-      bottom: 100%;
-      left: 50%;
-      transform: translateX(-50%);
-      border: 4px solid transparent;
-      border-top-color: #1f2937;
-      z-index: 1000;
-    }
+    /* Tooltip global (évite tout clipping/z-index) */
+    .dbt-tooltip{ position:fixed; top:0; left:0; display:none; padding:8px 12px; background:#111; color:#fff; border-radius:6px; font-size:13px; box-shadow:0 6px 16px rgba(0,0,0,.25); pointer-events:none; z-index:2147483647; }
   </style>
 </head>
 
@@ -222,6 +188,7 @@
       </div>
 
       <div class="dbt-cal-grid" id="dbtCalGrid"></div>
+      <div id="dbtTooltip" class="dbt-tooltip"></div>
     </div>
 
     <div class="dbt-footer-links">
@@ -270,12 +237,7 @@
   <div id="dbtFilterPanel" class="dbt-filter-panel" role="dialog" aria-label="Filtres">
     <div class="dbt-filter-title">Filtres</div>
 
-    <div class="dbt-filter-section">
-      <div class="dbt-filter-section-title">Statut du rendez-vous</div>
-      <label class="dbt-filter-row"><input type="checkbox" class="dbt-statut-filter" value="a_venir"> À venir</label>
-      <label class="dbt-filter-row"><input type="checkbox" class="dbt-statut-filter" value="valide"> Validé</label>
-      <label class="dbt-filter-row"><input type="checkbox" class="dbt-statut-filter" value="annule"> Annulé</label>
-    </div>
+    
 
     <div class="dbt-filter-section">
       <div class="dbt-filter-section-title">Date</div>
@@ -390,6 +352,10 @@
       decorateBadgesForMonth();
       // Marquer les RDV non validés sur l'onglet "À venir"
       markUnvalidatedRDVs();
+      // Si filtre "RDV à valider" actif, n'afficher que les jours concernés
+      if (rdvAValiderEl && rdvAValiderEl.checked) {
+        setTimeout(() => filterDaysByUnvalidated(), 150);
+      }
       // Si une recherche est active, ne montrer que les jours avec RDV pour ce client
       if ((searchInput.value||'').trim()) {
         applyCalendarFilterByClient(searchInput.value);
@@ -457,8 +423,29 @@
             cell.offsetHeight;
             cell.style.animation = 'pulse-unvalidated 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite';
           });
+          // Réappliquer le filtre d'affichage si demandé
+          if (rdvAValiderEl && rdvAValiderEl.checked) {
+            filterDaysByUnvalidated();
+          }
         }, 100);
       });
+    }
+
+    // Affiche uniquement les jours avec RDV à valider si la case est cochée
+    function filterDaysByUnvalidated(){
+      const only = rdvAValiderEl && rdvAValiderEl.checked;
+      const dayCells = document.querySelectorAll('.dbt-cell.day');
+      dayCells.forEach(cell => {
+        if (!only) {
+          cell.classList.remove('dbt-muted');
+          return;
+        }
+        const has = cell.classList.contains('has-unvalidated');
+        if (has) cell.classList.remove('dbt-muted'); else cell.classList.add('dbt-muted');
+      });
+      // Superposer avec le filtre de recherche si présent
+      const q = (searchInput.value||'').trim();
+      if (q) applyCalendarFilterByClient(q);
     }
     function decorateBadgesForMonth(){
       clearBadges();
@@ -723,12 +710,7 @@
     function toggleFilter(){ filterPanel.style.display = (filterPanel.style.display==='block'?'none':'block'); }
     function updateBadgesVisuals(){
       activeBadges.innerHTML='';
-      const selected = Array.from(statutCbs).filter(c=>c.checked).map(c=>c.value);
-      if(selected.length){
-        const b=document.createElement('span'); b.className='dbt-badge'; b.innerHTML='Statut: '+selected.join(', ')+' <span class="remove">×</span>';
-        b.querySelector('.remove').onclick=()=>{ statutCbs.forEach(c=>c.checked=false); updateBadgesVisuals(); };
-        activeBadges.appendChild(b);
-      }
+      // Suppression du badge Statut (les cases ont été retirées)
       if(dateFromEl.value || dateToEl.value){
         const b=document.createElement('span'); b.className='dbt-badge';
         b.innerHTML=`Date: ${dateFromEl.value||'…'} – ${dateToEl.value||'…'} <span class="remove">×</span>`;
@@ -778,6 +760,34 @@
     prev.onclick = ()=>{ view.setMonth(view.getMonth()-1); renderCal(); };
     next.onclick = ()=>{ view.setMonth(view.getMonth()+1); renderCal(); };
 
+    // Tooltip global pour les cases avec RDV à valider
+    const globalTooltip = document.getElementById('dbtTooltip');
+    grid.addEventListener('mouseover', (e)=>{
+      const cell = e.target.closest('.dbt-cell.day.has-unvalidated');
+      if(!cell) return;
+      const count = cell.getAttribute('data-unvalidated-count');
+      if(!count) return;
+      const rect = cell.getBoundingClientRect();
+      globalTooltip.textContent = `${count} rendez-vous à valider`;
+      globalTooltip.style.display = 'block';
+      globalTooltip.style.top = `${Math.max(10, rect.top - 10)}px`;
+      globalTooltip.style.left = `${rect.left + rect.width/2 - globalTooltip.offsetWidth/2}px`;
+    });
+    grid.addEventListener('mousemove', (e)=>{
+      if(globalTooltip.style.display !== 'block') return;
+      const cell = e.target.closest('.dbt-cell.day.has-unvalidated');
+      if(!cell){ globalTooltip.style.display='none'; return; }
+      const rect = cell.getBoundingClientRect();
+      globalTooltip.style.top = `${Math.max(10, rect.top - 10)}px`;
+      globalTooltip.style.left = `${rect.left + rect.width/2 - globalTooltip.offsetWidth/2}px`;
+    });
+    grid.addEventListener('mouseout', (e)=>{
+      const to = e.relatedTarget;
+      if(!to || !to.closest || !to.closest('.dbt-cell.day.has-unvalidated')){
+        globalTooltip.style.display='none';
+      }
+    });
+
     dayClose1.onclick = ()=> dayModal.style.display='none';
     dayClose2.onclick = ()=> dayModal.style.display='none';
     dayModal.addEventListener('click',e=>{ if(e.target===dayModal) dayModal.style.display='none'; });
@@ -790,6 +800,17 @@
       if(userMenu.style.display==='block'   && !userMenu.contains(e.target)   && !userBtn.contains(e.target))     userMenu.style.display='none';
     });
     [dateFromEl,dateToEl,rdvAValiderEl].forEach(el=> el && el.addEventListener('input',updateBadgesVisuals));
+    if (rdvAValiderEl) {
+      rdvAValiderEl.addEventListener('input', ()=>{
+        // S'assurer que les marquages existent avant de filtrer
+        if (rdvAValiderEl.checked) {
+          markUnvalidatedRDVs();
+          setTimeout(() => filterDaysByUnvalidated(), 150);
+        } else {
+          filterDaysByUnvalidated();
+        }
+      });
+    }
     statutCbs.forEach(cb=> cb.addEventListener('change',updateBadgesVisuals));
     resetFilters.addEventListener('click', (e)=>{ e.preventDefault(); statutCbs.forEach(c=>c.checked=false); dateFromEl.value=''; dateToEl.value=''; rdvAValiderEl.checked=false; updateBadgesVisuals(); });
 

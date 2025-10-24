@@ -13,7 +13,6 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
 
     # Tableaux de bord
-    path("dashboard/", views.dashboard, name="dashboard"),
     path("dashboard-test/", views.dashboard_test, name="dashboard_test"),
     path("dashboard-responsable/", views.dashboard_responsable, name="dashboard_responsable"),
 

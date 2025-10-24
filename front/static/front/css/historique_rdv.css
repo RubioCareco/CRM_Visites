@@ -1,6 +1,8 @@
 /* ===== STYLES DE BASE - MODE PC ===== */
-.body{
-  background-color: #f5f7fb;
+/* Fond clair pour l'interface historique_rdv */
+body{
+  background-color: #f5f7fb !important;
+  background-image: none !important;
 }
 
 .tab-btn {
@@ -170,13 +172,15 @@
   }
 
   .tabs-content-scroll {
-    max-height: 68vh;
+    max-height: 92vh;
     overflow-y: auto;
     padding-right: 18px;
+    padding-bottom: 260px; /* espace pour le footer/bouton fixe afin d'atteindre la dernière carte */
     margin-right: 6px;
     margin-top: 0;
     border-radius: 0;
     background: transparent;
+    box-sizing: border-box;
   }
 
   .tabs-content-scroll::-webkit-scrollbar {
@@ -217,8 +221,8 @@
   right: 0;
   top: 38px;
   z-index: 10;
-  background: rgba(30,30,30,0.95);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.95);
+  color: #e53935;
   border-radius: 0 0 8px 8px;
   max-height: 180px;
   overflow-y: auto;
@@ -280,7 +284,7 @@
   font-size: 1.15rem;
   font-weight: bold;
   margin-bottom: 14px;
-  color: #fff;
+  color: #666;
 }
 
 .filter-type-buttons {
@@ -339,19 +343,29 @@
 }
 
 .filter-close-btn {
-    position: absolute;
-    top: 10px;
-    right: 14px;
-    background: none;
-    border: none;
-  color: #fff;
-  font-size: 1.3rem;
-    cursor: pointer;
-  transition: color 0.2s;
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  color: #e53935;
+  font-size: 22px;
+  display: flex
+;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s 
+ease;
+  box-sizing: border-box;
+  padding: 0;
 }
 
 .filter-close-btn:hover {
-  color: #e53935;
+  background-color: #e53935;
+  color:#fff ;
 }
 
 .cards {
@@ -370,7 +384,7 @@
   padding-left: 0;
   padding-right: 0;
   border-radius: 12px;
-  overflow: hidden;
+  overflow: hidden; /* conserver les cartes dans le conteneur */
   color: #444;
 }
 
@@ -606,6 +620,7 @@
     display: flex !important;
     align-items: center !important;
     gap: 15px !important;
+    margin-left: 650px;
   }
   
   .search-bar input {
@@ -614,6 +629,7 @@
     height: 45px !important; /* Réduit de 50px à 45px */
     flex: 1 !important;
     border-radius: 12px !important;
+    margin-left: 450px;
   }
   
   .search-icon {
@@ -622,6 +638,7 @@
     left: 30px !important; /* Réduit de 35px à 30px */
     z-index: 10 !important;
     color: #666 !important;
+    margin-left: 450px;
   }
   
   /* AGRANDIR LE BOUTON FILTRES - MÊME PADDING QUE LA BARRE */
@@ -874,6 +891,8 @@
   }
   
   .search-bar input {
+    background-color: #ffffff;
+    color: #e53935;
     font-size: 1.6rem !important;
     padding: 15px 20px 15px 45px !important; /* Réduit de 20px 25px 20px 60px à 15px 20px 15px 45px */
     height: 50px !important; /* Réduit de 60px à 50px */
@@ -1035,10 +1054,10 @@
 /* Spécifique à l'interface historique_rdv: titre */
 .historique-title {
   position: absolute;
-  margin-left: 175px;
+  margin-left: 450px;
   top: 5px;
   left: 20px;
-  color: rgb(0, 0, 0);
+  color: #666;
   font-size: 34px;
   font-weight: bold;
 }
@@ -1182,4 +1201,87 @@ body .dashboard .search-bar {
 
 body .dashboard .cards {
   margin-top: 50px !important;
+  border-radius: 15px;
+}
+
+/* Alignement à droite de la barre de recherche (Desktop uniquement) */
+@media (min-width: 1025px) {
+  body .dashboard .search-bar {
+    justify-content: flex; /* pousse le contenu à droite */
+    margin-left: 250px;
+  }
+  body .dashboard .search-bar .search-icon { /* annule le gros décalage à gauche seulement sur desktop */
+    margin-left: 175px;
+  }
+}
+
+/* Disposition de la popover de filtre (desktop) :
+   - Boutons (jour/semaine/mois/année) au-dessus
+   - Barre de date alignée juste en dessous, bien alignée horizontalement */
+@media (min-width: 1025px) {
+  /* Conserver l'affichage contrôlé par le JS (display none/block) */
+  .filter-popover { display: none; }
+  .filter-type-buttons { display: flex; gap: 10px; margin-bottom: 12px; justify-content: flex-start; }
+  #filterInputsHistorique { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+  .filter-popover input[type="date"],
+  .filter-popover input[type="week"],
+  .filter-popover input[type="month"],
+  .filter-popover select {
+    width: auto; min-width: 200px;
+  }
+}
+
+/* Desktop: boutons filtres au-dessus + champ date juste en dessous, alignés */
+@media (min-width: 1025px) {
+  /* Centrer la popover au milieu de l'écran en desktop */
+  .filter-popover {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translate(-50%, -50%) !important;
+    width: min(640px, 90vw);
+  }
+
+  .filter-type-buttons { 
+    display: flex; 
+    gap: 10px; 
+    margin-bottom: 10px !important; }
+  .filter-type-buttons { justify-content: center; }
+  .filter-type-btn { margin-bottom: 0 !important; }
+  #filterInputsHistorique { display: flex; align-items: center; gap: 10px; justify-content: center; }
+  .filter-actions { justify-content: center; }
+  .filter-popover input[type="date"],
+  .filter-popover input[type="week"],
+  .filter-popover input[type="month"],
+  .filter-popover select {
+    width: 320px !important;
+    min-width: 260px !important;
+    max-width: 100% !important;
+    margin-bottom: 0 !important;
+    margin-left: auto !important;
+    margin-right: auto !important; /* centre exactement le champ */
+  }
+}
+
+.search-bar {
+  margin-left: 440px!important;
+}
+.search-bar input::placeholder {
+  color: #e53935 !important; }
+.search-icon {
+  margin-left: 1px!important;
+  color: #e53935!important;
+}
+
+.status.validée {
+  color: #1ecb6b !important;          /* vert validé */
+  font-weight: 700;
+}
+.status-à-rappeler {
+  color: #e53935 !important;          /* rouge annulé */
+  font-weight: 700;
+}
+.status-à-rappeler i {                /* icône triangle */
+  color: #e53935 !important;
 }

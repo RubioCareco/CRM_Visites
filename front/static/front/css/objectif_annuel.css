@@ -840,8 +840,8 @@ body {
 
 /* Bouton retour */
 .btn-retour {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: rgb(255, 255, 255);
+  color: #666;
   text-decoration: none;
   padding: 12px 24px;
   border-radius: 8px;

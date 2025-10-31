@@ -42,3 +42,4 @@ Thumbs.db
 *.pem
 staticfiles/
 nginx/staticfiles/
+.env.prod.save

@@ -35,3 +35,10 @@ __pycache__/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Secrets & générés
+.env
+.env.*
+*.pem
+staticfiles/
+nginx/staticfiles/

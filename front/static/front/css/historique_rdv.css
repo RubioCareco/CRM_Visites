@@ -5,6 +5,15 @@ body{
   background-image: none !important;
 }
 
+/* Liens footer – style identique à dashboard_test */
+.dbt-link{ color:#ef4444; text-decoration:none; font-size:14px; font-weight:500; }
+.dbt-link:hover{ text-decoration:underline; }
+.dbt-footer-links{
+  display:flex; gap:16px; align-items:center; justify-content:center;
+  margin:14px 2px; color:#8a96a3; width:100%; box-sizing:border-box;
+  position:relative; z-index:10;
+}
+
 .tab-btn {
   padding: 10px 24px;
   border: none;
@@ -336,6 +345,7 @@ body{
     border: none;
   cursor: pointer;
   transition: background 0.2s;
+  border: #fff!important;
 }
 
 .filter-reset-btn:hover {
@@ -351,21 +361,20 @@ body{
   border-radius: 50%;
   background: transparent;
   color: #e53935;
+  border: #fff!important;
   font-size: 22px;
-  display: flex
-;
+  display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.3s 
-ease;
-  box-sizing: border-box;
+  transition: all 0.3s ease;
   padding: 0;
 }
 
 .filter-close-btn:hover {
   background-color: #e53935;
   color:#fff ;
+  border: #fff!important;
 }
 
 .cards {
@@ -1262,6 +1271,13 @@ body .dashboard .cards {
     margin-left: auto !important;
     margin-right: auto !important; /* centre exactement le champ */
   }
+  /* Couleur du texte et du placeholder dans le champ du filtre */
+  .filter-popover input,
+  .filter-popover select { color:#111 !important; }
+  .filter-popover input::placeholder { color:#9aa3ad !important; opacity:1; }
+  .filter-popover input[type="date"]::-webkit-datetime-edit,
+  .filter-popover input[type="week"]::-webkit-datetime-edit,
+  .filter-popover input[type="month"]::-webkit-datetime-edit{ color:#111 !important; }
 }
 
 .search-bar {

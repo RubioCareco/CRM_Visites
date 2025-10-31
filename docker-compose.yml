@@ -1,9 +1,10 @@
+name: crm_visites
+
 services:
   db:
     image: mysql:8.0
     restart: unless-stopped
     environment:
-      # on réutilise directement tes DB_* pour éviter le doublon de variables
       MYSQL_DATABASE: ${DB_NAME}
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
@@ -15,22 +16,18 @@ services:
       --sql-mode=STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION
     volumes:
       - db_data:/var/lib/mysql
-    ports:
-      - "3307:3306"  # côté hôte 3307 pour éviter le conflit avec ton 3306 local
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 5s
       timeout: 3s
       retries: 30
-    networks:
-      - app_net
+    networks: [app_net]
 
   web:
     build: .
     restart: unless-stopped
-    env_file: .env
-    expose:
-      - "8000"
+    env_file: .env          # en prod, .env.prod sera appliqué par l'override
+    expose: ["8000"]        # uniquement sur le réseau Docker (pour Nginx)
     volumes:
       - .:/app
     depends_on:
@@ -38,12 +35,9 @@ services:
         condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    networks:
-      - app_net
-    ports:
-      - "127.0.0.1:8000:8000"
+    networks: [app_net]
 
-  # UI DB (phpMyAdmin) sur http://localhost:8081 (profil optionnel)
+  # Outil DEV facultatif
   phpmyadmin:
     profiles: ["devtools"]
     image: phpmyadmin:5-apache
@@ -57,8 +51,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    networks:
-      - app_net
+    networks: [app_net]
 
 volumes:
   db_data:

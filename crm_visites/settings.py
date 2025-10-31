@@ -37,9 +37,9 @@ DEBUG = env.bool('DEBUG', default=True)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 
-SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=not DEBUG)
-SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=not DEBUG)
-CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=not DEBUG)
+SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=True)
+SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=True)
+CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=True)
 
 # Application definition
 
@@ -182,3 +182,8 @@ SAME_DAY_SPREAD_KM = env.float("SAME_DAY_SPREAD_KM", default=15.0)
 SAME_DAY_CLUSTER_SEED_LIMIT = env.int("SAME_DAY_CLUSTER_SEED_LIMIT", default=60)
 ROUTING_AVG_SPEED_KMH = env.int("ROUTING_AVG_SPEED_KMH", default=50)
 HORIZON_MAX_VISITS_PER_CLIENT = env.int("HORIZON_MAX_VISITS_PER_CLIENT", default=1)
+# --- Sécurité HTTPS derrière Nginx ---
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=True)
+SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=True)
+CSRF_COOKIE_SECURE    = env.bool('CSRF_COOKIE_SECURE',    default=True)

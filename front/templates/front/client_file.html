@@ -131,17 +131,16 @@
 
   <!-- Barre de recherche identique au dashboard -->
   <div class="search-bar" style="position:relative;">
-      <i class="fa fa-search search-icon"></i>
       <input type="text" id="clientSearchBar" placeholder="Rechercher par clients, entreprises ..." autocomplete="off">
       <ul id="clientSearchSuggestions" class="autocomplete-results" style="position:absolute;left:0;right:0;top:38px;z-index:10;background:rgba(30,30,30,0.95);color:#fff;border-radius:0 0 8px 8px;max-height:180px;overflow-y:auto;display:none;"></ul>
   </div>
 
   <div class="cards" style="display:flex;justify-content:center;align-items:flex-start;min-height:10vh; border-radius: 15px;">
-    <div class="card" style="width:95%;max-width:1600px;margin-top:40px;min-height:750px;background-color: rgb(250, 250, 250);color: #444444e3;box-shadow: 0 26px 72px rgba(15, 23, 42, .14), 0 6px 16px rgba(15, 23, 42, .06);">
+    <div class="card" style="width:95%;max-width:1600px;margin-top:40px;min-height:850px;background-color: rgb(250, 250, 250);color: #444444e3;box-shadow: 0 26px 72px rgba(15, 23, 42, .14), 0 6px 16px rgba(15, 23, 42, .06);border-radius: 15px;">
       <h2 style="text-align:center;margin-bottom:24px;">
         Liste des clients
       </h2>
-      <div class="pagination-container" style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
+      <div class="pagination-container" style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-left:25px;">
         <form method="get" class="pagination-form" style="margin-right:12px;">
           <label for="per_page">Clients par page :</label>
           <select name="per_page" id="per_page" onchange="this.form.submit()">
@@ -169,7 +168,7 @@
         </form>
         {% endif %}
 
-        <button class="back-login" id="filterBtnClient" type="button" style="display:flex;align-items:center;gap:8px;font-size:1.15rem;padding:8px 22px;border-radius:8px;backdrop-filter:blur(6px);border:none;text-decoration:none;background:#e53935;color:#fff;">
+        <button class="back-login" id="filterBtnClient" type="button" style="display:flex;align-items:center;gap:8px;font-size:1.15rem;padding:8px 22px;border-radius:8px;backdrop-filter:blur(6px);border:none;text-decoration:none;background:#e53935;color:#fff;cursor:pointer;">
           <i class="fa fa-filter"></i> Filtres
         </button>
         <div class="active-filters">
@@ -211,7 +210,7 @@
           </div>
         </form>
       </div>
-      <div class="table-container" style="max-height: 850px; overflow-y: auto; padding-right: 8px; margin-top: 16px;">
+      <div class="table-container" style="max-height: 850px; overflow-y: auto; padding-right: 20px; margin-top: 16px;">
         <table class="client-table" style="width: 100%; table-layout: fixed;margin-left: 10px;">
           <thead>
             <tr style="background:transparent;border:1px solid #e53935">
@@ -290,18 +289,18 @@
         </div>
         <div id="clientComments" style="margin-top:18px;text-align:left;"></div>
         <div class="modal-buttons" style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:20px;">
-          <button class="action-button" type="button" id="addRdvBtn" style="width:260px;display:flex;align-items:center;justify-content:center;gap:7px;">
+          <button class="action-button" type="button" id="addRdvBtn" style="width:260px;display:flex;align-items:center;justify-content:center;gap:7px;border-radius: 15px;cursor:pointer;background-color: #e53935;color: white;border:#e53935">
             <i class="fa-solid fa-calendar-plus"></i> <span>Ajouter un rendez-vous</span>
           </button>
           <div style="display:flex;gap:16px;justify-content:center;">
-            <button class="action-button" type="button" id="saveBtn" style="display:none;background:#4caf50;">
+            <button class="action-button" type="button" id="saveBtn" style="display:none;background:#4caf50;border-radius: 15px;border:#4caf50;color: white;cursor:pointer">
               <i class="fa fa-check"></i> Enregistrer
             </button>
-            <button class="action-button" type="button" id="cancelBtn" style="display:none;background:#e53935;">
+            <button class="action-button" type="button" id="cancelBtn" style="display:none;background:#e53935;border-radius: 15px;border:#e53935;color: white;cursor:pointer">
               <i class="fa fa-times"></i> Annuler
             </button>
           </div>
-          <button class="action-button" type="button" id="modifyBtn" style="width:260px;display:flex;align-items:center;justify-content:center;gap:7px;">
+          <button class="action-button" type="button" id="modifyBtn" style="width:260px;display:flex;align-items:center;justify-content:center;gap:7px;background-color: #e53935;color: white;border:#e53935;cursor:pointer">
             <i class="fa-solid fa-pen"></i> <span>Modifier les informations</span>
           </button>
         </div>
@@ -309,7 +308,7 @@
     </div>
   </div>
 
-  <a href="{% if role == 'responsable' or role == 'admin' %}{% url 'dashboard_responsable' %}{% else %}{% url 'dashboard_test' %}{% endif %}" class="back-login" id="backDashboardBtn" style="position:fixed;left:24px;bottom:20px;z-index:9999;display:flex;align-items:center;gap:8px;color:#000000;font-size:1.15rem;padding:8px 22px;border-radius:8px;box-shadow:0 2px 8px rgba(255, 255, 255, 0.1);backdrop-filter:blur(6px);border: 1px solid rgba(0,0,0, 0.1);text-decoration:none;"><i class="
+  <a href="{% if role == 'responsable' or role == 'admin' %}{% url 'dashboard_responsable' %}{% else %}{% url 'dashboard-test' %}{% endif %}" class="back-login" id="backDashboardBtn" style="position:fixed;left:24px;bottom:20px;z-index:9999;display:flex;align-items:center;gap:8px;color:#000000;font-size:1.15rem;padding:8px 22px;border-radius:8px;box-shadow:0 2px 8px rgba(255, 255, 255, 0.1);backdrop-filter:blur(6px);border: 1px solid rgba(0,0,0, 0.1);text-decoration:none;"><i class="
     fa-fa arrow"></i> Retour</a>
 
 </body>

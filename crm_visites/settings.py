@@ -37,9 +37,9 @@ DEBUG = env.bool('DEBUG', default=True)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 
-SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=True)
-SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=True)
-CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=True)
+SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=(ENV == 'prod'))
+SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=True)
+CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=True)
 
 # Application definition
 
@@ -182,8 +182,17 @@ SAME_DAY_SPREAD_KM = env.float("SAME_DAY_SPREAD_KM", default=15.0)
 SAME_DAY_CLUSTER_SEED_LIMIT = env.int("SAME_DAY_CLUSTER_SEED_LIMIT", default=60)
 ROUTING_AVG_SPEED_KMH = env.int("ROUTING_AVG_SPEED_KMH", default=50)
 HORIZON_MAX_VISITS_PER_CLIENT = env.int("HORIZON_MAX_VISITS_PER_CLIENT", default=1)
-# --- Sécurité HTTPS derrière Nginx ---
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=True)
-SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=True)
-CSRF_COOKIE_SECURE    = env.bool('CSRF_COOKIE_SECURE',    default=True)
+
+# --- Sécurité derrière Nginx/Reverse proxy ---
+# Indique à Django que le client est en HTTPS quand Nginx envoie cet en-tête
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True  # utile quand on est derrière un proxy
+
+# (si ce n'est pas déjà fait, on lit ces flags depuis l'env)
+SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=False)
+SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=False)
+CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=False)
+
+# ALLOWED_HOSTS / CSRF_TRUSTED_ORIGINS depuis l'env si pas déjà définis
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=ALLOWED_HOSTS if 'ALLOWED_HOSTS' in globals() else [])
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])

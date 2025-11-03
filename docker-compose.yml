@@ -1,3 +1,4 @@
+version: "3.9"
 name: crm_visites
 
 services:
@@ -26,10 +27,10 @@ services:
   web:
     build: .
     restart: unless-stopped
-    env_file: .env          # en prod, .env.prod sera appliqué par l'override
-    expose: ["8000"]        # uniquement sur le réseau Docker (pour Nginx)
+    env_file: .env                # en prod, .env.prod sera appliqué via l’override
+    expose: ["8000"]              # visible seulement sur le réseau Docker
     volumes:
-      - .:/app
+      - .:/app                    # pratique en dev; en prod l’override retire ce bind
     depends_on:
       db:
         condition: service_healthy
@@ -37,13 +38,13 @@ services:
       - "host.docker.internal:host-gateway"
     networks: [app_net]
 
-  # Outil DEV facultatif
+  # Outil DEV (facultatif)
   phpmyadmin:
     profiles: ["devtools"]
     image: phpmyadmin:5-apache
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8081:80"
+      - "127.0.0.1:8081:80"       # accessible localement uniquement
     environment:
       PMA_HOST: db
       PMA_PORT: 3306

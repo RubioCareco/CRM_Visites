@@ -72,6 +72,7 @@ body{
 
 .tab-content.active {
   display: block;
+  cursor: pointer;
 }
 
   .visit-entry, .reminder-entry {
@@ -388,7 +389,7 @@ body{
   width: 100%;
   max-width: 1500px;
   margin: auto;
-  min-height: 750px;
+  min-height: 850px;
   padding-top: 0;
   padding-left: 0;
   padding-right: 0;
@@ -534,7 +535,8 @@ body{
 }
 
 .close-btn:hover {
-  background-color: rgba(229, 57, 53, 0.1);
+  background-color: #e53935;
+  color: white;
 }
 
 .table-modal-rdv {

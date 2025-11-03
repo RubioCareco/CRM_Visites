@@ -1,22 +1,19 @@
 services:
   web_preview:
     build: .
-    entrypoint: ["python","manage.py","runserver","0.0.0.0:8001"]
+    # On force un mode "dev" sûr pour la preview
     environment:
-      ENV: "dev"
       DEBUG: "True"
-      DB_HOST: "db"
-      ALLOWED_HOSTS: "localhost,127.0.0.1,0.0.0.0"
-      CSRF_TRUSTED_ORIGINS: "http://localhost:8001"
-      SECURE_SSL_REDIRECT: "False"
-      SESSION_COOKIE_SECURE: "False"
-      CSRF_COOKIE_SECURE: "False"
-      SITE_BASE_URL: "http://localhost:8001"
+      DB_HOST: db
+      ALLOWED_HOSTS: localhost,127.0.0.1
+      CSRF_TRUSTED_ORIGINS: http://localhost:8001
+    command: python manage.py runserver 0.0.0.0:8001
     volumes:
       - .:/app
     depends_on:
       - db
     networks:
       - app_net
+    # On NE publie pas sur Internet
     ports:
       - "127.0.0.1:8001:8001"

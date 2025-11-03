@@ -1,8 +1,13 @@
 /* Styles spécifiques à client_file.html */
 body.dashboard { background: #f5f7fb !important; background-image: none !important; }
+/* Neutraliser tout décor rouge provenant de pseudo-éléments globaux */
+body.dashboard::before,
+body.dashboard::after,
+.dashboard::before,
+.dashboard::after { content: none !important; display: none !important; }
 
 .dashboard{
-  background-color: #f5f7fb;
+  background-color: #f5f7fb!important;
 }
 
 .dashboard-title{
@@ -33,9 +38,16 @@ body.dashboard { background: #f5f7fb !important; background-image: none !importa
   color: #e53935;
 }
 
+.search-bar{ position: relative; }
 .search-icon{
-  margin-left: 375px;
-  color:#e53935;
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #e53935;
+  pointer-events: none;
+  z-index: 2;
+  margin-left:372px;
 }
 
 .client-card, .client-card * {
@@ -75,12 +87,14 @@ table.client-table tr.client-card td {
   align-items: center;
   margin-bottom: 0;
   gap: 18px;
+  margin-left: 25px;
 }
 .pagination-form {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 0;
+  margin-left: 25px;
 }
 .pagination-form label {
   font-weight: 500;

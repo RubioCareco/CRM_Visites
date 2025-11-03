@@ -2,53 +2,44 @@ services:
   nginx:
     build: ./nginx
     depends_on:
-      web:
-        condition: service_healthy
+      - web
     ports:
-      - "80:80"
-      - "443:443"                     # ← HTTPS ouvert
+      - "80:80"                            # publier en 80 en prod
+      # (si besoin de debug: remplace par "8080:80" temporairement)
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - staticfiles:/app/staticfiles:ro
-      - letsencrypt:/etc/letsencrypt   # ← certs
-      - certbot-www:/var/www/certbot   # ← webroot ACME
     networks: [app_net]
     restart: unless-stopped
 
   web:
+    build: .
     env_file: .env.prod
-    command: gunicorn crm_visites.wsgi:application --bind 0.0.0.0:8000
-    expose: ["8000"]
-    ports: []
+    depends_on:
+      - db
+    ports: []                               # PAS d’exposition directe en prod
+    expose:
+      - "8000"
     volumes:
       - staticfiles:/app/staticfiles
-    networks: [app_net]
-    restart: unless-stopped
     healthcheck:
       test:
         - CMD-SHELL
-        - python -c "import sys, urllib.request as u; r=u.urlopen('http://127.0.0.1:8000/', timeout=3); sys.exit(0 if 200 <= r.status < 400 else 1)"
+        - python -c "import sys,urllib.request as u;r=u.urlopen('http://127.0.0.1:8000/',timeout=3);sys.exit(0 if 200<=r.status<400 else 1)"
       interval: 15s
       timeout: 5s
       retries: 20
       start_period: 90s
+    networks: [app_net]
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   db:
-    ports: []
-    networks: [app_net]
-
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - letsencrypt:/etc/letsencrypt
-      - certbot-www:/var/www/certbot
-    entrypoint: ["/bin/sh","-c"]
-    command: "sleep infinity"
+    networks: [app_net]                     # hérite du service base
 
 volumes:
   staticfiles:
-  letsencrypt:
-  certbot-www:
 
 networks:
   app_net:

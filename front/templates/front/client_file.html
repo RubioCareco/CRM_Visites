@@ -20,14 +20,12 @@
       font-size: 0.95rem;
       transition: all 0.3s ease;
     }
-
     #filterPanelClient input:hover {
       background: rgba(255, 255, 255, 0.1);
       border-color: rgba(255, 255, 255, 0.2);
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
-
     #filterPanelClient input:focus {
       outline: none;
       background: rgba(255, 255, 255, 0.15);
@@ -35,20 +33,16 @@
       box-shadow: 0 0 0 2px rgba(160, 156, 156, 0.18);
       transform: translateY(-2px);
     }
-
     #filterPanelClient input::placeholder {
       color: rgba(0, 0, 0, 0.85);
       transition: color 0.3s ease;
     }
-
     #filterPanelClient input:hover::placeholder {
       color: rgba(0, 0, 0, 0.92);
     }
-
     #filterPanelClient input:focus::placeholder {
       color: #fff;
     }
-
     #resetClientFilters {
       color: #ff3030 !important;
       font-weight: 600;
@@ -68,7 +62,6 @@
       box-shadow: 0 4px 16px rgba(255,48,48,0.10);
       text-decoration: underline;
     }
-
     .commercial-select {
       background: rgba(255, 255, 255, 0.18);
       color: white;
@@ -78,18 +71,14 @@
       font-size: 0.9rem;
       cursor: pointer;
     }
-
     .commercial-select:focus {
       outline: none;
       border-color: #e53935;
     }
-
     #clientModal .modal-input:disabled {
       background: rgba(255, 255, 255, 0.08);
       border-color: transparent;
     }
-
-    /* Ajustement de la taille des champs et boutons dans la modale */
     #clientModal .input-icon-group input {
       padding: 6px 8px !important;
       font-size: 0.97rem !important;
@@ -98,24 +87,20 @@
       flex-grow: 1;
       color: #201f1f;
     }
-
     #clientModal .input-icon-group {
-        display: flex;
-        align-items: center;
-        margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
     }
-
     #clientModal .input-icon-group b {
-        width: 145px;
-        flex-shrink: 0;
-        white-space: nowrap;
+      width: 145px;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
-
     #clientModal .modal-buttons .action-button {
       padding: 12px 18px !important;
       font-size: 1.05rem !important;
     }
-
     #clientModal .modal-content h3 {
       text-align: left;
       margin-top: 24px;
@@ -152,7 +137,7 @@
           </select>
         </form>
 
-        {% if role in 'responsable,admin' %}
+        {% if role == 'responsable' or role == 'admin' %}
         <form method="get" id="commercial-filter-form" class="pagination-form" style="margin-right:12px;">
           <label for="commercial-select">Commercial :</label>
           <select name="commercial" id="commercial-select" class="commercial-select" onchange="this.form.submit()">
@@ -236,14 +221,14 @@
                 data-client-email="{{ client.email|escapejs }}"
                 data-client-statut="{{ client.statut|escapejs }}"
                 data-client-code-comptable="{{ client.code_comptable|escapejs }}"
-                                    data-client-classement="{{ client.classement_client|default:'N/A'|escapejs }}"
+                data-client-classement="{{ client.classement_client|default:'N/A'|escapejs }}"
                 style="cursor:pointer;">
               <td>{{ client.civilite|default:" " }}</td>
               <td>{{ client.rs_nom|default:" " }}</td>
               <td>{{ client.prénom|default:" " }}</td>
               <td>{{ adresse.adresse|default:" " }}</td>
-              <td>{{ adresse.code_postal|default:" " }}</td>
-              <td>{{ adresse.ville|default:" " }}</td>
+              <td>{{ adresse.code_postal|default:" " }}</td>
+              <td>{{ adresse.ville|default:" " }}</td>
             </tr>
             {% empty %}
             <tr><td colspan="6" style="text-align:center;">Aucun client importé trouvé.</td></tr>
@@ -308,8 +293,11 @@
     </div>
   </div>
 
-  <a href="{% if role == 'responsable' or role == 'admin' %}{% url 'dashboard_responsable' %}{% else %}{% url 'dashboard-test' %}{% endif %}" class="back-login" id="backDashboardBtn" style="position:fixed;left:24px;bottom:20px;z-index:9999;display:flex;align-items:center;gap:8px;color:#000000;font-size:1.15rem;padding:8px 22px;border-radius:8px;box-shadow:0 2px 8px rgba(255, 255, 255, 0.1);backdrop-filter:blur(6px);border: 1px solid rgba(0,0,0, 0.1);text-decoration:none;"><i class="
-    fa-fa arrow"></i> Retour</a>
+  <a href="{% if role == 'responsable' or role == 'admin' %}{% url 'dashboard_responsable' %}{% else %}{% url 'dashboard_test' %}{% endif %}"
+     class="back-login" id="backDashboardBtn"
+     style="position:fixed;left:24px;bottom:20px;z-index:9999;display:flex;align-items:center;gap:8px;color:#000000;font-size:1.15rem;padding:8px 22px;border-radius:8px;box-shadow:0 2px 8px rgba(255, 255, 255, 0.1);backdrop-filter:blur(6px);border: 1px solid rgba(0,0,0, 0.1);text-decoration:none;">
+    <i class="fa-solid fa-arrow-left"></i> Retour
+  </a>
 
 </body>
 <script>
@@ -585,9 +573,7 @@ document.addEventListener("DOMContentLoaded", function () {
     .then(res => {
       if (res.success) {
         alert('Modifications enregistrées !');
-        // Fermer la modal et rafraîchir la page pour afficher les nouvelles données
         closeClientModal();
-        // Attendre un peu que l'utilisateur voie le message, puis rafraîchir
         setTimeout(() => {
           window.location.reload();
         }, 1000);

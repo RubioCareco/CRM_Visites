@@ -2,10 +2,10 @@ services:
   nginx:
     build: ./nginx
     depends_on:
-      - web
+      web:
+        condition: service_healthy
     ports:
       - "80:80"                            # publier en 80 en prod
-      # (si besoin de debug: remplace par "8080:80" temporairement)
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - staticfiles:/app/staticfiles:ro
@@ -13,11 +13,13 @@ services:
     restart: unless-stopped
 
   web:
-    build: .
+    image: ghcr.io/rubiocareco/crm_visites-web:latest
+    pull_policy: always
     env_file: .env.prod
     depends_on:
-      - db
-    ports: []                               # PAS d’exposition directe en prod
+      db:
+        condition: service_started        # ou service_healthy si ton db a un healthcheck
+    ports: []                             # PAS d’exposition directe en prod
     expose:
       - "8000"
     volumes:
@@ -36,7 +38,7 @@ services:
       - "host.docker.internal:host-gateway"
 
   db:
-    networks: [app_net]                     # hérite du service base
+    networks: [app_net]                   # hérite du service base
 
 volumes:
   staticfiles:
@@ -44,3 +46,4 @@ volumes:
 networks:
   app_net:
     driver: bridge
+

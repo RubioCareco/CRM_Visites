@@ -24,7 +24,7 @@ from django.db.models import Avg, Count, Q
 from django.db.models import Min, Max  # <-- ajouté
 from django.db.models.functions import Coalesce, TruncDay, TruncWeek, TruncMonth, TruncYear
 from .models import Adresse
-from front.utils import generer_rendezvous_automatiques
+from front.utils import generer_rendezvous_automatiques, generer_rendezvous_simples
 from django.db import connection
 
 @require_GET
@@ -169,21 +169,35 @@ def login_required(view_func):
 # 🔐 Vue de connexion
 def login_view(request):
     erreur = False
+
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
+
         commercial = Commercial.objects.filter(email=email).first()
 
         if commercial and check_password(password, commercial.password):
+            # Stockage en session
             request.session['commercial_id'] = commercial.id
             request.session['commercial_nom'] = commercial.commercial
             request.session['role'] = commercial.role
+
+            # Génération de RDV à la connexion (commercial courant uniquement)
+            try:
+                today = date.today()
+                generer_rendezvous_simples(date_cible=today, commercial=commercial)
+            except Exception:
+                # Ne jamais bloquer la connexion si la génération échoue
+                pass
+
+            # Redirection selon le rôle
             if commercial.role in ['responsable', 'admin']:
                 return redirect('dashboard_responsable')
             else:
                 return redirect('dashboard_test')
         else:
             erreur = True
+
     return render(request, 'front/login.html', {'erreur': erreur})
 
 # 🔐 Déconnexion
@@ -621,17 +635,38 @@ def new_client(request):
             ville=ville
         )
 
-        # Création d'un rendez-vous si besoin (après ajout manuel)
-        rdv_temp = request.session.get('rdv_temp')
-        if rdv_temp:
-            Rendezvous.objects.create(
-                client=client,
-                commercial=commercial,
-                date_rdv=rdv_temp['date_rdv'],
-                heure_rdv=rdv_temp['heure_rdv'],
-                objet=rdv_temp.get('objet'),
-                notes=rdv_temp.get('notes')
-            )
+        # Création d'un rendez-vous si besoin
+    date_rdv = request.POST.get('date_rdv')
+    heure_rdv = request.POST.get('heure_rdv')
+    objet = request.POST.get('objet')
+    notes = request.POST.get('notes')
+
+    rdv, created = Rendezvous.objects.get_or_create(
+        client=client,
+        commercial=commercial,
+        date_rdv=date_rdv,
+        heure_rdv=heure_rdv,
+        defaults={
+            'objet': objet,
+            'notes': notes,
+            'statut_rdv': 'a_venir',
+            'rs_nom': client.rs_nom,
+    }
+)
+
+# Optionnel : si le RDV existait déjà, on peut mettre à jour objet/notes
+# (si tu veux que le dernier submit écrase l'ancien)
+# if not created:
+#     rdv.objet = objet
+#     rdv.notes = notes
+#     rdv.save(update_fields=["objet", "notes"])
+
+    if created:
+        ActivityLog.objects.create(
+            commercial=commercial,
+            action_type='RDV_AJOUTE',
+            description=f'Nouveau RDV ajouté pour {client.rs_nom}'
+        )
 
         # Nettoyage des données temporaires
         request.session.pop('client_temp', None)
@@ -642,6 +677,14 @@ def new_client(request):
             'client_temp': None,
             'rdv_temp': None,
             'success': True
+        })
+    else:
+        error_message = "⚠️ RDV déjà existant (doublon évité)."
+        return render(request, 'front/new_client.html', {
+            'client_temp': request.session.get('client_temp'),
+            'rdv_temp': request.session.get('rdv_temp'),
+            'success': False,
+            'error': error_message,
         })
 
     # En GET, on récupère le flag de succès éventuel
@@ -679,6 +722,7 @@ def add_rdv(request):
     error_message = None
     if request.method == 'POST':
         try:
+            # Cas "RDV temporaire" depuis new_client
             if 'is_temp_rdv' in request.POST:
                 request.session['rdv_temp'] = {
                     'date_rdv': request.POST.get('date_rdv'),
@@ -696,43 +740,48 @@ def add_rdv(request):
                 commercial_id = request.session.get('commercial_id')
                 commercial = Commercial.objects.get(id=commercial_id)
 
-            client_id = request.POST.get('client_id')
-            client, adresse, client_type = get_client_and_adresse(client_id)
+            # ❄️ GEL : bloquer la création si le commercial est absent
+            if commercial.is_absent:
+                error_message = "❄️ Ce commercial est absent : création de rendez-vous bloquée."
+            else:
+                client_id = request.POST.get('client_id')
+                client, adresse, client_type = get_client_and_adresse(client_id)
 
-            Rendezvous.objects.create(
-                client=client,
-                commercial=commercial,
-                date_rdv=request.POST.get('date_rdv'),
-                heure_rdv=request.POST.get('heure_rdv'),
-                objet=request.POST.get('objet'),
-                notes=request.POST.get('notes'),
-                statut_rdv='a_venir',  # Par défaut, à venir
-                rs_nom=client.rs_nom  # Ajouter le rs_nom du client
-            )
+                Rendezvous.objects.create(
+                    client=client,
+                    commercial=commercial,
+                    date_rdv=request.POST.get('date_rdv'),
+                    heure_rdv=request.POST.get('heure_rdv'),
+                    objet=request.POST.get('objet'),
+                    notes=request.POST.get('notes'),
+                    statut_rdv='a_venir',
+                    rs_nom=client.rs_nom
+                )
 
-            # Enregistrer l'activité dans le journal
-            ActivityLog.objects.create(
-                commercial=commercial,
-                action_type='RDV_AJOUTE',
-                description=f'Nouveau RDV ajouté pour {client.rs_nom}'
-            )
+                ActivityLog.objects.create(
+                    commercial=commercial,
+                    action_type='RDV_AJOUTE',
+                    description=f'Nouveau RDV ajouté pour {client.rs_nom}'
+                )
 
-            # Ajout : si show_success dans la session, on revient sur new_client avec notification
-            if request.session.get('show_success'):
-                request.session.pop('show_success')
-                return redirect('/new-client?success=1')
+                if request.session.get('show_success'):
+                    request.session.pop('show_success')
+                    return redirect('/new-client?success=1')
 
-            if role in ['responsable', 'admin']:
-                return redirect('dashboard_responsable')
-            next_url = request.POST.get('next') or request.GET.get('next')
-            if next_url:
-                return redirect(next_url)
-            return redirect('dashboard_test')
+                if role in ['responsable', 'admin']:
+                    return redirect('dashboard_responsable')
+
+                next_url = request.POST.get('next') or request.GET.get('next')
+                if next_url:
+                    return redirect(next_url)
+
+                return redirect('dashboard_test')
 
         except FrontClient.DoesNotExist:
             error_message = "Le client sélectionné est introuvable."
         except Exception as e:
             error_message = f"Une erreur est survenue : {e}"
+
 
     # Si responsable/admin, on affiche tous les clients, sinon seulement ceux du commercial
     if role in ['responsable', 'admin']:
@@ -1987,7 +2036,11 @@ def api_rdvs_a_venir(request):
         commercial_id = request.session.get('commercial_id')
     if not commercial_id:
         return JsonResponse({'error': 'Non authentifié'}, status=403)
-    rdvs = Rendezvous.objects.filter(commercial_id=commercial_id, statut_rdv='a_venir').order_by('date_rdv', 'heure_rdv')
+    rdvs = Rendezvous.objects.filter(
+        commercial_id=commercial_id,
+        statut_rdv='a_venir',
+        date_rdv__gte=timezone.now().date()
+    ).order_by('date_rdv', 'heure_rdv')
     data = []
     for rdv in rdvs:
         client, adresse, client_type = get_client_and_adresse(rdv.client.id)
@@ -2814,3 +2867,18 @@ def api_client_details(request, client_id):
     except Exception as e:
         print(f"DEBUG: Erreur pour client {client_id}: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+@require_POST
+def toggle_pin_comment(request, comment_id):
+    comment = get_object_or_404(CommentaireRdv, id=comment_id)
+
+    # toggle
+    comment.is_pinned = not comment.is_pinned
+    comment.save(update_fields=["is_pinned"])
+
+    return JsonResponse({"ok": True, "pinned": comment.is_pinned})
+
+@login_required
+def commercial_map(request):
+    return render(request, 'front/commercial_map.html')

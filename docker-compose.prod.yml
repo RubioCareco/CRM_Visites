@@ -5,10 +5,13 @@ services:
       web:
         condition: service_healthy
     ports:
-      - "80:80"                            # publier en 80 en prod
+      - "80:80"
+      - "443:443"                            # publier en 80 en prod
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - staticfiles:/app/staticfiles:ro
+      - ./certbot/www:/var/www/certbot:rw
+      - ./certbot/conf:/etc/letsencrypt:rw
     networks: [app_net]
     restart: unless-stopped
 
@@ -27,7 +30,7 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - python -c "import sys,urllib.request as u;r=u.urlopen('http://127.0.0.1:8000/',timeout=3);sys.exit(0 if 200<=r.status<400 else 1)"
+        - curl -fsS http://127.0.0.1:8000/healthz -o /dev/null || exit 1
       interval: 15s
       timeout: 5s
       retries: 20

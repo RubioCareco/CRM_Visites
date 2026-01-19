@@ -1,0 +1,26 @@
+{% extends "front/base.html" %}
+{% load static %}
+
+{% block content %}
+<h1>Ma tournée – Carte</h1>
+
+<div id="map" style="height: 80vh; border-radius: 12px;"></div>
+
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+  const map = L.map("map").setView([44.8378, -0.5792], 12);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "&copy; OpenStreetMap contributors",
+  }).addTo(map);
+
+  L.marker([44.8378, -0.5792])
+    .addTo(map)
+    .bindPopup("Map OK – Étape 1 validée");
+</script>
+{% endblock %}

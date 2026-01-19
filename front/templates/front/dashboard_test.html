@@ -24,101 +24,52 @@
     .dbt-client-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:9000 !important;}
     .dbt-client-modal-card{background:#fff;color:#111;min-width:360px;max-width:640px;width:min(92vw,640px);border:1px solid #e7ecf5;border-radius:16px;padding:18px;box-shadow:0 16px 60px rgba(0,0,0,.25);position:relative}
 
-    .dbt-filter-panel{position:fixed;right:18px;top:110px;background:#fff;border:1px solid #e7ecf5;border-radius:16px;padding:14px 16px;z-index:4800;min-width:260px;display:none;box-shadow:0 18px 36px rgba(0,0,0,.12)}
-    .dbt-filter-title{font-weight:700;margin-bottom:8px}
-    .dbt-filter-section{margin:12px 0}
-    .dbt-filter-section-title{font-weight:600;margin-bottom:6px}
-    .dbt-filter-row{display:flex;align-items:center;gap:8px;margin:6px 0}
-    .dbt-badges{display:flex;flex-wrap:wrap;gap:8px}
-    .dbt-badge .remove{margin-left:6px;cursor:pointer}
-
-    .dbt-user-wrap{position:relative}
-    .dbt-user-menu{
-      position:absolute; right:0; top:46px; display:none;
-      background:#fff; border:1px solid #e7ecf5; border-radius:12px;
-      min-width:220px; box-shadow:0 12px 28px rgba(22,39,94,.12); padding:8px 0; z-index:9500;
-    }
-    .dbt-user-menu a{display:block;padding:10px 14px;text-decoration:none;color:#111}
-    .dbt-user-menu a:hover{background:#f8fafc}
-    .dbt-user-menu a.logout{color:#e11d48}
-
-    /* Badges jour */
-    .dbt-cell.day{position:relative;}
-    .dbt-bullet{
-      position:absolute; top:8px; left:8px;
-      min-width:22px; height:22px; padding:0 6px;
-      display:inline-flex; align-items:center; justify-content:center;
-      border-radius:50%; font-size:12px; font-weight:700; line-height:1;
-      color:#fff; box-shadow:0 2px 6px rgba(0,0,0,.15);
-      pointer-events:none; user-select:none;
-    }
-    .dbt-bullet.green{ background:#10b981; }
-    .dbt-bullet.red{   background:#ef4444; }
-    
-    /* Surbrillance pour RDV non validés (animation très subtile) */
-    .dbt-cell.day.has-unvalidated{
-      position: relative;
-      background: linear-gradient(135deg,#fef2f2 0%,#fee2e2 100%);
-      border: 2px solid #fca5a5;
-      animation: pulse-subtle 2.2s ease-in-out infinite;
-    }
-    /* Supprimer l'utilisation de ::after pour éviter le conflit avec le tooltip */
-    .dbt-cell.day.has-unvalidated:hover{ animation-play-state:paused; }
-
-    @keyframes pulse-subtle{
-      0%,100%{ transform:translateZ(0) scale(1); }
-      50%    { transform:translateZ(0) scale(1.006); }
-    }
-    @media (prefers-reduced-motion: reduce){
-      .dbt-cell.day.has-unvalidated{ animation:none; }
-    }
-    
-    /* Couleurs de survol selon l'onglet actif */
-    .dbt-cell.day:hover{
-      transition: all 0.2s ease;
-    }
-
-    /* Jours atténués (quand filtre RDV à valider est actif) */
-    .dbt-cell.day.dbt-muted{
-      opacity: .35;
-      filter: grayscale(1) saturate(.3);
-      pointer-events: none; /* non cliquable */
-    }
-    .dbt-cell.day.dbt-muted:hover{ box-shadow: none !important; }
-    
-    /* Ombres et survol sur onglet "À venir" (orange) */
-    body:has(.dbt-tab[data-statut="a_venir"].dbt-tab-active) .dbt-cell.day{
-      box-shadow: 0 2px 8px rgba(249, 115, 22, 0.2);
-    }
-    body:has(.dbt-tab[data-statut="a_venir"].dbt-tab-active) .dbt-cell.day:hover{
-      background: rgba(249, 115, 22, 0.15) !important;
-      border-color: rgba(249, 115, 22, 0.3) !important;
-      box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
-    }
-    
-    /* Ombres et survol sur onglet "Validé" (vert) */
-    body:has(.dbt-tab[data-statut="valide"].dbt-tab-active) .dbt-cell.day{
-      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
-    }
-    body:has(.dbt-tab[data-statut="valide"].dbt-tab-active) .dbt-cell.day:hover{
-      background: rgba(16, 185, 129, 0.15) !important;
-      border-color: rgba(16, 185, 129, 0.3) !important;
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-    }
-    
-    /* Ombres et survol sur onglet "Annulé" (rouge) */
-    body:has(.dbt-tab[data-statut="annule"].dbt-tab-active) .dbt-cell.day{
-      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
-    }
-    body:has(.dbt-tab[data-statut="annule"].dbt-tab-active) .dbt-cell.day:hover{
-      background: rgba(239, 68, 68, 0.15) !important;
-      border-color: rgba(239, 68, 68, 0.3) !important;
-      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-    }
-    
-    /* Tooltip pour RDV non validés */
     /* Tooltip global (évite tout clipping/z-index) */
     .dbt-tooltip{ position:fixed; top:0; left:0; display:none; padding:8px 12px; background:#111; color:#fff; border-radius:6px; font-size:13px; box-shadow:0 6px 16px rgba(0,0,0,.25); pointer-events:none; z-index:2147483647; }
+
+    /* ====== ULTRA CLEAN : centrer le contenu de la modale filtres ====== */
+    .dbt-filter-body{ display:flex; flex-direction:column; align-items:center; }
+    .dbt-filter-section{ width:100%; max-width:340px; }
+    .dbt-filter-section-title{ text-align:center !important; }
+    .dbt-filter-row{ justify-content:center; }
+    .dbt-filter-date{ width:100%; max-width:240px; }
+
+    /* Footer 2 boutons */
+    .dbt-filter-footer-split{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      padding:20px 25px;
+      border-top:1px solid rgba(0,0,0,0.1);
+    }
+
+    /* Bouton gris (ghost) */
+    .dbt-btn.dbt-btn-ghost{
+      background:#f1f5f9;
+      border:1px solid #cbd5e1;
+      color:#334155;
+      box-shadow:none;
+      margin:0; /* important : annule les margins de .dbt-btn */
+    }
+    .dbt-btn.dbt-btn-ghost:hover{
+      background:#e2e8f0;
+      color:#0f172a;
+      border-color:#94a3b8;
+    }
+
+    /* Bouton appliquer rouge */
+    .dbt-btn.dbt-btn-apply{
+      background:#ef4444;
+      border:1px solid #ef4444;
+      color:#fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 18%);
+      margin:0; /* important : annule les margins de .dbt-btn */
+    }
+    .dbt-btn.dbt-btn-apply:hover{
+      background:#ffffff;
+      color:#ef4444;
+      border-color:#ef4444;
+    }
   </style>
 </head>
 
@@ -132,8 +83,8 @@
         <div class="dbt-user" id="dbtUserBtn" role="button" aria-haspopup="true" aria-expanded="false">
           <i class="fa fa-user"></i>
           <div class="dbt-user-info">
-            <div class="dbt-user-name">{{ commercial.prenom|default:'Nelson' }}</div>
-            <div class="dbt-user-role">{{ commercial.commercial|default:'Commercial 2' }}</div>
+            <div class="dbt-user-name">{{ request.session.commercial_nom|default:'Utilisateur' }}</div>
+            <div class="dbt-user-role">{{ request.session.commercial_nom|default:'Commercial' }}</div>
           </div>
           <i class="fa fa-chevron-down" style="margin-left:6px;color:#9aa7b1;font-size:15px;align-items:center;"></i>
         </div>
@@ -233,26 +184,42 @@
     </div>
   </div>
 
-  <!-- Panneau Filtres -->
-  <div id="dbtFilterPanel" class="dbt-filter-panel" role="dialog" aria-label="Filtres">
-    <div class="dbt-filter-title">Filtres</div>
+  <!-- ✅ Modale Filtres ULTRA CLEAN -->
+  <div id="dbtFilterPanel" class="dbt-filter-panel" role="dialog" aria-label="Filtres" style="display:none;">
+    <div class="dbt-filter-modal">
+      <div class="dbt-filter-header">
+        <div class="dbt-filter-title">Filtres</div>
+        <button id="dbtFilterCloseX" class="dbt-filter-close" aria-label="Fermer">×</button>
+      </div>
 
-    
+      <div class="dbt-filter-body">
+        <div class="dbt-filter-section">
+          <div class="dbt-filter-section-title">Date</div>
+          <div class="dbt-filter-row">
+            <input type="date" id="dbtDateFrom" class="dbt-filter-date">
+          </div>
+          <div class="dbt-filter-row">
+            <input type="date" id="dbtDateTo" class="dbt-filter-date">
+          </div>
+        </div>
 
-    <div class="dbt-filter-section">
-      <div class="dbt-filter-section-title">Date</div>
-      <div class="dbt-filter-row"><input type="date" id="dbtDateFrom" class="dbt-filter-date"></div>
-      <div class="dbt-filter-row"><input type="date" id="dbtDateTo" class="dbt-filter-date"></div>
+        <div class="dbt-filter-section">
+          <label class="dbt-filter-row" style="gap:6px">
+            <input type="checkbox" id="dbtRdvAValider"> RDV à valider
+          </label>
+        </div>
+      </div>
+
+      <div class="dbt-filter-footer-split">
+        <button id="dbtFilterResetBtn" class="dbt-btn dbt-btn-ghost" type="button">
+          <i class="fa fa-rotate-left"></i> Réinitialiser
+        </button>
+
+        <button id="dbtFilterApplyBtn" class="dbt-btn dbt-btn-apply" type="button">
+          <i class="fa fa-check"></i> Appliquer
+        </button>
+      </div>
     </div>
-
-    <div class="dbt-filter-section">
-      <label class="dbt-filter-row" style="gap:6px">
-        <input type="checkbox" id="dbtRdvAValider"> RDV à valider
-      </label>
-      <a href="#" id="dbtResetFilters" class="dbt-link">Réinitialiser</a>
-    </div>
-
-    <button id="dbtFilterClose" class="dbt-btn" style="width:100%;margin-top:8px"><i class="fa fa-xmark"></i> Fermer</button>
   </div>
 
   <script>
@@ -271,8 +238,12 @@
 
     const filterBtn    = document.getElementById('dbtFilterBtn');
     const filterPanel  = document.getElementById('dbtFilterPanel');
-    const filterClose  = document.getElementById('dbtFilterClose');
     const activeBadges = document.getElementById('dbtActiveFilters');
+    const filterCloseX = document.getElementById('dbtFilterCloseX');
+
+    // ✅ Nouveaux boutons footer
+    const resetBtnFooter = document.getElementById('dbtFilterResetBtn');
+    const applyBtnFooter = document.getElementById('dbtFilterApplyBtn');
 
     const addBtn       = document.getElementById('dbtAddBtn');
     const addMenu      = document.getElementById('dbtAddMenu');
@@ -295,11 +266,10 @@
     const btnSaveCom   = document.getElementById('dbtBtnSaveComment');
     const btnNewRDV    = document.getElementById('dbtBtnNewRDV');
 
-    const statutCbs    = document.querySelectorAll('.dbt-statut-filter');
+    const statutCbs    = document.querySelectorAll('.dbt-statut-filter'); // peut être vide, ok
     const dateFromEl   = document.getElementById('dbtDateFrom');
     const dateToEl     = document.getElementById('dbtDateTo');
     const rdvAValiderEl= document.getElementById('dbtRdvAValider');
-    const resetFilters = document.getElementById('dbtResetFilters');
 
     let view            = new Date();
     let statut          = 'a_venir';
@@ -349,27 +319,27 @@
         const row=document.createElement('div'); row.className='dbt-row';
         cells.slice(i,i+7).forEach(c=>row.appendChild(c)); grid.appendChild(row);
       }
+
       decorateBadgesForMonth();
-      // Marquer les RDV non validés sur l'onglet "À venir"
       markUnvalidatedRDVs();
-      // Si filtre "RDV à valider" actif, n'afficher que les jours concernés
+
       if (rdvAValiderEl && rdvAValiderEl.checked) {
         setTimeout(() => filterDaysByUnvalidated(), 150);
       }
-      // Si une recherche est active, ne montrer que les jours avec RDV pour ce client
+
       if ((searchInput.value||'').trim()) {
         applyCalendarFilterByClient(searchInput.value);
       }
     }
 
-    function clearBadges(){ 
+    function clearBadges(){
       document.querySelectorAll('.dbt-cell.day .dbt-bullet').forEach(b=>b.remove());
-      // Nettoyer aussi les marqueurs de RDV non validés
       document.querySelectorAll('.dbt-cell.day').forEach(cell=>{
         cell.classList.remove('has-unvalidated');
         cell.removeAttribute('data-unvalidated-count');
       });
     }
+
     function addBadge(cell, count, color){
       if(!cell || count<=0) return;
       let b = cell.querySelector('.dbt-bullet');
@@ -377,53 +347,38 @@
       else{ b.classList.toggle('green', color==='green'); b.classList.toggle('red', color==='red'); }
       b.textContent = count;
     }
-    
-    // Fonction pour marquer les RDV non validés
+
     function markUnvalidatedRDVs(){
-      if(statut !== 'a_venir') return; // Seulement sur l'onglet "À venir"
-      
+      if(statut !== 'a_venir') return;
       const dayCells = document.querySelectorAll('.dbt-cell.day');
       const promises = [];
       const cellsWithData = [];
-      
+
       dayCells.forEach(cell=>{
         const iso = cell.dataset.date;
         if(!iso) return;
-        
+
         const promise = fetch(`/api/rdvs-by-date/?date=${iso}&statut=a_venir`)
           .then(r=>r.json())
           .then(d=>{
             const rdvs = d.rdvs || [];
             const unvalidatedCount = rdvs.length;
-            
             if(unvalidatedCount > 0){
               cellsWithData.push({cell, count: unvalidatedCount});
             }
           })
-          .catch(err=>{
-            console.error(`Erreur pour ${iso}:`, err);
-          });
-        
+          .catch(err=>console.error(`Erreur pour ${iso}:`, err));
+
         promises.push(promise);
       });
-      
-      // Attendre que toutes les requêtes soient terminées
+
       Promise.all(promises).then(()=>{
-        // Appliquer les classes et démarrer l'animation en même temps
         cellsWithData.forEach(({cell, count}) => {
           cell.classList.add('has-unvalidated');
           cell.setAttribute('data-unvalidated-count', count);
         });
-        
-        // Démarrer l'animation synchronisée après un petit délai
+
         setTimeout(() => {
-          cellsWithData.forEach(({cell}) => {
-            cell.style.animation = 'none';
-            // Forcer un reflow pour redémarrer l'animation
-            cell.offsetHeight;
-            cell.style.animation = 'pulse-unvalidated 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite';
-          });
-          // Réappliquer le filtre d'affichage si demandé
           if (rdvAValiderEl && rdvAValiderEl.checked) {
             filterDaysByUnvalidated();
           }
@@ -431,7 +386,6 @@
       });
     }
 
-    // Affiche uniquement les jours avec RDV à valider si la case est cochée
     function filterDaysByUnvalidated(){
       const only = rdvAValiderEl && rdvAValiderEl.checked;
       const dayCells = document.querySelectorAll('.dbt-cell.day');
@@ -443,10 +397,11 @@
         const has = cell.classList.contains('has-unvalidated');
         if (has) cell.classList.remove('dbt-muted'); else cell.classList.add('dbt-muted');
       });
-      // Superposer avec le filtre de recherche si présent
+
       const q = (searchInput.value||'').trim();
       if (q) applyCalendarFilterByClient(q);
     }
+
     function decorateBadgesForMonth(){
       clearBadges();
       if(statut!=='valide' && statut!=='annule') return;
@@ -467,8 +422,8 @@
           }).catch(()=>{});
       });
     }
-    // Filtre d'affichage des jours selon le rs_nom saisi
-    let __filterSeq = 0; // évite conditions de course entre fetch successifs
+
+    let __filterSeq = 0;
     function applyCalendarFilterByClient(rsNom){
       const q = (rsNom||'').trim().toLowerCase();
       const dayCells = document.querySelectorAll('.dbt-cell.day');
@@ -482,14 +437,14 @@
         fetch(`/api/rdvs-by-date/?date=${iso}&statut=${encodeURIComponent(statut)}`)
           .then(r=>r.json())
           .then(d=>{
-            if(mySeq !== __filterSeq) return; // un nouveau filtre est arrivé entre temps
+            if(mySeq !== __filterSeq) return;
             const rdvs = d.rdvs || [];
             const has = rdvs.some(r => {
               const nom = (r.client?.rs_nom || r.client?.nom || '')+'';
               const civ = (r.client?.civilite || '')+'';
               const withCiv = (civ? civ+' ' : '') + nom;
-              return nom.toLowerCase().includes(q) || 
-                     civ.toLowerCase().includes(q) || 
+              return nom.toLowerCase().includes(q) ||
+                     civ.toLowerCase().includes(q) ||
                      withCiv.toLowerCase().includes(q);
             });
             cell.style.display = has ? '' : 'none';
@@ -513,26 +468,24 @@
             const nom = (r.client?.rs_nom || r.client?.nom || '')+'';
             const civ = (r.client?.civilite || '')+'';
             const withCiv = (civ? civ+' ' : '') + nom;
-            return nom.toLowerCase().includes(q) || 
-                   civ.toLowerCase().includes(q) || 
+            return nom.toLowerCase().includes(q) ||
+                   civ.toLowerCase().includes(q) ||
                    withCiv.toLowerCase().includes(q);
           }) : rdvs;
+
           if(!dataset.length){ dayList.innerHTML='<div style="padding:10px;color:#777">Aucun rendez-vous</div>'; return; }
+
           dayList.innerHTML='';
           dataset.forEach(r=>{
             const nom = r.client?.rs_nom || r.client?.nom || '(Sans raison sociale)';
             const heure = r.heure || '';
             const addr = r.adresse ? `${r.adresse.adresse||''} ${r.adresse.code_postal||''} ${r.adresse.ville||''}`.trim() : '';
-            // Suggestions: rs_nom et variante civilité + rs_nom
             const civ = r.client?.civilite || '';
             const withCiv = (civ? civ+' ' : '') + nom;
+
             suggestions.push(nom);
             if(withCiv && withCiv!==nom) suggestions.push(withCiv);
 
-            const item=document.createElement('div');
-            item.className='dbt-day-item';
-            
-            // Ajouter le lien PDF si disponible (seulement pour les RDV validés)
             let pdfLink = '';
             if (r.pdf && r.pdf.exists && statut === 'valide') {
               pdfLink = `
@@ -544,7 +497,9 @@
                 </div>
               `;
             }
-            
+
+            const item=document.createElement('div');
+            item.className='dbt-day-item';
             item.innerHTML=`
               <div class="dbt-day-left">
                 <div class="dbt-day-ttl">${heure?heure+' • ':''}${nom}</div>
@@ -574,13 +529,13 @@
               });
             });
           });
+
           suggestions=[...new Set(suggestions)];
         }).catch(()=>{ dayList.innerHTML='<div style="padding:10px;color:#a33">Erreur de chargement</div>'; });
     }
 
     /* ========== Modale Client ========== */
     function setupActionsByTab(){
-      // cache tout
       btnValider.style.display='none';
       btnAnnuler.style.display='none';
       btnForm.style.display='none';
@@ -590,15 +545,12 @@
       if(statut==='a_venir'){
         btnValider.style.display='inline-flex';
         btnAnnuler.style.display='inline-flex';
-        // le bouton formulaire ne concerne que l’onglet à venir
         fetch(`/check-satisfaction/${currentRDV.uuid}/`).then(r=>r.json()).then(d=>{
           btnForm.style.display = d.exists ? 'none' : 'inline-flex';
         });
       }else if(statut==='valide'){
-        // rendez-vous déjà validé -> commentaire uniquement
         btnSaveCom.style.display='inline-flex';
       }else if(statut==='annule'){
-        // rendez-vous annulé -> commentaire + possibilité de replanifier
         btnSaveCom.style.display='inline-flex';
         btnNewRDV.style.display='inline-flex';
       }
@@ -619,7 +571,6 @@
       `;
       pdfBox.innerHTML=''; commentEl.value='';
 
-      // commentaires existants
       fetch(`/get-rdv-info/${rdv.uuid}/`).then(r=>r.json()).then(data=>{
         const zone=document.getElementById('dbtComments');
         const cs=data.commentaires||[];
@@ -630,14 +581,12 @@
           </div>`).join('') : '<span style="color:#9ca3af">Aucun commentaire</span>';
       });
 
-      // PDF si dispo (inchangé)
       fetch(`/check-satisfaction-exists/${rdv.uuid}/`).then(r=>r.json()).then(d=>{
         if(d.exists && d.satisfaction_uuid){
           pdfBox.innerHTML = `<a class="dbt-pdf-icon" target="_blank" href="/download-satisfaction/${d.satisfaction_uuid}/" title="Télécharger"><img src="{% static 'front/img/PDF.svg' %}" alt="PDF"></a>`;
         }
       });
 
-      // Actions (handlers)
       btnValider.onclick = ()=> updateStatut(rdv.uuid,'valider');
       btnAnnuler.onclick = ()=> updateStatut(rdv.uuid,'annuler');
       btnForm.onclick    = ()=>{
@@ -653,8 +602,6 @@
           const url = `${ADD_RDV_URL}?client_id=${encodeURIComponent(currentRDV.client_id)}&next=${encodeURIComponent(next)}`;
           window.open(url,'_blank','noopener,noreferrer');
         } else {
-          // Fallback par nom si pas d'id (mieux que rien)
-          const rs = clientTitle.textContent.trim();
           const url = `${ADD_RDV_URL}?next=${encodeURIComponent(next)}`;
           window.open(url,'_blank','noopener,noreferrer');
         }
@@ -706,31 +653,70 @@
       }).catch(()=>alert('Erreur réseau.'));
     }
 
-    /* ========== Filtres (visuels) ========== */
-    function toggleFilter(){ filterPanel.style.display = (filterPanel.style.display==='block'?'none':'block'); }
+    /* ========== Filtres (badges + actions) ========== */
+    function toggleFilter(){
+      filterPanel.style.display = (filterPanel.style.display==='flex' ? 'none' : 'flex');
+    }
+
     function updateBadgesVisuals(){
       activeBadges.innerHTML='';
-      // Suppression du badge Statut (les cases ont été retirées)
       if(dateFromEl.value || dateToEl.value){
         const b=document.createElement('span'); b.className='dbt-badge';
         b.innerHTML=`Date: ${dateFromEl.value||'…'} – ${dateToEl.value||'…'} <span class="remove">×</span>`;
-        b.querySelector('.remove').onclick=()=>{ dateFromEl.value=''; dateToEl.value=''; updateBadgesVisuals(); };
+        b.querySelector('.remove').onclick=()=>{
+          dateFromEl.value='';
+          dateToEl.value='';
+          updateBadgesVisuals();
+          filterDaysByUnvalidated();
+        };
         activeBadges.appendChild(b);
       }
-      if(rdvAValiderEl.checked){
+      if(rdvAValiderEl && rdvAValiderEl.checked){
         const b=document.createElement('span'); b.className='dbt-badge';
         b.innerHTML='RDV à valider <span class="remove">×</span>';
-        b.querySelector('.remove').onclick=()=>{ rdvAValiderEl.checked=false; updateBadgesVisuals(); };
+        b.querySelector('.remove').onclick=()=>{
+          rdvAValiderEl.checked=false;
+          updateBadgesVisuals();
+          filterDaysByUnvalidated();
+        };
         activeBadges.appendChild(b);
       }
     }
 
-    /* ========== Recherche ========== */
+    function applyFilters(){
+      updateBadgesVisuals();
+
+      if (rdvAValiderEl && rdvAValiderEl.checked) {
+        markUnvalidatedRDVs();
+        setTimeout(() => filterDaysByUnvalidated(), 150);
+      } else {
+        filterDaysByUnvalidated();
+      }
+
+      const q = (searchInput.value||'').trim();
+      if (q) applyCalendarFilterByClient(q);
+
+      filterPanel.style.display = 'none';
+    }
+
+    function resetAllFilters(){
+      statutCbs.forEach(c=>c.checked=false);
+      if (dateFromEl) dateFromEl.value='';
+      if (dateToEl) dateToEl.value='';
+      if (rdvAValiderEl) rdvAValiderEl.checked=false;
+
+      updateBadgesVisuals();
+      filterDaysByUnvalidated();
+
+      const q = (searchInput.value||'').trim();
+      if (q) applyCalendarFilterByClient(q);
+    }
+
+    /* ========== Recherche (suggestions) ========== */
     function showSuggestions(v){
       const q=v.trim().toLowerCase();
       const uniq=[...new Set(suggestions)];
       if(!q){
-        // Affiche 8 suggestions récentes par défaut
         const base = uniq.slice(0,8);
         if(!base.length){ searchBox.style.display='none'; searchBox.innerHTML=''; return; }
         searchBox.innerHTML = base.map(s=>`<li style="padding:8px 10px;cursor:pointer">${s}</li>`).join('');
@@ -742,7 +728,12 @@
         searchBox.style.display='block';
       }
       Array.from(searchBox.children).forEach(li=>{
-        li.onmousedown = (e)=>{ e.preventDefault(); searchInput.value=li.textContent; searchBox.style.display='none'; applyCalendarFilterByClient(li.textContent); };
+        li.onmousedown = (e)=>{
+          e.preventDefault();
+          searchInput.value=li.textContent;
+          searchBox.style.display='none';
+          applyCalendarFilterByClient(li.textContent);
+        };
       });
     }
 
@@ -751,9 +742,11 @@
       tabs.forEach(x=>x.classList.remove('dbt-tab-active'));
       t.classList.add('dbt-tab-active');
       statut = t.getAttribute('data-statut');
+
       if(dayModal.style.display==='flex' && currentDayISO){ openDay(currentDayISO); }
       decorateBadgesForMonth();
-      markUnvalidatedRDVs(); // Marquer les RDV non validés
+      markUnvalidatedRDVs();
+
       if ((searchInput.value||'').trim()) { applyCalendarFilterByClient(searchInput.value); }
     }));
 
@@ -792,17 +785,21 @@
     dayClose2.onclick = ()=> dayModal.style.display='none';
     dayModal.addEventListener('click',e=>{ if(e.target===dayModal) dayModal.style.display='none'; });
 
+    // OUVERTURE/FERMETURE MODALE FILTRES
     filterBtn.addEventListener('click', (e)=>{ e.stopPropagation(); toggleFilter(); });
-    filterClose.addEventListener('click', ()=> filterPanel.style.display='none');
-    document.addEventListener('click',e=>{
-      if(filterPanel.style.display==='block' && !filterPanel.contains(e.target) && !filterBtn.contains(e.target)) filterPanel.style.display='none';
-      if(addMenu.style.display==='block'    && !addMenu.contains(e.target)    && !addBtn.contains(e.target))     addMenu.style.display='none';
-      if(userMenu.style.display==='block'   && !userMenu.contains(e.target)   && !userBtn.contains(e.target))     userMenu.style.display='none';
-    });
-    [dateFromEl,dateToEl,rdvAValiderEl].forEach(el=> el && el.addEventListener('input',updateBadgesVisuals));
+    if (filterCloseX) filterCloseX.addEventListener('click', ()=> filterPanel.style.display='none');
+    filterPanel.addEventListener('click', (e)=>{ if(e.target===filterPanel){ filterPanel.style.display='none'; }});
+
+    // ✅ Boutons footer
+    if (resetBtnFooter) resetBtnFooter.addEventListener('click', resetAllFilters);
+    if (applyBtnFooter) applyBtnFooter.addEventListener('click', applyFilters);
+
+    // Mise à jour badges quand on touche les champs (visuel)
+    [dateFromEl,dateToEl,rdvAValiderEl].forEach(el=> el && el.addEventListener('input', updateBadgesVisuals));
+
+    // Checkbox -> applique filtrage jours
     if (rdvAValiderEl) {
       rdvAValiderEl.addEventListener('input', ()=>{
-        // S'assurer que les marquages existent avant de filtrer
         if (rdvAValiderEl.checked) {
           markUnvalidatedRDVs();
           setTimeout(() => filterDaysByUnvalidated(), 150);
@@ -811,17 +808,47 @@
         }
       });
     }
-    statutCbs.forEach(cb=> cb.addEventListener('change',updateBadgesVisuals));
-    resetFilters.addEventListener('click', (e)=>{ e.preventDefault(); statutCbs.forEach(c=>c.checked=false); dateFromEl.value=''; dateToEl.value=''; rdvAValiderEl.checked=false; updateBadgesVisuals(); });
 
-    addBtn.addEventListener('click', (e)=>{ if(addBtn.disabled) return; e.stopPropagation(); addMenu.style.display = (addMenu.style.display==='block'?'none':'block'); });
-    userBtn.addEventListener('click', (e)=>{ e.stopPropagation(); const open = userMenu.style.display==='block'; userMenu.style.display = open ? 'none' : 'block'; userBtn.setAttribute('aria-expanded', (!open).toString()); });
-    document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ userMenu.style.display='none'; filterPanel.style.display='none'; } });
+    // Menu +
+    addBtn.addEventListener('click', (e)=>{
+      if(addBtn.disabled) return;
+      e.stopPropagation();
+      addMenu.style.display = (addMenu.style.display==='block'?'none':'block');
+    });
 
+    // Menu user
+    userBtn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const open = userMenu.style.display==='block';
+      userMenu.style.display = open ? 'none' : 'block';
+      userBtn.setAttribute('aria-expanded', (!open).toString());
+    });
+
+    // Fermeture globale (click dehors)
+    document.addEventListener('click',e=>{
+      // ✅ correction : on compare à 'flex' (pas 'block')
+      if(filterPanel.style.display==='flex' && !filterPanel.contains(e.target) && !filterBtn.contains(e.target)) filterPanel.style.display='none';
+      if(addMenu.style.display==='block'    && !addMenu.contains(e.target)    && !addBtn.contains(e.target))     addMenu.style.display='none';
+      if(userMenu.style.display==='block'   && !userMenu.contains(e.target)   && !userBtn.contains(e.target))    userMenu.style.display='none';
+    });
+
+    document.addEventListener('keydown', (e)=>{
+      if(e.key==='Escape'){
+        userMenu.style.display='none';
+        filterPanel.style.display='none';
+      }
+    });
+
+    // Modale client close
     clientClose.addEventListener('click', ()=> clientModal.style.display='none');
     clientModal.addEventListener('click',e=>{ if(e.target===clientModal) clientModal.style.display='none'; });
 
-    searchInput.addEventListener('input', e=>{ showSuggestions(e.target.value); applyCalendarFilterByClient(e.target.value); if(dayModal.style.display==='flex' && currentDayISO){ openDay(currentDayISO); } });
+    // Recherche
+    searchInput.addEventListener('input', e=>{
+      showSuggestions(e.target.value);
+      applyCalendarFilterByClient(e.target.value);
+      if(dayModal.style.display==='flex' && currentDayISO){ openDay(currentDayISO); }
+    });
     searchInput.addEventListener('focus', e=> showSuggestions(e.target.value));
     searchInput.addEventListener('blur', ()=> setTimeout(()=>{searchBox.style.display='none';},120) );
 
@@ -846,4 +873,3 @@
   </script>
 </body>
 </html>
-

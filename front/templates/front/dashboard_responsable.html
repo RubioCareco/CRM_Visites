@@ -80,15 +80,15 @@
     <div class="dashboard-resp-stats">
       <h2 class="dashboard-resp-section-title">Total rendez-vous :</h2>
       <div class="dashboard-resp-stats-grid">
-        <div class="stat-card realise">
+        <div class="stat-card realise" onclick="window.location.href='/historique-rdv-resp/?tab=recent'">
           <div class="stat-label">Rendez-vous réalisé</div>
           <div class="stat-value">{{ total_realise }}</div>
         </div>
-        <div class="stat-card a-venir">
+        <div class="stat-card a-venir" id="card-upcoming" style="cursor:pointer;">
           <div class="stat-label">Rendez-vous à venir</div>
           <div class="stat-value">{{ total_avenir }}</div>
         </div>
-        <div class="stat-card annule">
+        <div class="stat-card annule" onclick="window.location.href='/historique-rdv-resp/?tab=rappeler'">
           <div class="stat-label">Rendez-vous annulé</div>
           <div class="stat-value">{{ total_annule }}</div>
         </div>
@@ -148,6 +148,13 @@
 
   <div id="upcomingModal" class="modal-bg" style="display:none;">
     <div class="modal-content">
+        
+	<!-- 🔄 Loader -->
+    <div id="upcomingLoader" class="modal-loader" style="display:none;">
+      <div class="spinner"></div>
+      <p>Chargement des rendez-vous…</p>
+    </div>
+	
       <span class="close-modal" onclick="closeUpcomingModal()"><i class="fa-solid fa-xmark"></i></span>
       <h2>Rendez-vous à venir</h2>
       <div id="accordionCommerciaux"></div>
@@ -157,319 +164,405 @@
 </div>
 
 <script>
-  function toggleUserMenu() {
-    const menu = document.getElementById("userMenu");
-    menu.style.display = menu.style.display === "block" ? "none" : "block";
-  }
-  document.addEventListener("click", function(event) {
-    const userProfile = document.querySelector(".user-profile");
-    const userMenu = document.getElementById("userMenu");
-    if (userMenu && !userProfile.contains(event.target) && !userMenu.contains(event.target)) {
-      userMenu.style.display = "none";
-    }
-  });
-
-  // Fonction pour mettre à jour dynamiquement la carte d'un commercial
-  function updateCommercialCard(commercialId) {
-    fetch(`/get-last-rdv-commercial/${commercialId}/`)
-      .then(response => response.json())
-      .then(data => {
-        const card = document.querySelector(`.commercial-card[data-id='${commercialId}']`);
-        if (!card) return;
-        const infoDiv = card.querySelector('.commercial-info');
-        const prenom = card.getAttribute('data-prenom');
-        const nom = card.getAttribute('data-nom');
-        if (data.statut) {
-          let statutHtml = '';
-          if (data.statut === 'valide') {
-            statutHtml = '<span style="color:#1ecb6b;font-weight:bold;">Validé</span>';
-          } else if (data.statut === 'annule') {
-            statutHtml = '<span style="color:#e53935;font-weight:bold;">Annulé</span>';
-          }
-          infoDiv.innerHTML = `
-            <div class="commercial-name">${prenom} ${nom}</div>
-            <div class="commercial-last-rdv">
-              Dernier rendez-vous : ${data.civilite} ${data.rs_nom}<br>
-              Statut : ${statutHtml}<br>
-              Le ${data.date} à ${data.heure}
-            </div>
-          `;
-        } else {
-          infoDiv.innerHTML = `
-            <div class="commercial-name">${prenom} ${nom}</div>
-            <div class="commercial-last-rdv" style="color:#aaa;">Aucun RDV</div>
-          `;
-        }
-      });
-  }
-
-  function updateRdvCounters() {
-    fetch('/api/rdv-counters/')
-      .then(response => response.json())
-      .then(data => {
-        document.querySelector('.stat-card.realise .stat-value').textContent = data.total_realise;
-        document.querySelector('.stat-card.a-venir .stat-value').textContent = data.total_avenir;
-        document.querySelector('.stat-card.annule .stat-value').textContent = data.total_annule;
-      });
-  }
-
-  let polling = null;
-  function startPolling() {
-    if (!polling) polling = setInterval(updateRdvCounters, 1800000); // 30 minutes
-  }
-  function stopPolling() {
-    if (polling) clearInterval(polling);
-    polling = null;
-  }
-  document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'visible') {
-      startPolling();
-      updateRdvCounters(); // Rafraîchit immédiatement au retour
-    } else {
-      stopPolling();
-    }
-  });
-  if (document.visibilityState === 'visible') startPolling();
-  document.addEventListener('DOMContentLoaded', updateRdvCounters);
-
-  document.addEventListener('DOMContentLoaded', function() {
-    const addCard = document.querySelector('.stat-card.add');
-    if (addCard) {
-      addCard.style.cursor = 'pointer';
-      addCard.addEventListener('click', function() {
-        window.location.href = '/add-rdv/';
-      });
+    function toggleUserMenu() {
+      const menu = document.getElementById("userMenu");
+      menu.style.display = menu.style.display === "block" ? "none" : "block";
     }
 
-    // Rendre les cartes de commerciaux cliquables
-    const commercialCards = document.querySelectorAll('.commercial-card');
-    commercialCards.forEach(card => {
-      card.style.cursor = 'pointer';
-      card.addEventListener('click', function(event) {
-        // Ne pas rediriger si le clic vient du lien PDF
-        if (event.target.closest('.pdf-link')) {
-            return;
-        }
-        const commercialId = this.dataset.id;
-        window.location.href = `/fiche-commercial/${commercialId}/`;
-      });
+    document.addEventListener("click", function(event) {
+      const userProfile = document.querySelector(".user-profile");
+      const userMenu = document.getElementById("userMenu");
+      if (userMenu && !userProfile.contains(event.target) && !userMenu.contains(event.target)) {
+        userMenu.style.display = "none";
+      }
     });
 
-    // Arrêter la propagation pour les liens PDF
-    const pdfLinks = document.querySelectorAll('.pdf-link');
-    pdfLinks.forEach(link => {
-        link.addEventListener('click', function(event) {
-            event.stopPropagation();
+    // Fonction pour mettre à jour dynamiquement la carte d'un commercial
+    function updateCommercialCard(commercialId) {
+      fetch(`/get-last-rdv-commercial/${commercialId}/`)
+        .then(response => response.json())
+        .then(data => {
+          const card = document.querySelector(`.commercial-card[data-id='${commercialId}']`);
+          if (!card) return;
+          const infoDiv = card.querySelector('.commercial-info');
+          const prenom = card.getAttribute('data-prenom');
+          const nom = card.getAttribute('data-nom');
+
+          if (data.statut) {
+            let statutHtml = '';
+            if (data.statut === 'valide') {
+              statutHtml = '<span style="color:#1ecb6b;font-weight:bold;">Validé</span>';
+            } else if (data.statut === 'annule') {
+              statutHtml = '<span style="color:#e53935;font-weight:bold;">Annulé</span>';
+            }
+
+            infoDiv.innerHTML = `
+              <div class="commercial-name">${prenom} ${nom}</div>
+              <div class="commercial-last-rdv">
+                Dernier rendez-vous : ${data.civilite} ${data.rs_nom}<br>
+                Statut : ${statutHtml}<br>
+                Le ${data.date} à ${data.heure}
+              </div>
+            `;
+          } else {
+            infoDiv.innerHTML = `
+              <div class="commercial-name">${prenom} ${nom}</div>
+              <div class="commercial-last-rdv" style="color:#aaa;">Aucun RDV</div>
+            `;
+          }
         });
+    }
+
+    function updateRdvCounters() {
+      fetch('/api/rdv-counters/')
+        .then(response => response.json())
+        .then(data => {
+          document.querySelector('.stat-card.realise .stat-value').textContent = data.total_realise;
+          document.querySelector('.stat-card.a-venir .stat-value').textContent = data.total_avenir;
+          document.querySelector('.stat-card.annule .stat-value').textContent = data.total_annule;
+        });
+    }
+
+    let polling = null;
+
+    function startPolling() {
+      if (!polling) polling = setInterval(updateRdvCounters, 1800000); // 30 minutes
+    }
+
+    function stopPolling() {
+      if (polling) clearInterval(polling);
+      polling = null;
+    }
+
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'visible') {
+        startPolling();
+        updateRdvCounters(); // Rafraîchit immédiatement au retour
+      } else {
+        stopPolling();
+      }
     });
 
-    // Rendre les cartes de stats cliquables
-    const realiseCard = document.querySelector('.stat-card.realise');
-    const avenirCard = document.querySelector('.stat-card.a-venir');
-    const annuleCard = document.querySelector('.stat-card.annule');
-    if (realiseCard) {
-      realiseCard.style.cursor = 'pointer';
-      realiseCard.addEventListener('click', function() {
-        window.location.href = '/historique-rdv-responsable/?tab=recent';
-      });
-    }
-    if (avenirCard) {
-      avenirCard.style.cursor = 'pointer';
-      avenirCard.addEventListener('click', function() {
-        openUpcomingModal();
-      });
-    }
-    if (annuleCard) {
-      annuleCard.style.cursor = 'pointer';
-      annuleCard.addEventListener('click', function() {
-        window.location.href = '/historique-rdv-responsable/?tab=rappeler';
-      });
-    }
+    if (document.visibilityState === 'visible') startPolling();
+    document.addEventListener('DOMContentLoaded', updateRdvCounters);
 
-    const initialChartData = JSON.parse('{{ stats_satisfaction_chart|escapejs }}');
-    const ctx = document.getElementById('satisfactionChart').getContext('2d');
-    let satisfactionChart;
+    document.addEventListener('DOMContentLoaded', function() {
+      const addCard = document.querySelector('.stat-card.add');
+      if (addCard) {
+        addCard.style.cursor = 'pointer';
+        addCard.addEventListener('click', function() {
+          window.location.href = '/add-rdv/';
+        });
+      }
 
-    function renderChart(chartData) {
-      if (satisfactionChart) {
-        satisfactionChart.destroy();
+      // Rendre les cartes de commerciaux cliquables
+      const commercialCards = document.querySelectorAll('.commercial-card');
+      commercialCards.forEach(card => {
+        card.style.cursor = 'pointer';
+        card.addEventListener('click', function(event) {
+          // Ne pas rediriger si le clic vient du lien PDF
+          if (event.target.closest('.pdf-link')) {
+            return;
+          }
+          const commercialId = this.dataset.id;
+          window.location.href = `/fiche-commercial/${commercialId}/`;
+        });
+      });
+
+      // Arrêter la propagation pour les liens PDF
+      const pdfLinks = document.querySelectorAll('.pdf-link');
+      pdfLinks.forEach(link => {
+        link.addEventListener('click', function(event) {
+          event.stopPropagation();
+        });
+      });
+
+      // Rendre les cartes de stats cliquables
+      const realiseCard = document.querySelector('.stat-card.realise');
+      const avenirCard = document.querySelector('.stat-card.a-venir');
+      const annuleCard = document.querySelector('.stat-card.annule');
+
+      if (realiseCard) {
+        realiseCard.style.cursor = 'pointer';
+        realiseCard.addEventListener('click', function() {
+          window.location.href = '/historique-rdv-resp/?tab=recent';
+        });
       }
-      
-      // Gérer les deux formats de données
-      let labels, datasets;
-      
-      if (chartData.datasets && Array.isArray(chartData.datasets)) {
-        // Format API (avec datasets)
-        labels = chartData.labels;
-        datasets = chartData.datasets;
-      } else {
-        // Format initial (avec data)
-        labels = chartData.labels;
-        datasets = [{
-          label: 'Moyenne des notes (sur 10)',
-          data: chartData.data,
-          backgroundColor: [
-            'rgba(229, 57, 53, 0.6)', // Rouge principal
-            'rgba(255, 138, 101, 0.6)', // Corail
-            'rgba(255, 209, 128, 0.6)', // Or
-            'rgba(120, 144, 156, 0.6)' // Gris froid
-          ],
-          borderColor: [
-            'rgba(229, 57, 53, 1)',
-            'rgba(255, 138, 101, 1)',
-            'rgba(255, 209, 128, 1)',
-            'rgba(120, 144, 156, 1)'
-          ],
-          borderWidth: 1,
-          borderRadius: 5,
-        }];
+
+      if (annuleCard) {
+        annuleCard.style.cursor = 'pointer';
+        annuleCard.addEventListener('click', function() {
+          window.location.href = '/historique-rdv-resp/?tab=rappeler';
+        });
       }
-      
-      satisfactionChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: datasets
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: {
-              beginAtZero: true,
-              max: 10,
-              ticks: {
-                color: '#fff',
-                font: {
-                  size: 14,
-                }
-              },
-              grid: {
-                color: 'rgba(255, 255, 255, 0.2)'
-              }
-            },
-            x: {
-              ticks: {
-                color: '#fff',
-                font: {
-                  size: 14,
-                }
-              },
-              grid: {
-                display: false
-              }
-            }
+
+      // ==== GRAPHIQUE SATISFACTION ====
+      const initialChartData = JSON.parse('{{ stats_satisfaction_chart|escapejs }}');
+      const ctx = document.getElementById('satisfactionChart').getContext('2d');
+      let satisfactionChart;
+
+      function renderChart(chartData) {
+        if (satisfactionChart) {
+          satisfactionChart.destroy();
+        }
+
+        let labels;
+        let datasets;
+
+        if (chartData.datasets && Array.isArray(chartData.datasets)) {
+          // Format API (datasets déjà prêts)
+          labels = chartData.labels;
+          datasets = chartData.datasets;
+        } else {
+          // Format initial (labels + data)
+          labels = chartData.labels;
+          datasets = [{
+            label: 'Moyenne des notes (sur 10)',
+            data: chartData.data,
+            backgroundColor: [
+              'rgba(229, 57, 53, 0.6)',   // Rouge
+              'rgba(255, 138, 101, 0.6)', // Corail
+              'rgba(255, 209, 128, 0.6)', // Or
+              'rgba(120, 144, 156, 0.6)'  // Gris froid
+            ],
+            borderColor: [
+              'rgba(229, 57, 53, 1)',
+              'rgba(255, 138, 101, 1)',
+              'rgba(255, 209, 128, 1)',
+              'rgba(120, 144, 156, 1)'
+            ],
+            borderWidth: 1,
+            borderRadius: 5
+          }];
+        }
+
+        satisfactionChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: datasets
           },
-          plugins: {
-            legend: {
-              display: false
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 10,
+                ticks: {
+                  color: '#4b5563',
+                  font: {
+                    size: 14
+                  }
+                },
+                grid: {
+                  color: 'rgba(209, 213, 219, 0.7)'
+                }
+              },
+              x: {
+                ticks: {
+                  color: '#4b5563',
+                  font: {
+                    size: 14
+                  }
+                },
+                grid: {
+                  display: false
+                }
+              }
             },
-            title: {
-              display: false,
-              text: 'Moyenne des notes de satisfaction',
-              color: '#fff',
-              font: {
-                size: 20
+            plugins: {
+              legend: {
+                display: false
+              },
+              title: {
+                display: false,
+                text: 'Moyenne des notes de satisfaction',
+                color: '#111827',
+                font: {
+                  size: 20
+                }
               }
             }
           }
+        });
+      }
+
+      function updateChart() {
+        const commercialId = document.getElementById('commercial-filter').value;
+        const activePeriodBtn = document.querySelector('.period-btn.active');
+        const period = activePeriodBtn ? activePeriodBtn.dataset.period : null;
+        const startDate = document.getElementById('start-date').value;
+        const endDate = document.getElementById('end-date').value;
+
+        let url = `/api/satisfaction-stats/?commercial_id=${commercialId}`;
+
+        if (period && period !== 'all_time') {
+          url += `&period=${period}`;
         }
-      });
-    }
 
-    async function updateChart() {
-      const commercialId = document.getElementById('commercial-filter').value;
-      const activePeriodBtn = document.querySelector('.period-btn.active');
-      const period = activePeriodBtn ? activePeriodBtn.dataset.period : null;
-      const startDate = document.getElementById('start-date').value;
-      const endDate = document.getElementById('end-date').value;
+        if (startDate) {
+          url += `&start_date=${startDate}`;
+        }
 
-      let url = `/api/satisfaction-stats/?commercial_id=${commercialId}`;
-      
-      if (period && period !== 'all_time') {
-        url += `&period=${period}`;
-      } else if (startDate && endDate) {
-        url += `&start_date=${startDate}&end_date=${endDate}`;
+        if (endDate) {
+          url += `&end_date=${endDate}`;
+        }
+
+        fetch(url)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+            return response.json();
+          })
+          .then(newData => {
+            renderChart(newData);
+          })
+          .catch(error => {
+            console.error('Erreur lors de la mise à jour du graphique :', error);
+          });
       }
 
-      try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Network response was not ok');
-        const newData = await response.json();
-        renderChart(newData);
-      } catch (error) {
-        console.error('Erreur lors de la mise à jour du graphique:', error);
+      // Écouteurs d'événements pour le graphique
+      const commercialFilter = document.getElementById('commercial-filter');
+      if (commercialFilter) {
+        commercialFilter.addEventListener('change', updateChart);
       }
-    }
 
-    // Écouteurs d'événements
-    document.getElementById('commercial-filter').addEventListener('change', updateChart);
-    document.getElementById('apply-date-filter').addEventListener('click', () => {
-      // Désactiver les boutons de période rapide
-      document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
-      updateChart();
-    });
-    
-    document.querySelectorAll('.period-btn').forEach(button => {
-      button.addEventListener('click', function() {
-        document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
-        this.classList.add('active');
-        // Vider les champs de date
-        document.getElementById('start-date').value = '';
-        document.getElementById('end-date').value = '';
-        updateChart();
+      const applyDateFilterBtn = document.getElementById('apply-date-filter');
+      if (applyDateFilterBtn) {
+        applyDateFilterBtn.addEventListener('click', () => {
+          // Désactiver les boutons de période rapide
+          document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
+          updateChart();
+        });
+      }
+
+      document.querySelectorAll('.period-btn').forEach(button => {
+        button.addEventListener('click', function() {
+          document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
+          this.classList.add('active');
+          // Vider les champs de date
+          document.getElementById('start-date').value = '';
+          document.getElementById('end-date').value = '';
+          updateChart();
+        });
       });
+
+      // Premier rendu du graphique
+      renderChart(initialChartData);
     });
 
-    // Premier rendu du graphique
-    renderChart(initialChartData);
-  });
+function renderUpcomingSkeleton(count = 3) {
+  return `
+    <div class="skeleton-wrap">
+      ${Array.from({ length: count }).map(() => `
+        <div class="skel-card">
+          <div class="skel-head">
+            <div class="skel-line" style="width: 55%;"></div>
+            <div class="skel-line" style="width: 18%;"></div>
+          </div>
+          <div class="skel-body">
+            <div class="skel-row">
+              <div class="skel-line" style="width: 70%; height: 14px;"></div>
+              <div class="skel-line" style="width: 35%;"></div>
+            </div>
+            <div class="skel-row">
+              <div class="skel-line" style="width: 55%; height: 14px;"></div>
+              <div class="skel-line" style="width: 28%;"></div>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
 
-  function openUpcomingModal() {
-    document.getElementById('upcomingModal').style.display = 'flex';
-    fetch('/api/commerciaux/')
-      .then(response => response.json())
-      .then(data => {
-        const commerciaux = data.commerciaux || [];
-        const accordion = document.getElementById('accordionCommerciaux');
-        accordion.innerHTML = '';
-        commerciaux.forEach(commercial => {
+function openUpcomingModal() {
+  if (upcomingModalOpened) return;
+  upcomingModalOpened = true;
+
+  const modal = document.getElementById('upcomingModal');
+  const accordion = document.getElementById('accordionCommerciaux');
+
+  modal.style.display = 'flex';
+
+  // affiche un skeleton immédiatement (Chargement)
+  accordion.innerHTML = renderUpcomingSkeleton(3);
+
+  fetch('/api/commerciaux/')
+    .then(response => response.json())
+    .then(data => {
+      const commerciaux = data.commerciaux || [];
+
+      // ✅ Attendre tous les rdvs
+      return Promise.all(
+        commerciaux.map(commercial =>
           fetch(`/api/rdvs-a-venir/?commercial_id=${commercial.id}`)
             .then(resp => resp.json())
             .then(rdvData => {
-              const rdvs = rdvData.rdvs || [];
+              const rdvs = Array.isArray(rdvData) ? rdvData : (rdvData.rdvs || []);
+
               const section = document.createElement('div');
               section.className = 'accordion-section';
-              const absentBadge = commercial.is_absent ? '<span class="modal-absent-badge">❄️ Absent</span>' : '';
+
+              const absentBadge = commercial.is_absent
+                ? '<span class="modal-absent-badge">❄️ Absent</span>'
+                : '';
+
               section.innerHTML = `
                 <div class="accordion-header">
                   ${commercial.nom} ${commercial.prenom} (${rdvs.length} à venir)
                   ${absentBadge}
                 </div>
                 <div class="accordion-body">
-                  ${rdvs.length === 0 ? '<i>Aucun rendez-vous à venir</i>' : rdvs.map(rdv => `
-                    <div class=\"rdv-card\">
-                      <div class=\"rdv-card-header\"><b>${rdv.civilite ? rdv.civilite + ' ' : ''}${rdv.rs_nom || rdv.client || ''}</b></div>
-                      <div class=\"rdv-card-body\">
-                        <span class=\"rdv-objet\">${rdv.objet || ''}</span><br>
-                        <span class=\"rdv-date\">${rdv.date} à ${rdv.heure}</span>
+                  ${rdvs.length === 0
+                    ? '<i>Aucun rendez-vous à venir</i>'
+                    : rdvs.map(rdv => `
+                      <div class="rdv-card">
+                        <div class="rdv-card-header">
+                          <b>${rdv.civilite ? rdv.civilite + ' ' : ''}${rdv.rs_nom || rdv.client || ''}</b>
+                        </div>
+                        <div class="rdv-card-body">
+                          <span class="rdv-objet">${rdv.objet || ''}</span><br>
+                          <span class="rdv-date">${rdv.date} à ${rdv.heure}</span>
+                        </div>
                       </div>
-                    </div>
-                  `).join('')}
+                    `).join('')}
                 </div>
               `;
-              section.querySelector('.accordion-header').onclick = function() {
+
+              section.querySelector('.accordion-header').onclick = () => {
                 section.classList.toggle('open');
               };
-              accordion.appendChild(section);
-            });
-        });
-      });
-  }
-  function closeUpcomingModal() {
-    document.getElementById('upcomingModal').style.display = 'none';
-  }
-</script>
+
+              return section;
+            })
+        )
+      );
+    })
+    .then(sections => {
+      // ✅ Ici on remplace le skeleton par le vrai contenu en une fois
+      accordion.innerHTML = '';
+      sections.forEach(section => accordion.appendChild(section));
+    })
+    .catch(err => {
+      console.error("Erreur chargement RDV à venir:", err);
+      accordion.innerHTML = '<p style="color:#c00;">Erreur de chargement.</p>';
+    })
+    .finally(() => {
+    });
+}
+
+function closeUpcomingModal() {
+  document.getElementById('upcomingModal').style.display = 'none';
+  upcomingModalOpened = false;
+}
+
+
+  </script>
+
 <!-- Bannière cookies -->
 <div id="cookie-banner" class="cookie-banner-center" style="display:none; position:fixed; bottom:0; left:0; width:100%; background:#222; color:#fff; padding:18px 10px; text-align:center; z-index:9999; box-shadow: 0 -2px 12px rgba(0,0,0,0.18); font-size: 1.1em;">
   <b>Notre application utilise uniquement des cookies strictement nécessaires à son bon fonctionnement.</b>
@@ -485,6 +578,21 @@
   <button id="accept-cookies-btn" style="margin-left:20px; padding:8px 18px; background:#1ecb6b; color:#fff; border:none; border-radius:5px; cursor:pointer;">J'ai compris</button>
 </div>
 <script>
+let loadingUpcoming = false;
+document.addEventListener("DOMContentLoaded", () => {
+    const card = document.getElementById("card-upcoming");
+    if (!card) return;
+
+    // empêche le double bind si le script est chargé 2 fois
+    if (card.dataset.bound === "1") return;
+    card.dataset.bound = "1";
+
+    card.addEventListener("click", openUpcomingModal);
+  });
+
+
+let upcomingModalOpened = false;
+
   function getCookie(name) {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);

@@ -434,6 +434,7 @@
   }
 
   .clientTitle{
+    display:flex;
     justify-content: center;
     align-items: center;
     color: #666;
@@ -471,52 +472,50 @@
   .dbt-pdf-icon img{
     height:28px}
   
-  /* --------- Panneau filtres & menu user --------- */
-  .dbt-filter-panel{
-    position:fixed;
-    right:18px;
-    top:110px;
-    background:#ffffff;
-    border:1px solid #e7ecf5;
-    border-radius:16px;
-    padding:14px 16px;
-    z-index:9500;
-    min-width:260px;
-    display:none;
-    box-shadow:0 18px 36px rgba(0,0,0,.12)
-  }
-
-  .dbt-filter-title {
-    font-weight:800;
-    margin-bottom:8px;
-    color:#666;
-    }
-
-  .dbt-filter-section {
-    margin: 12px;
-    justify-content:center
-    }
-
-  .dbt-filter-section-title{
-    font-weight:700;
-    margin-bottom:6px;
-    justify-content: center;
-    text-align: center;
-    color:#e53935 ;
-    }
-    
-  .dbt-filter-date{
-    padding: 6px 16px;
-    border-radius: 15px;
-    
-  }
-  .dbt-filter-row{
-    display:flex;
-    align-items:center;
-    justify-content: center;
-    gap:8px;
-    margin:6px 0
+/* --------- Modale filtres (alignée sur objectif_annuel) --------- */
+.dbt-filter-panel{
+  position:fixed;
+  inset:0;
+  display:none;               /* toggled via JS */
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,0.35); /* plus transparent pour laisser voir le calendrier */
+  backdrop-filter:none;       /* éviter l'aspect laiteux qui masque le fond */
+  z-index:9500;
 }
+
+.dbt-filter-modal{
+  background: rgba(250, 250, 250, 0.95);
+  backdrop-filter: blur(15px);
+  border-radius: 20px;
+  width: 520px;
+  max-width: 92vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  color: #333;
+}
+
+.dbt-filter-header{
+  background:#181212b8;
+  color:#fff;
+  padding:20px 25px;
+  border-radius:20px 20px 0 0;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.dbt-filter-title{ margin:0; font-weight:600; }
+.dbt-filter-close{ background:transparent; border:none; color:#fff; font-size:22px; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.dbt-filter-close:hover{ background:#ef4444; color:#fff; }
+
+.dbt-filter-body{ padding:20px 25px; }
+.dbt-filter-section{ margin:12px 0; }
+.dbt-filter-section-title{ font-weight:600; margin-bottom:6px; color:#e53935; text-align:left; }
+.dbt-filter-row{ display:flex; align-items:center; gap:8px; margin:6px 0; }
+.dbt-filter-date{ padding:8px 12px; border-radius:12px; border:1px solid rgba(0,0,0,0.1); background:rgba(0,0,0,0.05); }
+
+.dbt-filter-footer{ padding:20px 25px; border-top:1px solid rgba(0,0,0,0.1); display:flex; justify-content:flex-end; }
+
+/* (anciens styles panneau supprimés au profit de la modale) */
   
   /* --------- Responsive --------- */
   @media (max-width: 768px){
@@ -616,3 +615,161 @@
     }
   }
   
+/* ============================
+   Center content in FILTER MODAL
+   (scope: only #dbtFilterPanel)
+   ============================ */
+
+#dbtFilterPanel .dbt-filter-body{
+  display: flex;
+  flex-direction: column;
+  align-items: center;     /* centre horizontalement tout le contenu */
+  text-align: center;      /* centre les textes */
+}
+
+#dbtFilterPanel .dbt-filter-section{
+  width: 100%;
+  max-width: 360px;        /* largeur "propre" au centre */
+}
+
+#dbtFilterPanel .dbt-filter-section-title{
+  text-align: center;      /* au lieu de left */
+}
+
+#dbtFilterPanel .dbt-filter-row{
+  justify-content: center; /* centre les inputs / checkbox */
+}
+
+#dbtFilterPanel .dbt-filter-date{
+  width: 100%;
+  max-width: 260px;        /* inputs date centrés et pas trop larges */
+}
+
+/* Centre le lien "Réinitialiser" */
+#dbtFilterPanel #dbtResetFilters{
+  display: inline-block;
+  margin-top: 8px;
+}
+
+/* Centre le bouton "Fermer" en bas */
+#dbtFilterPanel .dbt-filter-footer{
+  justify-content: center;
+}
+
+/* Bonus: évite que .dbt-btn ajoute des marges dans la modale */
+#dbtFilterPanel .dbt-btn{
+  margin: 0;
+}
+/* ====== Filtres ULTRA CLEAN : footer 2 boutons ====== */
+.dbt-filter-footer-split{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+}
+
+/* Bouton gris (ghost) */
+.dbt-btn.dbt-btn-ghost{
+  background:#f1f5f9;            /* gris clair */
+  border:1px solid #cbd5e1;
+  color:#334155;
+  box-shadow:none;
+}
+
+/* Hover du gris */
+.dbt-btn.dbt-btn-ghost:hover{
+  background:#e2e8f0;
+  color:#0f172a;
+  border-color:#94a3b8;
+}
+
+/* Bouton appliquer rouge (on garde ton style mais + clean) */
+.dbt-btn.dbt-btn-apply{
+  background:#ef4444;
+  border:1px solid #ef4444;
+  color:#fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 18%);
+}
+
+/* Hover appliquer */
+.dbt-btn.dbt-btn-apply:hover{
+  background:#ffffff;
+  color:#ef4444;
+  border-color:#ef4444;
+}
+/* =========================================================
+   PATCH styles perdus : menu user + badges + jours RDV
+   ========================================================= */
+
+/* --- Menu utilisateur (dropdown) --- */
+.dbt-user-wrap{ position:relative; }
+
+.dbt-user-menu{
+  position:absolute;
+  right:0;
+  top:46px;
+  display:none;                 /* IMPORTANT: cache par défaut */
+  background:#fff;
+  border:1px solid #e7ecf5;
+  border-radius:12px;
+  min-width:220px;
+  box-shadow:0 12px 28px rgba(22,39,94,.12);
+  padding:8px 0;
+  z-index:9500;
+}
+
+.dbt-user-menu a{
+  display:block;
+  padding:10px 14px;
+  text-decoration:none;
+  color:#111;
+}
+
+.dbt-user-menu a:hover{ background:#f8fafc; }
+.dbt-user-menu a.logout{ color:#e11d48; }
+
+/* --- Badges sur les jours (compteurs) --- */
+.dbt-cell.day{ position:relative; }
+
+.dbt-bullet{
+  position:absolute;
+  top:8px;
+  left:8px;
+  min-width:22px;
+  height:22px;
+  padding:0 6px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  font-size:12px;
+  font-weight:700;
+  line-height:1;
+  color:#fff;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+  pointer-events:none;
+  user-select:none;
+}
+
+.dbt-bullet.green{ background:#10b981; }
+.dbt-bullet.red{ background:#ef4444; }
+
+/* --- Mise en évidence des jours avec RDV à valider (onglet "À venir") --- */
+.dbt-cell.day.has-unvalidated{
+  position:relative;
+  background: linear-gradient(135deg,#fef2f2 0%,#fee2e2 100%);
+  border: 2px solid #fca5a5;
+  animation: pulse-subtle 2.2s ease-in-out infinite;
+}
+
+.dbt-cell.day.has-unvalidated:hover{
+  animation-play-state: paused;
+}
+
+@keyframes pulse-subtle{
+  0%,100%{ transform:translateZ(0) scale(1); }
+  50%    { transform:translateZ(0) scale(1.006); }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .dbt-cell.day.has-unvalidated{ animation:none; }
+}

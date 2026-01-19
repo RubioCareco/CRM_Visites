@@ -288,21 +288,26 @@ def _run_planning_job_background(dry_run: bool = False):
 
 @receiver(user_logged_in)
 def trigger_planning_on_login(sender, user, request, **kwargs):
-    """Complète jusqu'à J+28 au premier login de la journée (verrou cache)."""
     from django.conf import settings
 
-    enabled = getattr(settings, 'GENERATION_AUTO_ENABLED', True)
-    if not enabled:
+    if not getattr(settings, 'GENERATION_AUTO_ENABLED', True):
         return
 
-    today = dj_timezone.localdate().isoformat()
-    cache_key = f"planning:last_run:{today}"
-    if cache.get(cache_key):
+    cache_key = "planning:last_run"  # plus de date dans la clé
+    last_run = cache.get(cache_key)
+    now = dj_timezone.now()
+    delta_days = (now - last_run).days if last_run else None
+
+    # si jamais exécuté ET moins de 28 jours, on ignore
+    if last_run and delta_days is not None and delta_days < 28:
         return
 
-    # Poser le verrou pour 26h pour éviter doublons même avec fuseaux
-    cache.set(cache_key, True, timeout=26*3600)
+    # pose un verrou/horodatage pour 29 jours (sécurité)
+    cache.set(cache_key, now, timeout=29 * 24 * 3600)
 
     dry_run = getattr(settings, 'GENERATION_AUTO_DRY_RUN', False)
-    # Lancer en arrière-plan pour ne pas bloquer la réponse
-    threading.Thread(target=_run_planning_job_background, kwargs={'dry_run': dry_run}, daemon=True).start()
+    threading.Thread(
+        target=_run_planning_job_background,
+        kwargs={'dry_run': dry_run},
+        daemon=True
+    ).start()

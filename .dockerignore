@@ -19,3 +19,14 @@ pytest_cache/
 .vscode/
 .idea/
 dump.sql
+certbot/
+certbot/
+backups/
+srv/
+.ssh/
+*.sql
+*.sql.gz
+*.tar.gz
+staticfiles/
+__pycache__/
+.git/

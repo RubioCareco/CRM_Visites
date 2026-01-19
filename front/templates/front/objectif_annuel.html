@@ -6,7 +6,6 @@
     <title>Objectifs annuels</title>
         {% load static %}
         <link rel="stylesheet" href="{% static 'front/css/objectif_annuel.css' %}">
-    <link rel="stylesheet" href="{% static 'front/css/footer.css' %}">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     </head>
     <body>
@@ -195,6 +194,11 @@
                     Planifier un RDV
                 </button>
                 <button class="btn-cancel" onclick="closeClientModal()">Fermer</button>
+                <div class="dbt-footer-links">
+                    <a href="/mentions-legales" class="dbt-link">Mentions légales</a>
+                    <a href="/politique-confidentialite" class="dbt-link">Politique de confidentialité</a>
+                  </div>
+                  </div>
             </div>
         </div>
     </div>
@@ -572,7 +576,5 @@
             }
         }
     </script>
-
-    {% include 'front/footer.html' %}
     </body>
 </html>

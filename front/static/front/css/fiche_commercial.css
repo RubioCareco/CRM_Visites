@@ -932,3 +932,341 @@ footer {
     margin-bottom: -20px !important;
   }
 } 
+/* =========================================================
+   RELOOK FICHE COMMERCIAL => STYLE DASHBOARD RESPONSABLE (CLAIR)
+   IMPORTANT : on garde 100% les classes existantes
+   ========================================================= */
+
+/* Base */
+body{
+  background: #f4f6fb !important;
+  color: #0f172a !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-family: 'Segoe UI', sans-serif !important;
+}
+
+/* Container principal (carte blanche comme dashboard) */
+.main-container{
+  max-width: 1500px !important;
+  margin: 28px auto !important;
+  background: #ffffff !important;
+  border-radius: 26px !important;
+  padding: 32px 38px !important;
+  border: 1px solid rgba(15, 23, 42, 0.06) !important;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08) !important;
+  backdrop-filter: none !important;
+}
+
+/* Header / titres */
+header .page-title{
+  color: #ff3b3b !important;
+  font-size: 2.1rem !important;
+  font-weight: 800 !important;
+  margin-bottom: 12px !important;
+}
+
+.title-container .page-subtitle{
+  color: rgba(15,23,42,0.55) !important;
+  font-weight: 600 !important;
+}
+
+.title-container h1,
+.commercial-id h1{
+  color: #0f172a !important;
+  font-size: 2rem !important;
+  font-weight: 800 !important;
+}
+
+/* Ligne principale */
+.commercial-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+
+/* Avatar */
+.commercial-id .avatar{
+  background: #eef2f7 !important;
+  color: #7b8794 !important;
+  box-shadow: none !important;
+}
+
+/* Cards stats => gros blocs colorés */
+.stats-container{
+  gap: 18px !important;
+}
+
+.stat-card{
+  border-radius: 18px !important;
+  padding: 18px 42px 14px 42px !important;
+  box-shadow: 0 10px 24px rgba(15,23,42,0.10) !important;
+  border: none !important;
+  color: #fff !important;
+}
+
+.stat-card .stat-label{
+  background: transparent !important;
+  color: rgba(255,255,255,0.95) !important;
+  font-weight: 700 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+
+.stat-card .stat-value{
+  color: #fff !important;
+}
+
+/* Gradients (proches du dashboard) */
+.stat-card.realise{
+  background: linear-gradient(135deg, #27d79a, #18b775) !important;
+}
+.stat-card.a-venir{
+  background: linear-gradient(135deg, #ffb020, #ff8a00) !important;
+}
+.stat-card.annule{
+  background: linear-gradient(135deg, #ff5b7a, #ff3b3b) !important;
+}
+
+/* Hover doux */
+.stat-card:hover{
+  transform: translateY(-4px) !important;
+  box-shadow: 0 14px 30px rgba(15,23,42,0.14) !important;
+}
+
+/* Bouton filtre => clair */
+.filters-container{
+  margin-bottom: 22px !important;
+}
+
+.filter-main-btn{
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(15,23,42,0.08) !important;
+  box-shadow: 0 8px 18px rgba(15,23,42,0.08) !important;
+  font-weight: 600 !important;
+  margin-bottom: 0 !important; /* annule ton margin-bottom:-250px */
+}
+.filter-main-btn:hover{
+  background: #eaf0f8 !important;
+}
+
+/* Satisfaction => carte blanche */
+.satisfaction-section{
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.satisfaction-card{
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(15, 23, 42, 0.06) !important;
+  box-shadow: 0 10px 24px rgba(15,23,42,0.08) !important;
+  margin-top: 0 !important;
+}
+
+.satisfaction-header,
+.satisfaction-percentage,
+.satisfaction-avg{
+  color: #0f172a !important;
+}
+
+.satisfaction-count{
+  color: rgba(15,23,42,0.55) !important;
+}
+
+/* Comparaisons */
+.satisfaction-comparisons{
+  border-top: 1px solid rgba(15,23,42,0.08) !important;
+}
+
+.comparison-label{
+  color: rgba(15,23,42,0.55) !important;
+}
+
+/* Grille des colonnes => cartes blanches */
+.content-grid{
+  gap: 28px !important;
+}
+
+.column{
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.06) !important;
+  box-shadow: 0 10px 24px rgba(15,23,42,0.08) !important;
+  border-radius: 18px !important;
+  color: #0f172a !important;
+}
+
+/* Titres colonnes + soulignements couleur conservés */
+.column h2{
+  color: #0f172a !important;
+}
+
+/* Liste RDV : garde ton scroll si besoin (sinon tu peux enlever) */
+.card-list{
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15,23,42,0.18) transparent;
+}
+.card-list::-webkit-scrollbar{ width: 8px; background: transparent; }
+.card-list::-webkit-scrollbar-thumb{
+  background: rgba(15,23,42,0.14);
+  border-radius: 999px;
+}
+.card-list::-webkit-scrollbar-thumb:hover{
+  background: rgba(15,23,42,0.22);
+}
+
+/* Cartes RDV */
+.rdv-card{
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.06) !important;
+  box-shadow: 0 6px 16px rgba(15,23,42,0.06) !important;
+}
+.rdv-card:hover{
+  background: #ffffff !important;
+  box-shadow: 0 12px 24px rgba(15,23,42,0.10) !important;
+}
+
+/* Textes RDV */
+.rdv-title{
+  color: #0f172a !important;
+}
+
+.rdv-details{
+  color: rgba(15,23,42,0.70) !important;
+}
+
+.no-rdv{
+  color: rgba(15,23,42,0.50) !important;
+}
+
+/* Petit point important : dans ton HTML tu as un style inline color:#fff sur .rdv-objet
+   -> On le force à être lisible en clair */
+.rdv-objet{
+  color: rgba(15,23,42,0.78) !important;
+}
+
+/* Bouton retour */
+.back-link{
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(15,23,42,0.08) !important;
+}
+.back-link:hover{
+  background: #eaf0f8 !important;
+}
+/* =========================================================
+   MODALE FILTRES — STYLE LIGHT DASHBOARD
+   (conserve toutes les fonctionnalités : on ne touche pas au HTML/JS)
+   ========================================================= */
+
+.filter-panel-overlay{
+  background: rgba(15, 23, 42, 0.35) !important; /* gris bleuté */
+  backdrop-filter: blur(10px) !important;
+}
+
+/* Carte blanche */
+.filter-panel{
+  background: rgba(255,255,255,0.92) !important;
+  color: #0f172a !important;
+  border-radius: 18px !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.18) !important;
+}
+
+/* Titre */
+.filter-panel-header h3{
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+/* Bouton X */
+.filter-panel-header .close-btn,
+.close-btn{
+  color: rgba(15, 23, 42, 0.45) !important;
+  border-radius: 10px !important;
+  transition: background .18s, color .18s, transform .18s;
+}
+.filter-panel-header .close-btn:hover,
+.close-btn:hover{
+  background: rgba(15, 23, 42, 0.06) !important;
+  color: #ff3b3b !important;
+  transform: scale(1.06);
+}
+
+/* Labels */
+.filter-group label{
+  color: rgba(15, 23, 42, 0.62) !important;
+  font-weight: 600 !important;
+}
+
+/* Inputs / select : clair */
+.filter-select-panel,
+.date-input{
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(15, 23, 42, 0.10) !important;
+  border-radius: 12px !important;
+}
+.filter-select-panel:hover,
+.date-input:hover{
+  background: #eaf0f8 !important;
+  border-color: rgba(15, 23, 42, 0.16) !important;
+}
+.filter-select-panel:focus,
+.date-input:focus{
+  outline: none !important;
+  border-color: rgba(59,130,246,0.55) !important; /* bleu soft */
+  box-shadow: 0 0 0 4px rgba(59,130,246,0.12) !important;
+}
+
+/* Boutons période : style pill clair */
+.filter-btn{
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(15, 23, 42, 0.10) !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  transition: background .18s, transform .18s, box-shadow .18s, border-color .18s;
+}
+.filter-btn:hover{
+  background: #eaf0f8 !important;
+  transform: translateY(-1px);
+}
+
+/* Bouton actif : rouge dashboard */
+.filter-btn.active{
+  background: #ff3b3b !important;
+  color: #ffffff !important;
+  border-color: #ff3b3b !important;
+  box-shadow: 0 10px 22px rgba(255, 59, 59, 0.22) !important;
+}
+
+/* Footer / actions */
+.filter-panel-footer{
+  border-top: 1px solid rgba(15, 23, 42, 0.08) !important;
+  padding-top: 18px !important;
+}
+
+/* Appliquer : vert comme ton UI */
+.apply-btn{
+  background: linear-gradient(135deg, #27d79a, #18b775) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 22px rgba(24, 183, 117, 0.18) !important;
+}
+.apply-btn:hover{
+  filter: brightness(0.98);
+  transform: translateY(-1px);
+}
+
+/* Réinitialiser : lien discret */
+.reset-link{
+  color: rgba(15, 23, 42, 0.62) !important;
+  font-weight: 700 !important;
+}
+.reset-link:hover{
+  color: #0f172a !important;
+  text-decoration: underline !important;
+}

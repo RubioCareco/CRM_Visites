@@ -11,6 +11,9 @@ backups/
 *.sqlite3
 *.dump
 *.bak
+*.BAK*
+*.log
+*.tgz
 *.sql
 *.sql.gz
 /staticfiles/
@@ -30,6 +33,8 @@ db.sqlite3
 __pycache__/
 *.py[cod]
 .pytest_cache/
+*.pyc
+*.pyo
 
 # IDE / OS
 .vscode/
@@ -43,3 +48,21 @@ Thumbs.db
 staticfiles/
 nginx/staticfiles/
 .env.prod.save
+
+#Certbot / SSL local artifacts
+certbot/
+renew_cert.sh
+renew_cert.log
+
+#Local scripts / dumps
+mysqldump
+envprod_backup_*
+backup_*
+scripts/
+
+#Nested git folder
+CRM_Visites.git/
+
+#Nginx assets generated
+nginx/assets/
+mysqldump

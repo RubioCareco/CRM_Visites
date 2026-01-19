@@ -33,13 +33,9 @@ if local_env.exists():
 SECRET_KEY = env('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env.bool('DEBUG', default=True)
+DEBUG = env.bool("DEBUG", default=(ENV != "prod"))
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
-
-SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=(ENV == 'prod'))
-SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=True)
-CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=True)
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1", "web"])
 
 # Application definition
 
@@ -132,7 +128,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CSRF_USE_SESSIONS = False
 CSRF_TRUSTED_ORIGINS = env.list(
     "CSRF_TRUSTED_ORIGINS",
-    default=["http://127.0.0.1:8000", "http://localhost:8000"]
+    default=["http://127.0.0.1:8000", "http://localhost:8000",  "https://rcareco.eu.org", "https://crm.rcareco.eu.org"]
 )
 
 EMAIL_BACKEND = env(
@@ -190,9 +186,18 @@ USE_X_FORWARDED_HOST = True  # utile quand on est derrière un proxy
 
 # (si ce n'est pas déjà fait, on lit ces flags depuis l'env)
 SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=False)
-SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=False)
-CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=False)
+SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=(ENV == "prod"))
+CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=(ENV == "prod"))
+
 
 # ALLOWED_HOSTS / CSRF_TRUSTED_ORIGINS depuis l'env si pas déjà définis
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=ALLOWED_HOSTS if 'ALLOWED_HOSTS' in globals() else [])
-CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
+#ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=ALLOWED_HOSTS if 'ALLOWED_HOSTS' in globals() else [])
+#CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
+# Durée de validité des liens de réinit de mot de passe (en secondes)
+PASSWORD_RESET_TIMEOUT = env.int("PASSWORD_RESET_TIMEOUT", default=60*60*24)
+
+
+# Google Maps
+GOOGLE_MAPS_API_KEY = env("GOOGLE_MAPS_API_KEY", default="")
+GOOGLE_MAPS_TRAVEL_MODE = os.getenv("GOOGLE_MAPS_TRAVEL_MODE", "driving")
+GOOGLE_LOG_STATS = os.getenv("GOOGLE_LOG_STATS", "false").lower() == "true"

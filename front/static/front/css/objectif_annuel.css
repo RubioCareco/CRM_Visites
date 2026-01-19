@@ -1156,3 +1156,12 @@ body {
     width: 98%;
   }
 }
+
+.dbt-link{
+  color:#ef4444;
+  text-decoration:none;
+  font-size:14px;
+  font-weight:500;
+}
+.dbt-link:hover{
+  text-decoration:underline}

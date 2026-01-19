@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 import uuid
 
+
 class Commercial(models.Model):
     commercial = models.CharField(max_length=100)
     nom = models.CharField(max_length=100)
@@ -15,6 +16,7 @@ class Commercial(models.Model):
     latitude_depart = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
     longitude_depart = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
     adresse_depart = models.CharField(max_length=255, blank=True, null=True)
+
     ROLE_CHOICES = [
         ('commercial', 'Commercial'),
         ('responsable', 'Responsable'),
@@ -28,6 +30,7 @@ class Commercial(models.Model):
 
     class Meta:
         managed = True
+
 
 class Rendezvous(models.Model):
     STATUT_CHOICES = [
@@ -53,6 +56,13 @@ class Rendezvous(models.Model):
 
     class Meta:
         managed = True
+        constraints = [
+            models.UniqueConstraint(
+                fields=["commercial", "client", "date_rdv", "heure_rdv"],
+                name="uniq_rdv_commercial_client_datetime",
+        )
+    ]
+
 
 # Historique des commentaires sur les rendez-vous
 class CommentaireRdv(models.Model):
@@ -62,12 +72,15 @@ class CommentaireRdv(models.Model):
     texte = models.TextField()
     date_creation = models.DateTimeField(auto_now_add=True)
     rs_nom = models.CharField(max_length=128, blank=True, null=True)
+    # 👇 Nouveau champ pour les commentaires épinglés
+    is_pinned = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.auteur} - {self.date_creation.strftime('%d/%m/%Y %H:%M')} : {self.texte[:30]}"
 
     class Meta:
         managed = True
+
 
 class ImportClientCorrected(models.Model):
     civilite = models.CharField(max_length=50, blank=True, null=True)
@@ -79,13 +92,15 @@ class ImportClientCorrected(models.Model):
     commercial = models.CharField(max_length=50, blank=True, null=True)
     telephone = models.CharField(max_length=15, blank=True, null=True)
     e_mail = models.CharField(max_length=60, blank=True, null=True)
-    statut= models.CharField(max_length=50, blank=True, null=True)
+    statut = models.CharField(max_length=50, blank=True, null=True)
     code_comptable = models.CharField(max_length=64, blank=True, null=True)
     e_mail_comptabilité = models.CharField(max_length=60, blank=True, null=True)
     en_compte = models.CharField(max_length=50, blank=True, null=True)
+
     class Meta:
         db_table = 'import_clients_corrected'
         managed = False  # Table historique: on ne la gère plus via Django
+
 
 class SatisfactionB2B(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
@@ -116,10 +131,10 @@ class SatisfactionB2B(models.Model):
     suggestion = models.TextField(blank=True, null=True)
     motivation_commande = models.TextField(blank=True, null=True)
     note_recommandation = models.PositiveSmallIntegerField(blank=True, null=True)
-    
+
     # Nouvelle colonne pour la moyenne
     moyenne = models.DecimalField(max_digits=4, decimal_places=2, blank=True, null=True)
-    
+
     # Nouvelle colonne pour le score hybride (numérique + textuel)
     score_hybride = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
 
@@ -146,17 +161,17 @@ class SatisfactionB2B(models.Model):
                 notes.append(int(self.note_recommandation))
             except (ValueError, TypeError):
                 pass
-        
+
         if notes:
             self.moyenne = sum(notes) / len(notes)
         else:
             self.moyenne = None
-        
+
         # Calcul du score hybride (numérique + analyse textuelle)
         try:
             from .utils import calculate_comprehensive_satisfaction_score
             self.score_hybride = calculate_comprehensive_satisfaction_score(self)
-        except Exception as e:
+        except Exception:
             # En cas d'erreur, on garde le score numérique uniquement
             if self.moyenne:
                 # La moyenne peut contenir des notes sur 5 et sur 10, donc on ne multiplie pas par 2
@@ -164,11 +179,12 @@ class SatisfactionB2B(models.Model):
                 self.score_hybride = min(self.moyenne, 10.0)  # Limiter à 10 maximum
             else:
                 self.score_hybride = None
-        
+
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Satisfaction B2B #{self.id} - {self.rs_nom} - {self.date_soumission.strftime('%d/%m/%Y')}"
+
 
 class ActivityLog(models.Model):
     ACTION_TYPES = [
@@ -191,6 +207,7 @@ class ActivityLog(models.Model):
     class Meta:
         ordering = ['-timestamp']
 
+
 class FrontClient(models.Model):
     nom = models.CharField(max_length=100, blank=True, null=True)
     prenom = models.CharField(max_length=100, blank=True, null=True)
@@ -208,11 +225,17 @@ class FrontClient(models.Model):
     commercial_id = models.BigIntegerField(null=True, blank=True)
     commentaires = models.TextField(null=True, blank=True)
     commercial = models.CharField(max_length=100, blank=True, null=True)
-    classement_client = models.CharField(max_length=50, blank=True, null=True, help_text="Type de client (A, B, C) pour déterminer l'objectif annuel de visites")
+    classement_client = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text="Type de client (A, B, C) pour déterminer l'objectif annuel de visites",
+    )
 
     class Meta:
         db_table = 'front_client'
         managed = True
+
 
 class Adresse(models.Model):
     client = models.ForeignKey(FrontClient, on_delete=models.CASCADE, related_name='adresses')
@@ -230,6 +253,7 @@ class Adresse(models.Model):
     def __str__(self):
         return f"{self.adresse}, {self.code_postal} {self.ville}"
 
+
 class ClientVisitStats(models.Model):
     """Statistiques annuelles de visites par client et commercial"""
     client = models.ForeignKey('FrontClient', on_delete=models.CASCADE, related_name='stats_visites')
@@ -238,7 +262,7 @@ class ClientVisitStats(models.Model):
     visites_valides = models.IntegerField(default=0, help_text="Nombre de visites validées cette année")
     objectif = models.IntegerField(help_text="Objectif annuel de visites (A=10, B=5, C=1, défaut=1)")
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         unique_together = ['client', 'commercial', 'annee']
         verbose_name = "Statistique de visite client"
@@ -247,10 +271,10 @@ class ClientVisitStats(models.Model):
             models.Index(fields=['client', 'annee']),
             models.Index(fields=['commercial', 'annee']),
         ]
-    
+
     def __str__(self):
         return f"{self.client} - {self.commercial} - {self.annee} ({self.visites_valides}/{self.objectif})"
-    
+
     @property
     def ratio(self):
         """Retourne le ratio sous forme 'X/Y'"""

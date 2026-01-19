@@ -8,6 +8,51 @@
   <link rel="stylesheet" href="{% static 'front/css/client_file.css' %}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
+    .pinned-comment-pill {
+      background: rgba(229, 57, 53, 0.08);
+      border: 1px solid rgba(229, 57, 53, 0.4);
+      border-radius: 10px;
+      padding: 8px 12px;
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: #444;
+    }
+
+    .pinned-comment-pill .pinned-label {
+      font-weight: 600;
+      margin-right: 6px;
+      color: #e53935;
+    }
+
+    .comment-card {
+      padding: 6px 8px;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+
+    .comment-meta {
+      font-size: 0.78rem;
+      color: #777;
+    }
+
+    .comment-text {
+      font-size: 0.9rem;
+      margin-bottom: 2px;
+    }
+
+    .pin-comment-btn {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 0.78rem;
+      margin-left: 8px;
+      color: #888;
+    }
+
+    .pin-comment-btn.pinned {
+      color: #e53935;
+      font-weight: 600;
+    }
+
     #filterPanelClient input {
       width: 92%;
       margin: 0 auto 12px auto;
@@ -105,7 +150,7 @@
       text-align: left;
       margin-top: 24px;
     }
-    #dashboard{
+    #dashboard {
       background-color: #f5f7fb;
     }
   </style>
@@ -114,17 +159,19 @@
 
   <h1 class="dashboard-title">Fichier Clients</h1>
 
-  <!-- Barre de recherche identique au dashboard -->
+  <!-- Barre de recherche -->
   <div class="search-bar" style="position:relative;">
-      <input type="text" id="clientSearchBar" placeholder="Rechercher par clients, entreprises ..." autocomplete="off">
-      <ul id="clientSearchSuggestions" class="autocomplete-results" style="position:absolute;left:0;right:0;top:38px;z-index:10;background:rgba(30,30,30,0.95);color:#fff;border-radius:0 0 8px 8px;max-height:180px;overflow-y:auto;display:none;"></ul>
+    <input type="text" id="clientSearchBar" placeholder="Rechercher par clients, entreprises ..." autocomplete="off">
+    <ul id="clientSearchSuggestions" class="autocomplete-results" style="position:absolute;left:0;right:0;top:38px;z-index:10;background:rgba(30,30,30,0.95);color:#fff;border-radius:0 0 8px 8px;max-height:180px;overflow-y:auto;display:none;"></ul>
   </div>
 
   <div class="cards" style="display:flex;justify-content:center;align-items:flex-start;min-height:10vh; border-radius: 15px;">
-    <div class="card" style="width:95%;max-width:1600px;margin-top:40px;min-height:850px;background-color: rgb(250, 250, 250);color: #444444e3;box-shadow: 0 26px 72px rgba(15, 23, 42, .14), 0 6px 16px rgba(15, 23, 42, .06);border-radius: 15px;">
+    <div class="card" style="width:90%;max-width:1600px;margin:40px auto 0 auto;min-height:850px;background-color: rgb(250, 250, 250);color: #444444e3;box-shadow: 0 26px 72px rgba(15, 23, 42, .14), 0 6px 16px rgba(15, 23, 42, .06);border-radius: 15px;">
       <h2 style="text-align:center;margin-bottom:24px;">
         Liste des clients
       </h2>
+
+      <!-- Pagination + filtre commercial -->
       <div class="pagination-container" style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-left:25px;">
         <form method="get" class="pagination-form" style="margin-right:12px;">
           <label for="per_page">Clients par page :</label>
@@ -156,6 +203,8 @@
         <button class="back-login" id="filterBtnClient" type="button" style="display:flex;align-items:center;gap:8px;font-size:1.15rem;padding:8px 22px;border-radius:8px;backdrop-filter:blur(6px);border:none;text-decoration:none;background:#e53935;color:#fff;cursor:pointer;">
           <i class="fa fa-filter"></i> Filtres
         </button>
+
+        <!-- Pills des filtres actifs -->
         <div class="active-filters">
           {% for key, value in request.GET.items %}
             {% if value and key != 'page' and key != 'per_page' %}
@@ -167,6 +216,8 @@
           {% endfor %}
         </div>
       </div>
+
+      <!-- Panneau latéral des filtres -->
       <div id="filterPanelClient" class="filter-panel-overlay">
         <form class="filter-panel" id="clientFilterForm">
           <div class="filter-panel-header">
@@ -195,6 +246,8 @@
           </div>
         </form>
       </div>
+
+      <!-- Tableau -->
       <div class="table-container" style="max-height: 850px; overflow-y: auto; padding-right: 20px; margin-top: 16px;">
         <table class="client-table" style="width: 100%; table-layout: fixed;margin-left: 10px;">
           <thead>
@@ -236,6 +289,8 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Pagination bas -->
       <div style="text-align:center;margin:18px 0;">
         {% with filtre_params="" %}
           {% if request.GET.filterRaison %}{% with filtre_params=filtre_params|add:"&filterRaison="|add:request.GET.filterRaison %}{% endwith %}{% endif %}
@@ -293,6 +348,7 @@
     </div>
   </div>
 
+  <!-- Bouton retour -->
   <a href="{% if role == 'responsable' or role == 'admin' %}{% url 'dashboard_responsable' %}{% else %}{% url 'dashboard_test' %}{% endif %}"
      class="back-login" id="backDashboardBtn"
      style="position:fixed;left:24px;bottom:20px;z-index:9999;display:flex;align-items:center;gap:8px;color:#000000;font-size:1.15rem;padding:8px 22px;border-radius:8px;box-shadow:0 2px 8px rgba(255, 255, 255, 0.1);backdrop-filter:blur(6px);border: 1px solid rgba(0,0,0, 0.1);text-decoration:none;">
@@ -302,224 +358,19 @@
 </body>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  // Récupération de toutes les lignes du tableau
-  const allRows = Array.from(document.querySelectorAll(".client-card"));
-  
-  // Ajout des event listeners pour ouvrir la modale
-  allRows.forEach(row => {
-    row.addEventListener('click', function() {
-      const rs_nom = this.getAttribute('data-client-nom') || '';
-      const prenom = this.getAttribute('data-client-prenom') || '';
-      const civilite = this.getAttribute('data-client-civilite') || '';
-      const adresse = this.getAttribute('data-client-adresse') || '';
-      const code_postal = this.getAttribute('data-client-cp') || '';
-      const ville = this.getAttribute('data-client-ville') || '';
-      const telephone = this.getAttribute('data-client-telephone') || '';
-      const email = this.getAttribute('data-client-email') || '';
-      const statut = this.getAttribute('data-client-statut') || '';
-      const id = this.getAttribute('data-client-id') || '';
-      const code_comptable = this.getAttribute('data-client-code-comptable') || '';
-      const classement = this.getAttribute('data-client-classement') || '';
-      
-      openClientModal(rs_nom, prenom, civilite, adresse, code_postal, ville, telephone, email, statut, id, code_comptable, classement);
-    });
-  });
-  
-  // Création de la liste des suggestions via AJAX (civilité, raison sociale, prénom uniquement)
-  async function fetchSuggestions(query) {
-    if (!query.trim()) return [];
-    try {
-      const resp = await fetch(`/search-clients/?q=${encodeURIComponent(query)}`);
-      if (!resp.ok) return [];
-      const data = await resp.json();
-      return data.results || [];
-    } catch (e) {
-      return [];
-    }
-  }
-
-  // Affiche les suggestions filtrées (AJAX)
-  async function showSuggestions(value) {
-    const v = value.trim();
-    if (!v) {
-      suggestionBox.style.display = 'none';
-      suggestionBox.innerHTML = '';
-      return;
-    }
-    const suggestions = await fetchSuggestions(v);
-    if (suggestions.length === 0) {
-      suggestionBox.style.display = 'none';
-      suggestionBox.innerHTML = '';
-      return;
-    }
-    suggestionBox.innerHTML = suggestions.map(s => `<li class='autocomplete-item' style='padding:8px 12px;cursor:pointer;'>${s.civilite} ${s.rs_nom} ${s.prenom}</li>`).join('');
-    suggestionBox.style.display = 'block';
-    Array.from(suggestionBox.children).forEach(li => {
-      li.addEventListener('mousedown', function(e) {
-        e.preventDefault();
-        searchInput.value = this.textContent;
-        filterTableBySuggestion(this.textContent);
-        suggestionBox.style.display = 'none';
-      });
-    });
-  }
-
-  // Filtre le tableau sur la suggestion choisie
-  function filterTableBySuggestion(text) {
-    const lowerText = text.trim().toLowerCase();
-    allRows.forEach(row => {
-      const rowText = ((row.children[0]?.textContent || '') + ' ' + (row.children[1]?.textContent || '') + ' ' + (row.children[2]?.textContent || '')).toLowerCase();
-      if (rowText.includes(lowerText)) {
-        row.style.display = '';
-      } else {
-        row.style.display = 'none';
-      }
-    });
-  }
-
-  // Recherche dynamique du tableau (AJAX)
-  async function searchAndUpdateTable(query) {
-    if (!query.trim()) {
-      window.location.reload(); // Retour à la pagination serveur
-      return;
-    }
-    try {
-      const resp = await fetch(`/search-clients-table/?q=${encodeURIComponent(query)}`);
-      if (!resp.ok) return;
-      const data = await resp.json();
-      const results = data.results || [];
-      const tbody = document.querySelector('.client-table tbody');
-      tbody.innerHTML = '';
-      
-      // Supprimer l'ancien indicateur s'il existe
-      const existingIndicator = document.querySelector('.client-table').previousElementSibling;
-      if (existingIndicator && existingIndicator.style.background.includes('rgba(229, 57, 53, 0.1)')) {
-        existingIndicator.remove();
-      }
-      
-      // Ajouter un indicateur de recherche active
-      const searchIndicator = document.createElement('div');
-      searchIndicator.style.cssText = 'background: rgba(229, 57, 53, 0.1); border: 1px solid rgba(229, 57, 53, 0.3); border-radius: 6px; padding: 8px 12px; margin: 8px 0; color: #fff; font-size: 0.9rem; text-align: center;';
-      searchIndicator.innerHTML = `<i class="fa fa-search" style="margin-right: 6px;"></i>Résultats de recherche pour "${query}" (${results.length} client${results.length > 1 ? 's' : ''})`;
-      
-      // Insérer l'indicateur avant le tableau
-      const table = document.querySelector('.client-table');
-      table.parentNode.insertBefore(searchIndicator, table);
-      
-      if (results.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#e53935;font-style:italic;">Aucun client trouvé pour "${query}"</td></tr>`;
-        return;
-      }
-      
-      for (const c of results) {
-        const tr = document.createElement('tr');
-        tr.className = 'client-card';
-        tr.style.cursor = 'pointer';
-        tr.style.backgroundColor = 'rgba(229, 57, 53, 0.05)'; // Légère surbrillance
-        tr.innerHTML = `
-          <td>${c.civilite || ''}</td>
-          <td>${c.rs_nom || ''}</td>
-          <td>${c.prenom || ''}</td>
-          <td>${c.adresse || ''}</td>
-          <td>${c.code_postal || ''}</td>
-          <td>${c.ville || ''}</td>
-        `;
-        
-        // Réattacher l'event listener pour ouvrir la modale
-        tr.addEventListener('click', function() {
-          window.openClientModal(
-            c.rs_nom || '',
-            c.prenom || '',
-            c.civilite || '',
-            c.adresse || '',
-            c.code_postal || '',
-            c.ville || '',
-            c.telephone || '',
-            c.email || '',
-            c.statut || '',
-            c.id,
-            c.code_comptable || ''
-          );
-        });
-        
-        tbody.appendChild(tr);
-      }
-    } catch (e) {
-      // Optionnel : afficher une erreur
-    }
-  }
-
+  // --- Références générales ---
   const searchInput = document.getElementById('clientSearchBar');
   const suggestionBox = document.getElementById('clientSearchSuggestions');
-
-  searchInput.addEventListener('input', function() {
-    showSuggestions(this.value);
-    if (this.value.trim()) {
-      searchAndUpdateTable(this.value);
-    } else {
-      // Nettoyer l'indicateur de recherche si la barre est vide
-      const existingIndicator = document.querySelector('.client-table').previousElementSibling;
-      if (existingIndicator && existingIndicator.style.background.includes('rgba(229, 57, 53, 0.1)')) {
-        existingIndicator.remove();
-      }
-    }
-  });
-
-  searchInput.addEventListener('focus', function() {
-    showSuggestions(this.value);
-  });
-  searchInput.addEventListener('blur', function() {
-    setTimeout(() => { suggestionBox.style.display = 'none'; }, 120);
-  });
-
-  // Filtres clients (panneau latéral)
   const filterBtn = document.getElementById('filterBtnClient');
   const filterPanel = document.getElementById('filterPanelClient');
   const closeFilterPanel = document.getElementById('closeFilterPanelClient');
   const resetFilters = document.getElementById('resetClientFilters');
-  const form = document.getElementById('clientFilterForm');
+  const formFilters = document.getElementById('clientFilterForm');
   const raisonInput = document.getElementById('filterRaison');
   const adresseInput = document.getElementById('filterAdresse');
   const cpInput = document.getElementById('filterCP');
   const villeInput = document.getElementById('filterVille');
 
-  filterBtn.addEventListener('click', function() {
-    filterPanel.classList.add('active');
-  });
-  closeFilterPanel.addEventListener('click', function() {
-    filterPanel.classList.remove('active');
-  });
-  resetFilters.addEventListener('click', function(e) {
-    e.preventDefault();
-    raisonInput.value = '';
-    adresseInput.value = '';
-    cpInput.value = '';
-    villeInput.value = '';
-    filterRowsByFilters();
-  });
-  form.addEventListener('input', filterRowsByFilters);
-
-  function filterRowsByFilters() {
-    const raison = raisonInput.value.trim().toLowerCase();
-    const adresse = adresseInput.value.trim().toLowerCase();
-    const cp = cpInput.value.trim().toLowerCase();
-    const ville = villeInput.value.trim().toLowerCase();
-    allRows.forEach(row => {
-      const tds = row.children;
-      const raisonVal = (tds[1]?.textContent || '').toLowerCase();
-      const adresseVal = (tds[3]?.textContent || '').toLowerCase();
-      const cpVal = (tds[4]?.textContent || '').toLowerCase();
-      const villeVal = (tds[5]?.textContent || '').toLowerCase();
-      let show = true;
-      if (raison && !raisonVal.includes(raison)) show = false;
-      if (adresse && !adresseVal.includes(adresse)) show = false;
-      if (cp && !cpVal.includes(cp)) show = false;
-      if (ville && !villeVal.includes(ville)) show = false;
-      row.style.display = show ? '' : 'none';
-    });
-  }
-
-  // --- Edition des infos client dans la modale ---
   const modifyBtn = document.getElementById('modifyBtn');
   const saveBtn = document.getElementById('saveBtn');
   const cancelBtn = document.getElementById('cancelBtn');
@@ -532,56 +383,9 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById('inputClassement')
   ];
   let oldValues = {};
+  let allRows = [];
 
-  modifyBtn.addEventListener('click', function () {
-    editableFields.forEach(input => oldValues[input.id] = input.value);
-    editableFields.forEach(input => input.disabled = false);
-    modifyBtn.style.display = 'none';
-    saveBtn.style.display = 'inline-block';
-    cancelBtn.style.display = 'inline-block';
-  });
-
-  cancelBtn.addEventListener('click', function () {
-    editableFields.forEach(input => {
-      input.value = oldValues[input.id];
-      input.disabled = true;
-    });
-    modifyBtn.style.display = 'inline-block';
-    saveBtn.style.display = 'none';
-    cancelBtn.style.display = 'none';
-  });
-
-  saveBtn.addEventListener('click', function () {
-    const clientId = document.getElementById('clientModal').getAttribute('data-client-id');
-    const data = {
-      adresse: document.getElementById('inputAdresse').value,
-      code_postal: document.getElementById('inputCP').value,
-      ville: document.getElementById('inputVille').value,
-      telephone: document.getElementById('inputTel').value,
-      email: document.getElementById('inputEmail').value,
-      classement_client: document.getElementById('inputClassement').value
-    };
-    fetch(`/update-client/${clientId}/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': getCookie('csrftoken')
-      },
-      body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(res => {
-      if (res.success) {
-        alert('Modifications enregistrées !');
-        closeClientModal();
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
-      } else {
-        alert('Erreur : ' + (res.error || 'Impossible de sauvegarder'));
-      }
-    });
-  });
+  // --- Utilitaires ---
 
   function getCookie(name) {
     let cookieValue = null;
@@ -598,11 +402,156 @@ document.addEventListener("DOMContentLoaded", function () {
     return cookieValue;
   }
 
-  // --- Remplissage de la modale client ---
-  window.openClientModal = function(nom, prenom, civilite, adresse, code_postal, ville, telephone, email, statut, clientId, code_comptable, classement) {
-    document.getElementById('clientModal').style.display = 'flex';
-    document.getElementById('clientModal').setAttribute('data-client-id', clientId);
-    document.getElementById('modalClientName').textContent = (civilite ? civilite + ' ' : '') + (prenom ? prenom + ' ' : '') + nom;
+  // --- Commentaires client (chargement + pin) ---
+
+  function loadClientComments(clientId) {
+    const commentsDiv = document.getElementById('clientComments');
+    commentsDiv.innerHTML = "<i>Chargement de l'historique des commentaires...</i>";
+
+    fetch(`/api/client-comments/${clientId}/`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('HTTP ' + response.status);
+        }
+        return response.json();
+      })
+      .then(data => {
+        const commentaires = data.commentaires || [];
+        const pinned = commentaires.filter(c => c.is_pinned);
+
+        let html = '';
+
+        // Zone "Commentaires épinglés"
+        if (pinned.length > 0) {
+          html += `
+            <div>
+              <b>Commentaires épinglés :</b>
+              <div class="dbt-badges" style="margin-top:6px;">
+                ${pinned.map(c => {
+                  const info = (c.date ? ` (${c.date}${c.auteur ? ' — ' + c.auteur : ''})` : (c.auteur ? ' (' + c.auteur + ')' : ''));
+                  return `<span class="dbt-badge" title="${(c.texte || '').replace(/"/g,'&quot;')}">${c.texte}${info}</span>`;
+                }).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        html += `
+          <b>Historique des commentaires :</b>
+          <div style="max-height:180px;overflow-y:auto;margin-top:8px;">
+        `;
+
+        if (!commentaires.length) {
+          html += '<span style="color:#aaa;">Aucun commentaire pour ce client.</span>';
+        } else {
+          commentaires.forEach(c => {
+            const isPinned = !!c.is_pinned;
+
+            // 🔧 RÉCUPÉRATION ROBUSTE DE L'ID DU COMMENTAIRE
+            const commentId =
+              (c && (c.id ?? c.comment_id ?? c.commentId ?? c.commentaire_id ?? c.pk)) ?? null;
+
+            if (commentId === null) {
+              console.warn('Commentaire sans ID détecté :', c);
+            }
+
+            const pinBtnHtml = (commentId !== null)
+              ? `<button type="button"
+                          class="pin-comment-btn ${isPinned ? 'pinned' : ''}"
+                          data-comment-id="${commentId}"
+                          data-client-id="${clientId}"
+                          onclick="togglePinComment(${commentId}, ${clientId}, event)">
+                    <i class="fa-solid fa-thumbtack"></i>
+                    ${isPinned ? 'Épinglé' : 'Épingler'}
+                 </button>`
+              : '';
+
+            html += `
+              <div class="comment-card">
+                <div class="comment-text">${c.texte}</div>
+                <div class="comment-meta">
+                  <span class="comment-date">${c.date}</span>
+                  <span class="comment-author"> — ${c.auteur}</span>
+                  ${pinBtnHtml}
+                </div>
+              </div>
+            `;
+          });
+        }
+
+        html += '</div>';
+        commentsDiv.innerHTML = html;
+      })
+      .catch(err => {
+        console.error('Erreur loadClientComments :', err);
+        commentsDiv.innerHTML = '<span style="color:#e53935;">Erreur lors du chargement des commentaires.</span>';
+      });
+  }
+
+  window.togglePinComment = function (commentId, clientId, ev) {
+    const btn = ev?.currentTarget || ev?.target;
+    const commentIdFinal = commentId ?? (btn?.dataset?.commentId ? Number(btn.dataset.commentId) : null);
+    const clientIdFinal = clientId ?? (btn?.dataset?.clientId ? Number(btn.dataset.clientId) : null);
+
+    if (!commentIdFinal || Number.isNaN(commentIdFinal)) {
+      console.error('togglePinComment appelé sans commentId', commentId, btn?.dataset);
+      return;
+    }
+
+    if (!clientIdFinal || Number.isNaN(clientIdFinal)) {
+      console.error('togglePinComment appelé sans clientId', clientId, btn?.dataset);
+      return;
+    }
+
+    fetch(`/api/toggle-pin-comment/${commentIdFinal}/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken')
+      }
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('HTTP ' + response.status);
+        }
+        return response.json();
+      })
+      .then(res => {
+        if (res.success) {
+          loadClientComments(clientIdFinal);
+        } else {
+          console.error('Réponse API toggle-pin-comment non valide :', res);
+        }
+      })
+      .catch(err => {
+        console.error('Erreur toggle-pin-comment :', err);
+      });
+  };
+
+  // --- Ouverture de la modale client ---
+
+  window.openClientModal = function (
+    nom,
+    prenom,
+    civilite,
+    adresse,
+    code_postal,
+    ville,
+    telephone,
+    email,
+    statut,
+    clientId,
+    code_comptable,
+    classement
+  ) {
+    const modal = document.getElementById('clientModal');
+    modal.style.display = 'flex';
+    modal.setAttribute('data-client-id', clientId);
+
+    document.getElementById('modalClientName').textContent =
+      (civilite ? civilite + ' ' : '') +
+      (prenom ? prenom + ' ' : '') +
+      (nom || '');
+
     document.getElementById('inputAdresse').value = adresse || '';
     document.getElementById('inputCP').value = code_postal || '';
     document.getElementById('inputVille').value = ville || '';
@@ -611,39 +560,333 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById('inputStatut').value = statut || '';
     document.getElementById('inputCodeComptable').value = code_comptable || '';
     document.getElementById('inputClassement').value = classement || '';
-    // Désactive tout par défaut
-    editableFields.forEach(input => input.disabled = true);
+
+    editableFields.forEach(input => (input.disabled = true));
     modifyBtn.style.display = 'inline-block';
     saveBtn.style.display = 'none';
     cancelBtn.style.display = 'none';
-    // Mettre à jour le bouton RDV avec l'ID du client
+
     const btnRdv = document.getElementById('addRdvBtn');
     if (btnRdv) {
-      btnRdv.setAttribute('onclick', `window.location.href='/add-rdv/?next=/client-file/&client_id=${clientId}'`);
+      btnRdv.setAttribute(
+        'onclick',
+        `window.location.href='/add-rdv/?next=/client-file/&client_id=${clientId}'`
+      );
     }
-    // --- Affichage des commentaires ---
-    const commentsDiv = document.getElementById('clientComments');
-    commentsDiv.innerHTML = '<i>Chargement de l\'historique des commentaires...</i>';
-    fetch(`/get-client-comments/${clientId}/`)
+
+    loadClientComments(clientId);
+  };
+
+  // --- Edition infos client dans la modale ---
+
+  modifyBtn.addEventListener('click', function () {
+    editableFields.forEach(input => (oldValues[input.id] = input.value));
+    editableFields.forEach(input => (input.disabled = false));
+    modifyBtn.style.display = 'none';
+    saveBtn.style.display = 'inline-block';
+    cancelBtn.style.display = 'inline-block';
+  });
+
+  cancelBtn.addEventListener('click', function () {
+    editableFields.forEach(input => {
+      input.value = oldValues[input.id];
+      input.disabled = true;
+    });
+    modifyBtn.style.display = 'inline-block';
+    saveBtn.style.display = 'none';
+    cancelBtn.style.display = 'none';
+  });
+
+  saveBtn.addEventListener('click', function () {
+    const clientId = document
+      .getElementById('clientModal')
+      .getAttribute('data-client-id');
+    const data = {
+      adresse: document.getElementById('inputAdresse').value,
+      code_postal: document.getElementById('inputCP').value,
+      ville: document.getElementById('inputVille').value,
+      telephone: document.getElementById('inputTel').value,
+      email: document.getElementById('inputEmail').value,
+      classement_client: document.getElementById('inputClassement').value
+    };
+
+    fetch(`/update-client/${clientId}/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken')
+      },
+      body: JSON.stringify(data)
+    })
       .then(response => response.json())
-      .then(data => {
-        const commentaires = data.commentaires || [];
-        let html = '<b>Historique des commentaires :</b><div style="max-height:180px;overflow-y:auto;margin-top:8px;">';
-        if (commentaires.length === 0) {
-          html += '<span style="color:#aaa;">Aucun commentaire pour ce client.</span>';
+      .then(res => {
+        if (res.success) {
+          alert('Modifications enregistrées !');
+          closeClientModal();
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
         } else {
-          commentaires.forEach(c => {
-            html += `<div class='comment-card'><div class='comment-text'>${c.texte}</div><div class='comment-meta'><span class='comment-date'>${c.date}</span> <span class='comment-author'>${c.auteur}</span></div></div>`;
-          });
+          alert('Erreur : ' + (res.error || 'Impossible de sauvegarder'));
         }
-        html += '</div>';
-        commentsDiv.innerHTML = html;
-      })
-      .catch(() => {
-        commentsDiv.innerHTML = '<span style="color:#e53935;">Erreur lors du chargement des commentaires.</span>';
       });
+  });
+
+  // --- Lignes du tableau + ouverture modale ---
+
+  function attachClientRowHandlers() {
+    const rows = Array.from(document.querySelectorAll('.client-card'));
+    rows.forEach(row => {
+      row.addEventListener('click', function () {
+        const rs_nom = this.getAttribute('data-client-nom') || '';
+        const prenom = this.getAttribute('data-client-prenom') || '';
+        const civilite = this.getAttribute('data-client-civilite') || '';
+        const adresse = this.getAttribute('data-client-adresse') || '';
+        const code_postal = this.getAttribute('data-client-cp') || '';
+        const ville = this.getAttribute('data-client-ville') || '';
+        const telephone = this.getAttribute('data-client-telephone') || '';
+        const email = this.getAttribute('data-client-email') || '';
+        const statut = this.getAttribute('data-client-statut') || '';
+        const id = this.getAttribute('data-client-id') || '';
+        const code_comptable =
+          this.getAttribute('data-client-code-comptable') || '';
+        const classement =
+          this.getAttribute('data-client-classement') || '';
+
+        openClientModal(
+          rs_nom,
+          prenom,
+          civilite,
+          adresse,
+          code_postal,
+          ville,
+          telephone,
+          email,
+          statut,
+          id,
+          code_comptable,
+          classement
+        );
+      });
+    });
+    allRows = rows;
   }
+
+  attachClientRowHandlers();
+
+  // --- Recherche + suggestions ---
+
+  async function fetchSuggestions(query) {
+    if (!query.trim()) return [];
+    try {
+      const resp = await fetch(`/search-clients/?q=${encodeURIComponent(query)}`);
+      if (!resp.ok) return [];
+      const data = await resp.json();
+      return data.results || [];
+    } catch (e) {
+      console.error('Erreur fetchSuggestions :', e);
+      return [];
+    }
+  }
+
+  async function showSuggestions(value) {
+    const v = value.trim();
+    if (!v) {
+      suggestionBox.style.display = 'none';
+      suggestionBox.innerHTML = '';
+      return;
+    }
+    const suggestions = await fetchSuggestions(v);
+    if (suggestions.length === 0) {
+      suggestionBox.style.display = 'none';
+      suggestionBox.innerHTML = '';
+      return;
+    }
+    suggestionBox.innerHTML = suggestions
+      .map(
+        s =>
+          `<li class='autocomplete-item' style='padding:8px 12px;cursor:pointer;'>${s.civilite} ${s.rs_nom} ${s.prenom}</li>`
+      )
+      .join('');
+    suggestionBox.style.display = 'block';
+
+    Array.from(suggestionBox.children).forEach(li => {
+      li.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        searchInput.value = this.textContent;
+        filterTableBySuggestion(this.textcontent);
+        suggestionBox.style.display = 'none';
+      });
+    });
+  }
+
+  function filterTableBySuggestion(text) {
+    const lowerText = text.trim().toLowerCase();
+    allRows.forEach(row => {
+      const civilite = row.children[0]?.textContent || '';
+      const raison = row.children[1]?.textContent || '';
+      const prenom = row.children[2]?.textContent || '';
+      const rowText = `${civilite} ${raison} ${prenom}`.toLowerCase();
+      row.style.display = rowText.includes(lowerText) ? '' : 'none';
+    });
+  }
+
+  async function searchAndUpdateTable(query) {
+    if (!query.trim()) {
+      window.location.reload();
+      return;
+    }
+    try {
+      const resp = await fetch(
+        `/search-clients-table/?q=${encodeURIComponent(query)}`
+      );
+      if (!resp.ok) return;
+      const data = await resp.json();
+      const results = data.results || [];
+      const tbody = document.querySelector('.client-table tbody');
+      const table = document.querySelector('.client-table');
+      tbody.innerHTML = '';
+
+      // Supprimer un éventuel indicateur précédent
+      const prevIndicator = table.previousElementSibling;
+      if (
+        prevIndicator &&
+        prevIndicator.dataset &&
+        prevIndicator.dataset.searchIndicator === '1'
+      ) {
+        prevIndicator.remove();
+      }
+
+      // Indicateur de recherche
+      const searchIndicator = document.createElement('div');
+      searchIndicator.dataset.searchIndicator = '1';
+      searchIndicator.style.cssText =
+        'background: rgba(229, 57, 53, 0.1); border: 1px solid rgba(229, 57, 53, 0.3); border-radius: 6px; padding: 8px 12px; margin: 8px 0; color: #fff; font-size: 0.9rem; text-align: center;';
+      searchIndicator.innerHTML = `Résultats de recherche pour "${query}" (${results.length} client${
+        results.length > 1 ? 's' : ''
+      })`;
+      table.parentNode.insertBefore(searchIndicator, table);
+
+      if (results.length === 0) {
+        tbody.innerHTML =
+          `<tr><td colspan="6" style="text-align:center;color:#e53935;font-style:italic;">Aucun client trouvé pour "${query}"</td></tr>`;
+        allRows = [];
+        return;
+      }
+
+      results.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.className = 'client-card';
+        tr.style.cursor = 'pointer';
+        tr.style.backgroundColor = 'rgba(229, 57, 53, 0.05)';
+
+        tr.innerHTML = `
+          <td>${c.civilite || ''}</td>
+          <td>${c.rs_nom || ''}</td>
+          <td>${c.prenom || ''}</td>
+          <td>${c.adresse || ''}</td>
+          <td>${c.code_postal || ''}</td>
+          <td>${c.ville || ''}</td>
+        `;
+
+        tr.addEventListener('click', function () {
+          openClientModal(
+            c.rs_nom || '',
+            c.prenom || '',
+            c.civilite || '',
+            c.adresse || '',
+            c.code_postal || '',
+            c.ville || '',
+            c.telephone || '',
+            c.email || '',
+            c.statut || '',
+            c.id,
+            c.code_comptable || '',
+            c.classement_client || ''
+          );
+        });
+
+        tbody.appendChild(tr);
+      });
+
+      allRows = Array.from(document.querySelectorAll('.client-card'));
+    } catch (e) {
+      console.error('Erreur searchAndUpdateTable :', e);
+    }
+  }
+
+  searchInput.addEventListener('input', function () {
+    showSuggestions(this.value);
+    if (this.value.trim()) {
+      searchAndUpdateTable(this.value);
+    } else {
+      const table = document.querySelector('.client-table');
+      const prevIndicator = table.previousElementSibling;
+      if (
+        prevIndicator &&
+        prevIndicator.dataset &&
+        prevIndicator.dataset.searchIndicator === '1'
+      ) {
+        prevIndicator.remove();
+      }
+    }
+  });
+
+  searchInput.addEventListener('focus', function () {
+    showSuggestions(this.value);
+  });
+
+  searchInput.addEventListener('blur', function () {
+    setTimeout(() => {
+      suggestionBox.style.display = 'none';
+    }, 120);
+  });
+
+  // --- Filtres latéraux ---
+
+  function filterRowsByFilters() {
+    const raison = raisonInput.value.trim().toLowerCase();
+    const adresse = adresseInput.value.trim().toLowerCase();
+    const cp = cpInput.value.trim().toLowerCase();
+    const ville = villeInput.value.trim().toLowerCase();
+
+    allRows.forEach(row => {
+      const tds = row.children;
+      const raisonVal = (tds[1]?.textContent || '').toLowerCase();
+      const adresseVal = (tds[3]?.textContent || '').toLowerCase();
+      const cpVal = (tds[4]?.textContent || '').toLowerCase();
+      const villeVal = (tds[5]?.textContent || '').toLowerCase();
+
+      let show = true;
+      if (raison && !raisonVal.includes(raison)) show = false;
+      if (adresse && !adresseVal.includes(adresse)) show = false;
+      if (cp && !cpVal.includes(cp)) show = false;
+      if (ville && !villeVal.includes(ville)) show = false;
+
+      row.style.display = show ? '' : 'none';
+    });
+  }
+
+  filterBtn.addEventListener('click', function () {
+    filterPanel.classList.add('active');
+  });
+
+  closeFilterPanel.addEventListener('click', function () {
+    filterPanel.classList.remove('active');
+  });
+
+  resetFilters.addEventListener('click', function (e) {
+    e.preventDefault();
+    raisonInput.value = '';
+    adresseInput.value = '';
+    cpInput.value = '';
+    villeInput.value = '';
+    filterRowsByFilters();
+  });
+
+  formFilters.addEventListener('input', filterRowsByFilters);
 });
+
 function closeClientModal() {
   document.getElementById('clientModal').style.display = 'none';
 }

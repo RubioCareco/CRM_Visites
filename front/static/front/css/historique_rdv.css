@@ -75,12 +75,11 @@ body{
   cursor: pointer;
 }
 
-  .visit-entry, .reminder-entry {
-    width: 99.5%;
-    min-width: 340px;
-    max-width: 100%;
-    margin: 8px auto;
-    margin-left: 13px;
+.visit-entry, .reminder-entry {
+  width: 95%;
+  min-width: 340px;
+  max-width: 100%;
+  margin: 8px auto;
     border-radius: 10px;
     padding: 20px 25px;
     box-sizing: border-box;
@@ -181,17 +180,17 @@ body{
     flex-shrink: 0;
   }
 
-  .tabs-content-scroll {
-    max-height: 92vh;
-    overflow-y: auto;
-    padding-right: 18px;
-    padding-bottom: 260px; /* espace pour le footer/bouton fixe afin d'atteindre la dernière carte */
-    margin-right: 6px;
-    margin-top: 0;
-    border-radius: 0;
-    background: transparent;
-    box-sizing: border-box;
-  }
+.tabs-content-scroll {
+  max-height: 92vh;
+  overflow-y: auto;
+  padding-right: 18px;
+  padding-bottom: 100px; /* réduit l'espace bas pour limiter le scroll global */
+  margin-right: 6px;
+  margin-top: 0;
+  border-radius: 0;
+  background: transparent;
+  box-sizing: border-box;
+}
 
   .tabs-content-scroll::-webkit-scrollbar {
     width: 6px;
@@ -382,20 +381,21 @@ body{
   margin-top: 0px !important;
   justify-content: center;
   align-items: flex-start;
-  background-color: #fff;
+  background-color: transparent; /* ne pas occuper tout l'écran en blanc */
 }
 
 .card {
-  width: 100%;
+  width: 90%;
   max-width: 1500px;
-  margin: auto;
-  min-height: 850px;
+  margin: 0 auto;
+  min-height: auto;
   padding-top: 0;
   padding-left: 0;
   padding-right: 0;
   border-radius: 12px;
   overflow: hidden; /* conserver les cartes dans le conteneur */
   color: #444;
+  background: #fff; /* la carte blanche est maintenant le conteneur centré */
 }
 
 .status-valid {
@@ -587,19 +587,21 @@ body{
 @media (max-width: 1366px) {
   /* RENDRE LE TABLEAU BEAUCOUP PLUS LARGE sur tablette/smartphone */
   .card {
-    width: 98% !important;
+    width: 95% !important;            /* garde une marge sur les côtés */
     max-width: none !important;
     margin: 0 auto !important;
     padding: 0 !important;
     border-radius: 15px !important;
     overflow: visible !important;
+    background: #fff !important;
   }
   
   /* Forcer la largeur du conteneur principal */
   .cards {
     width: 100% !important;
     margin: 0 !important;
-    padding: 0 10px !important;
+    padding: 0 10px !important;        /* légère respiration */
+    background: transparent !important;
   }
   
   .tabs-content-scroll {
@@ -856,11 +858,12 @@ body{
 @media (max-width: 480px) {
   /* RENDRE LE TABLEAU ENCORE PLUS LARGE sur smartphone */
   .card {
-    width: 100% !important;
+    width: 95% !important;             /* marge à gauche/droite */
     max-width: none !important;
     padding: 0 !important;
-    border-radius: 0 !important;
+    border-radius: 12px !important;
     overflow: visible !important;
+    background: #fff !important;
   }
   
   /* Forcer la largeur du conteneur principal sur smartphone */
@@ -868,6 +871,7 @@ body{
     width: 100% !important;
     margin: 0 !important;
     padding: 0 5px !important;
+    background: transparent !important;
   }
   
   .tabs-content-scroll {
@@ -1157,7 +1161,7 @@ body{
   
   /* Supprimer la hauteur minimale fixe qui cause le scrolling */
   .card {
-    min-height: 950px; /* Supprime la min-height: 750px */
+    min-height: auto !important;
   }
   
   /* Réduire les marges de la barre de recherche */
@@ -1191,7 +1195,7 @@ body{
   
   /* Supprimer la hauteur minimale fixe qui cause le scrolling */
   .card {
-    min-height: auto !important; /* Supprime la min-height: 750px */
+    min-height: auto !important; /* Supprime la min-height fixe */
   }
   
   /* Réduire les marges de la barre de recherche */
@@ -1280,6 +1284,48 @@ body .dashboard .cards {
   .filter-popover input[type="date"]::-webkit-datetime-edit,
   .filter-popover input[type="week"]::-webkit-datetime-edit,
   .filter-popover input[type="month"]::-webkit-datetime-edit{ color:#111 !important; }
+}
+
+/* === Barre de recherche harmonisée avec les autres écrans === */
+body .dashboard .search-bar { margin-left: 0 !important; }
+body .dashboard .search-bar input {
+  position: relative;
+  color: #e53935;
+  z-index: 1;
+  padding-left: 36px;
+  width: 450px;
+  height: 38px;
+  border-radius: 20px;
+  background: #f5f7fb !important; /* comme client_file */
+  backdrop-filter: blur(6px);
+  border: 1px solid #e53935 !important; /* supprime le cadre noir */
+  box-shadow: 0 2px 12px rgba(196, 98, 98, 0.13);
+  font-size: 1.05rem;
+  font-weight: 400;
+  outline: none !important;
+  appearance: none;
+  -webkit-appearance: none;
+  margin-left: 450px;
+  margin-top: 10px;
+}
+body .dashboard .search-bar input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(229,57,53,0.15);
+}
+body .dashboard .search-bar .search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #e53935 !important;
+  pointer-events: none;
+  z-index: 2;
+  margin: 0 !important;
+}
+
+@media (max-width: 1366px) {
+  body .dashboard .search-bar { margin-left: 0 !important; }
+  body .dashboard .search-bar input { width: clamp(300px, 55vw, 520px); }
 }
 
 .search-bar {

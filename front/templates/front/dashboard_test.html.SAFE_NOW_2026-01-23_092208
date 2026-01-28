@@ -71,9 +71,6 @@
       border-color:#ef4444;
     }
   </style>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 </head>
 
 <body class="dbt-body">
@@ -142,25 +139,6 @@
       </div>
 
       <div class="dbt-cal-grid" id="dbtCalGrid"></div>
-
-<!-- MAP_TOURNEE_BLOCK -->
-<div style="margin-top:14px;padding:14px;border-radius:14px;background:#fff;border:1px solid #e5e7eb;">
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-    <div style="font-weight:700;">Carte (clients + tournée du jour)</div>
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-      <label style="font-size:12px;color:#64748b;">Commercial</label>
-      <select id="dbtMapCommercial" style="padding:8px 10px;border:1px solid #e5e7eb;border-radius:10px;min-width:180px;"></select>
-      <label style="font-size:12px;color:#64748b;">Date</label>
-      <input id="dbtMapDate" type="date" style="padding:8px 10px;border:1px solid #e5e7eb;border-radius:10px;" />
-      <button id="dbtMapLoad" type="button" style="padding:9px 12px;border-radius:10px;border:1px solid #111827;background:#111827;color:#fff;cursor:pointer;">
-        Charger
-      </button>
-      <div id="dbtMapMeta" style="font-size:12px;color:#64748b;">—</div>
-    </div>
-  </div>
-  <div id="dbtMap" style="height:460px;margin-top:12px;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;"></div>
-</div>
-
       <div id="dbtTooltip" class="dbt-tooltip"></div>
     </div>
 
@@ -191,9 +169,6 @@
 
       <label for="dbtComment" style="display:block;margin:12px 0 6px">Commentaire :</label>
       <textarea id="dbtComment" rows="4" style="width:100%;border:1px solid #e7ecf5;border-radius:8px;padding:8px"></textarea>
-      <label id="pinWrap" style="display:none;align-items:center;gap:8px;margin-top:8px;font-size:13px;color:#334155">
-        <input id="pinNewComment" type="checkbox"> Épingler ce commentaire
-      </label>
 
       <div id="dbtPDFContainer" style="text-align:center;margin:10px 0"></div>
 
@@ -583,12 +558,6 @@
     }
 
     function openClientModal(rdv){
-      
-  // PIN_PREVIEW_BIND_IN_OPENCLIENTMODAL
-  setTimeout(bindPinCheckbox, 0);
-  setTimeout(bindPinCheckbox, 200);
-
-bindPinCheckbox();
       currentRDV = rdv;
       clientTitle.textContent = (rdv.civilite ? rdv.civilite+' ' : '') + (rdv.rs_nom || '(Sans raison sociale)');
       clientInfo.innerHTML = `
@@ -643,8 +612,7 @@ bindPinCheckbox();
     }
 
     function updateStatut(uuid, action){
-      const isPinned = (document.getElementById('pinNewComment') && document.getElementById('pinNewComment').checked);
-        const body = JSON.stringify({ commentaire: commentEl.value, is_pinned: !!isPinned });
+      const body = JSON.stringify({ commentaire: commentEl.value });
       fetch(`/update-statut/${uuid}/${action}/`, {
         method:'POST',
         headers:{'X-CSRFToken':getCSRF(),'Content-Type':'application/json'},
@@ -663,8 +631,7 @@ bindPinCheckbox();
     }
 
     function saveComment(uuid){
-      const isPinned = (document.getElementById('pinNewComment') && document.getElementById('pinNewComment').checked);
-        const body = JSON.stringify({ commentaire: commentEl.value, is_pinned: !!isPinned });
+      const body = JSON.stringify({ commentaire: commentEl.value });
       fetch(`/update-statut/${uuid}/commentaire/`, {
         method:'POST',
         headers:{'X-CSRFToken':getCSRF(),'Content-Type':'application/json'},
@@ -673,9 +640,6 @@ bindPinCheckbox();
         if(data.status==='ok'){
           clientModal.style.display='none';
           if(dayModal.style.display==='flex' && currentDayISO){ openDay(currentDayISO); }
-            commentEl.value = "";
-              let pinCb = document.getElementById("pinNewComment"); if (pinCb) pinCb.checked = false;
-            const wrap = document.getElementById("pinWrap"); if (wrap) wrap.style.display = "none";
           alert('Commentaire enregistré.');
         }else{
           alert('Erreur lors de l’enregistrement du commentaire.');
@@ -907,13 +871,8 @@ function loadClientComments(clientId){
 
   zone.innerHTML = '<em>Chargement…</em>';
 
-  fetch(`/api/client-comments/${clientId}/`, { headers: { 'Accept': 'application/json' } })
-      .then(async (r) => {
-        const ct = r.headers.get('content-type') || '';
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        if (!ct.includes('application/json')) throw new Error('Non-JSON response');
-        return r.json();
-      })
+  fetch(`/api/client-comments/${clientId}/`)
+    .then(r => r.json())
     .then(data => {
       const cs = data.commentaires || [];
       const pinned = cs.filter(c => !!c.is_pinned);
@@ -922,13 +881,12 @@ function loadClientComments(clientId){
       const badgePinned = pinned.length ? `
         <div style="margin-bottom:10px">
           <b>Commentaires épinglés :</b>
-<div id="dbtPinPreview" style="display:none;margin-top:6px"></div>
           <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">
             ${pinned.map(c => `
               <span style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:999px;padding:6px 10px;font-size:12px"
                     title="${String(c.texte||'').replace(/"/g,'&quot;')}">
                 📌 ${c.texte}
-              <button type="button" class="dbt-unpin" data-unpin-id="${c.id}" title="Désépingler" style="margin-left:8px;border:none;background:transparent;cursor:pointer;font-weight:800;opacity:.75">✕</button></span>
+              </span>
             `).join('')}
           </div>
         </div>
@@ -960,15 +918,16 @@ function loadClientComments(clientId){
           </div>
         `;
       };
-        const hasPinned = Array.isArray(pinned) && pinned.length > 0;
 
-        const listHtml = (
-          others.length
-            ? others.map(card).join('')
-            : (hasPinned ? '' : '<span style="color:#9ca3af">Aucun commentaire</span>')
-        );
+      const hasPins = (typeOf pins !== 'undefined') && Array.isArray(pins) && pins.length > 0;
 
-        zone.innerHTML = badgePinned + listHtml;
+      const listHtml = (
+        others.length
+          ? others.map(card).join('')
+          : (hasPins ? '' : '<span style="color:#9ca3af">Aucun commentaire</span>')
+      );
+      if (title) title.style.display = others.length ? 'inline-block' : 'none';
+      zone.innerHTML = badgePinned + listHtml;
     })
     .catch(() => zone.innerHTML = '<span style="color:#ef4444">Erreur chargement commentaires</span>');
 }
@@ -1007,183 +966,6 @@ function getCookie(name) {
   return cookieValue;
 }
 
-
-  function bindPinCheckbox(){
-    
-  // --- PIN PREVIEW INSTANT ---
-
-  const preview = document.getElementById("dbtPinPreview");
-  const ppTa = document.getElementById("dbtComment");
-  const ppCb = document.getElementById("pinNewComment");
-if (preview) {
-
-    preview.style.border = "1px solid #fdba74";
-
-    preview.style.background = "#fff7ed";
-
-    preview.style.color = "#9a3412";
-
-    preview.style.borderRadius = "10px";
-
-    preview.style.padding = "6px 10px";
-
-    preview.style.fontSize = "12px";
-
-    preview.style.fontWeight = "600";
-
-  }
-
-  function renderPinPreview() {
-
-    if (!preview) return;
-
-    const txt = (ppTa && ppTa.value ? ppTa.value : "").trim();
-
-    if (ppCb && ppCb.checked && txt) {
-
-      preview.style.display = "block";
-
-      const shortTxt = (txt.length > 60) ? (txt.slice(0,60) + "...") : txt;
-
-      preview.textContent = "EN ATTENTE: " + shortTxt + " (a enregistrer)";
-
-    } else {
-
-      preview.style.display = "none";
-
-      preview.textContent = "";
-
-    }
-
-  }
-
-  if (ppTa) ppTa.addEventListener("input", renderPinPreview);
-
-  if (ppCb) ppCb.addEventListener("change", renderPinPreview);
-
-  renderPinPreview();
-
-            const wrap = document.getElementById("pinWrap"); if (wrap) wrap.style.display = "none";
-              let pinCb = document.getElementById("pinNewComment"); if (pinCb) pinCb.checked = false;
-    if(!ppTa || !wrap || !pinCb) return;
-    const refresh = () => {
-      const hasText = (ppTa.value || "").trim().length > 0;
-      wrap.style.display = hasText ? "flex" : "none";
-      if(!hasText) pinCb.checked = false;
-    };
-    ppTa.addEventListener("input", refresh);
-    refresh();
-  }
-
-
-// UNPIN_HANDLER_V1
-document.addEventListener("click", async (e) => {
-  const btn = e.target.closest && e.target.closest("button[data-unpin-id]");
-  if (!btn) return;
-
-  const id = btn.getAttribute("data-unpin-id");
-  if (!id) return;
-
-  // retire visuellement le badge
-  const badge = btn.closest("span");
-  if (badge) badge.remove();
-
-  try {
-    const csrf = (typeof getCSRF === "function") ? getCSRF() : (typeof getCookie === "function" ? getCookie("csrftoken") : "");
-    await fetch("/rdv/unpin-comment/", {
-      method: "POST",
-      headers: {"Content-Type":"application/json", "X-CSRFToken": csrf},
-      body: JSON.stringify({id: id})
-    });
-  } catch(err) {
-    console.warn("Unpin failed", err);
-  }
-});
-
 </script>
-
-
-<!-- DISABLED: removed duplicate unpin X button block -->
-
-
-
-<script>
-// MAP_TOURNEE_LEAFLET
-(function(){
-  function isoToday(){
-    var d=new Date(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
-    return d.getFullYear()+"-"+m+"-"+day;
-  }
-
-  var sel=document.getElementById("dbtMapCommercial");
-  var dt=document.getElementById("dbtMapDate");
-  var btn=document.getElementById("dbtMapLoad");
-  var meta=document.getElementById("dbtMapMeta");
-  if(!sel||!dt||!btn||!meta) return;
-
-  dt.value = isoToday();
-
-  var map=L.map("dbtMap");
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19, attribution:"&copy; OpenStreetMap"}).addTo(map);
-  var gClients=L.layerGroup().addTo(map);
-  var gTour=L.layerGroup().addTo(map);
-
-  function clear(){ gClients.clearLayers(); gTour.clearLayers(); }
-  function fitDefault(){ map.setView([44.84,-0.58],9); }
-
-  function loadCom(){
-    return fetch("/api/commerciaux/").then(r=>r.json()).then(data=>{
-      var arr=data.commerciaux||data||[];
-      sel.innerHTML="";
-      arr.forEach(c=>{
-        var o=document.createElement("option");
-        o.value=c.id; o.textContent=c.nom||("Commercial "+c.id);
-        sel.appendChild(o);
-      });
-      if(!sel.value && sel.options.length) sel.value=sel.options[0].value;
-    });
-  }
-
-  function loadMap(){
-    var cid=sel.value, date=dt.value;
-    if(!cid){ meta.textContent="❌ Commercial manquant"; return; }
-    meta.textContent="Chargement…";
-    clear();
-
-    var url="/api/map-tournee/?commercial_id="+encodeURIComponent(cid)+"&date="+encodeURIComponent(date);
-    fetch(url).then(r=>{ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }).then(data=>{
-      var pts=[];
-
-      (data.clients||[]).forEach(c=>{
-        var ll=[c.lat,c.lng]; pts.push(ll);
-        L.marker(ll).addTo(gClients).bindPopup("<b>"+(c.nom||"Client")+"</b>");
-      });
-
-      var tour=data.tournee||[];
-      var tourPts=[];
-      tour.forEach((t,i)=>{
-        var ll=[t.lat,t.lng]; tourPts.push(ll); pts.push(ll);
-        L.marker(ll).addTo(gTour).bindPopup("<b>"+(t.label||"RDV")+"</b>");
-      });
-      if(tourPts.length>=2) L.polyline(tourPts,{weight:4}).addTo(gTour);
-
-      if(pts.length) map.fitBounds(pts,{padding:[20,20]}); else fitDefault();
-
-      meta.textContent=(data.commercial?.nom||"")+" — "+data.date+" — clients: "+(data.clients||[]).length+" — rdv: "+(data.tournee||[]).length;
-    }).catch(err=>{
-      console.error(err);
-      meta.textContent="❌ Erreur chargement carte";
-      fitDefault();
-    });
-  }
-
-  btn.addEventListener("click", loadMap);
-  sel.addEventListener("change", loadMap);
-  dt.addEventListener("change", loadMap);
-
-  loadCom().then(loadMap).catch(()=>{ meta.textContent="❌ Impossible de charger les commerciaux"; });
-})();
-</script>
-
 </body>
 </html>

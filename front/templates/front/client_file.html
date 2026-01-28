@@ -503,11 +503,13 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    fetch(`/api/toggle-pin-comment/${commentIdFinal}/`, {
+    fetch(`/api/comment-pin/${commentIdFinal}/`, {
       method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'X-CSRFToken': getCookie('csrftoken')
-      }
+      },
+      body: JSON.stringify({ is_pinned: !btn?.classList?.contains('pinned') })
     })
       .then(response => {
         if (!response.ok) {
@@ -519,11 +521,11 @@ document.addEventListener("DOMContentLoaded", function () {
         if (res.success) {
           loadClientComments(clientIdFinal);
         } else {
-          console.error('Réponse API toggle-pin-comment non valide :', res);
+          console.error('Réponse API comment-pin non valide :', res);
         }
       })
       .catch(err => {
-        console.error('Erreur toggle-pin-comment :', err);
+        console.error('Erreur comment-pin :', err);
       });
   };
 

@@ -773,3 +773,41 @@
 @media (prefers-reduced-motion: reduce){
   .dbt-cell.day.has-unvalidated{ animation:none; }
 }
+
+/* === SCROLL FIX (map tournée) === */
+html, body{
+  height:auto !important;
+  overflow-y:auto !important;
+}
+/* si un wrapper bloque le scroll */
+.dashboard, .dbt-container, .dbt-main, #dbtMain{
+  overflow-y:auto !important;
+}
+
+/* === SCROLL FIX (map tournée) === */
+html, body{
+  height:auto !important;
+  overflow-y:auto !important;
+}
+/* si un wrapper bloque le scroll */
+.dashboard, .dbt-container, .dbt-main, #dbtMain{
+  overflow-y:auto !important;
+}
+
+/* === MAP ACCORDION (dashboard_test) === */
+.dbt-map-acc-btn{
+  border:1px solid #e5e7eb;
+  background:#fff;
+  border-radius:10px;
+  padding:8px 10px;
+  font-weight:600;
+  cursor:pointer;
+}
+#dbtMapAccWrap{
+  overflow:hidden;
+  max-height:0;
+  transition:max-height .25s ease;
+}
+#dbtMapAccWrap.open{
+  max-height:520px; /* > hauteur map (380) + marges */
+}

@@ -32,6 +32,7 @@ urlpatterns = [
     # Satisfaction B2B
     path('satisfaction-b2b/', views.satisfaction_b2b, name='satisfaction_b2b'),
     path('check-satisfaction/<uuid:uuid>/', views.check_satisfaction_exists, name='check_satisfaction_exists'),
+    path('check-satisfaction-exists/<uuid:uuid>', views.check_satisfaction_exists, name='check_satisfaction_exists_alias'),
     path('download-satisfaction/<uuid:uuid>/', views.download_satisfaction_pdf, name='download_satisfaction_pdf'),
     path('export-satisfactions-excel/', views.export_satisfactions_excel, name='export_satisfactions_excel'),
 
@@ -58,6 +59,9 @@ urlpatterns = [
     path('api/clients-by-commercial/', views.api_clients_by_commercial, name='api_clients_by_commercial'),
     path('api/commerciaux/', views.api_commerciaux, name='api_commerciaux'),
 
+    path('api/map-tournee/', views.api_map_tournee, name='api_map_tournee'),
+
+
     path('api/last-rdv-commercial/<int:commercial_id>/', views.get_last_rdv_commercial, name='get_last_rdv_commercial'),
 
     path('api/satisfaction-stats/', views.api_satisfaction_stats, name='api_satisfaction_stats'),
@@ -67,6 +71,7 @@ urlpatterns = [
     path('api/client-details/<int:client_id>/', views.api_client_details, name='api_client_details'),
 
     path('api/client-comments/<int:client_id>/', views.get_client_comments, name='get_client_comments'),
+    path('api/comment-pin/<int:comment_id>/', views.set_comment_pin, name='set_comment_pin'),
     path('api/toggle-pin-comment/<int:comment_id>/', views.toggle_pin_comment, name='toggle_pin_comment'),
     path('api/client-rdv/<int:client_id>/', views.get_client_rdv, name='get_client_rdv'),
 
@@ -92,4 +97,9 @@ urlpatterns = [
 
     # Map
     path('commercial/map/', views.commercial_map, name='commercial_map'),
+
+    # Unpin
+    path('rdv/unpin-comment/', views.unpin_comment, name='unpin_comment'),
+
+    path("healthz", views.healthz, name="healthz"),
 ]

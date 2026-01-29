@@ -1124,9 +1124,22 @@ document.addEventListener("click", async (e) => {
   dt.value = isoToday();
 
   var map=L.map("dbtMap");
+map.on("click", function(e){ console.log("MAP CLICK", e.latlng); });
+
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19, attribution:"&copy; OpenStreetMap"}).addTo(map);
   var gClients=L.layerGroup().addTo(map);
   var gTour=L.layerGroup().addTo(map);
+    // ✅ Sélection clients (Set)
+    window.dbtSelectedClientIds = window.dbtSelectedClientIds || new Set();
+
+    function dbtIsSelected(id){ return window.dbtSelectedClientIds.has(Number(id)); }
+    function dbtToggleSelected(id){
+      id = Number(id);
+      if (window.dbtSelectedClientIds.has(id)) window.dbtSelectedClientIds.delete(id);
+      else window.dbtSelectedClientIds.add(id);
+      console.log("SELECTED CLIENT IDS =", Array.from(window.dbtSelectedClientIds));
+    }
+
 
   function clear(){ gClients.clearLayers(); gTour.clearLayers(); }
   function fitDefault(){ map.setView([44.84,-0.58],9); }
@@ -1156,7 +1169,25 @@ document.addEventListener("click", async (e) => {
 
       (data.clients||[]).forEach(c=>{
         var ll=[c.lat,c.lng]; pts.push(ll);
-        L.marker(ll).addTo(gClients).bindPopup("<b>"+(c.nom||"Client")+"</b>");
+        // ✅ Client selectable
+var mk = L.circleMarker(ll, {radius: 8, weight: 2, fillOpacity: 0.85});
+mk._clientId = Number(c.id);
+
+function refreshStyle(){
+  var sel = dbtIsSelected(mk._clientId);
+  // On ne fixe pas de couleurs, juste un "poids" plus fort si sélection
+  mk.setStyle(sel ? {weight: 4, fillOpacity: 1.0} : {weight: 2, fillOpacity: 0.85});
+}
+refreshStyle();
+
+mk.on("click", function(ev){
+  console.log("CLIENT MARKER CLICK", mk._clientId, ll);
+  if (ev && ev.originalEvent) ev.originalEvent.stopPropagation();
+  dbtToggleSelected(mk._clientId);
+  refreshStyle();
+});
+
+mk.addTo(gClients).bindPopup("<b>"+(c.nom||"Client")+"</b>");
       });
 
       var tour=data.tournee||[];

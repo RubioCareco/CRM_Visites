@@ -25,7 +25,52 @@
     .dbt-client-modal-card{background:#fff;color:#111;min-width:360px;max-width:640px;width:min(92vw,640px);border:1px solid #e7ecf5;border-radius:16px;padding:18px;box-shadow:0 16px 60px rgba(0,0,0,.25);position:relative}
 
     /* Tooltip global (évite tout clipping/z-index) */
-    .dbt-tooltip{ position:fixed; top:0; left:0; display:none; padding:8px 12px; background:#111; color:#fff; border-radius:6px; font-size:13px; box-shadow:0 6px 16px rgba(0,0,0,.25); pointer-events:none; z-index:2147483647; }
+    .dbt-tooltip{ position:fixed; top:0; left:0; display:none; padding:8px 12px; background:linear-gradient(135deg, #fbbf24, #f97316); color:#fff; border:1px solid #f59e0b; border-radius:8px; font-size:13px; box-shadow:0 8px 18px rgba(249, 115, 22, .32); pointer-events:none; z-index:2147483647; }
+    .dbt-toast-stack{
+      position:fixed;
+      top:22px;
+      right:22px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      z-index:2147483647;
+      pointer-events:none;
+    }
+    .dbt-toast{
+      min-width:280px;
+      max-width:min(92vw, 420px);
+      padding:12px 14px;
+      border-radius:12px;
+      color:#fff;
+      font-weight:600;
+      box-shadow:0 12px 26px rgba(15,23,42,.22);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      pointer-events:auto;
+      transform:translateY(-8px);
+      opacity:0;
+      transition:opacity .2s ease, transform .2s ease;
+    }
+    .dbt-toast.show{ display:flex; opacity:1; transform:translateY(0); }
+    .dbt-toast.success{ background:linear-gradient(135deg,#34d399,#10b981); border:1px solid #10b981; }
+    .dbt-toast.error{ background:linear-gradient(135deg,#fb7185,#f43f5e); border:1px solid #f43f5e; }
+    .dbt-toast button{
+      border:none;
+      background:rgba(255,255,255,.2);
+      color:#fff;
+      border-radius:8px;
+      width:28px;
+      height:28px;
+      cursor:pointer;
+      font-size:16px;
+      line-height:1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .dbt-toast button:hover{ background:rgba(255,255,255,.3); }
 
     /* ====== ULTRA CLEAN : centrer le contenu de la modale filtres ====== */
     .dbt-filter-body{ display:flex; flex-direction:column; align-items:center; }
@@ -187,6 +232,7 @@
 </div>\n
 
 <div id="dbtTooltip" class="dbt-tooltip"></div>
+<div id="dbtToastStack" class="dbt-toast-stack" aria-live="polite" aria-atomic="false"></div>
     </div>
 
     <div class="dbt-footer-links">
@@ -316,6 +362,7 @@
     const btnForm      = document.getElementById('dbtBtnForm');
     const btnSaveCom   = document.getElementById('dbtBtnSaveComment');
     const btnNewRDV    = document.getElementById('dbtBtnNewRDV');
+    const toastStack   = document.getElementById('dbtToastStack');
 
     const statutCbs    = document.querySelectorAll('.dbt-statut-filter'); // peut être vide, ok
     const dateFromEl   = document.getElementById('dbtDateFrom');
@@ -339,6 +386,28 @@
     function getCSRF(){
       const m = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
       return m ? decodeURIComponent(m[1]) : '';
+    }
+
+    function showToast(message, tone='success'){
+      if(!toastStack) return;
+      const toast = document.createElement('div');
+      toast.className = `dbt-toast ${tone}`;
+      toast.setAttribute('role', 'status');
+      toast.innerHTML = `<span>${message}</span><button type="button" aria-label="Fermer">×</button>`;
+      toastStack.appendChild(toast);
+
+      const closeBtn = toast.querySelector('button');
+      let removed = false;
+      const removeToast = ()=>{
+        if(removed) return;
+        removed = true;
+        toast.classList.remove('show');
+        setTimeout(()=> toast.remove(), 220);
+      };
+      closeBtn.addEventListener('click', removeToast);
+
+      requestAnimationFrame(()=> toast.classList.add('show'));
+      setTimeout(removeToast, 7000);
     }
 
     /* ========== Calendrier ========== */
@@ -387,7 +456,11 @@
       document.querySelectorAll('.dbt-cell.day .dbt-bullet').forEach(b=>b.remove());
       document.querySelectorAll('.dbt-cell.day').forEach(cell=>{
         cell.classList.remove('has-unvalidated');
+        cell.classList.remove('has-validated');
+        cell.classList.remove('has-cancelled');
         cell.removeAttribute('data-unvalidated-count');
+        cell.removeAttribute('data-status-count');
+        cell.removeAttribute('data-status-type');
       });
     }
 
@@ -427,6 +500,8 @@
         cellsWithData.forEach(({cell, count}) => {
           cell.classList.add('has-unvalidated');
           cell.setAttribute('data-unvalidated-count', count);
+          cell.setAttribute('data-status-count', count);
+          cell.setAttribute('data-status-type', 'a_venir');
         });
 
         setTimeout(() => {
@@ -456,20 +531,34 @@
     function decorateBadgesForMonth(){
       clearBadges();
       if(statut!=='valide' && statut!=='annule') return;
-      const color = (statut==='valide') ? 'green' : 'red';
+      const showCountBubble = false;
+      const cellClass = (statut==='valide') ? 'has-validated' : 'has-cancelled';
       const cacheKey = ymKey()+':'+statut;
       if(!monthCache[cacheKey]) monthCache[cacheKey]={};
 
       document.querySelectorAll('.dbt-cell.day').forEach(cell=>{
         const date=cell.dataset.date;
         const cached=monthCache[cacheKey][date];
-        if(typeof cached==='number'){ addBadge(cell,cached,color); return; }
+        if(typeof cached==='number'){
+          if(showCountBubble) addBadge(cell,cached,color);
+          if(cached>0){
+            cell.classList.add(cellClass);
+            cell.setAttribute('data-status-count', cached);
+            cell.setAttribute('data-status-type', statut);
+          }
+          return;
+        }
         fetch(`/api/rdvs-by-date/?date=${date}&statut=${encodeURIComponent(statut)}`)
           .then(r=>r.json())
           .then(d=>{
             const n = Array.isArray(d.rdvs)? d.rdvs.length:0;
             monthCache[cacheKey][date]=n;
-            addBadge(cell,n,color);
+            if(showCountBubble) addBadge(cell,n,color);
+            if(n>0){
+              cell.classList.add(cellClass);
+              cell.setAttribute('data-status-count', n);
+              cell.setAttribute('data-status-type', statut);
+            }
           }).catch(()=>{});
       });
     }
@@ -680,11 +769,17 @@ bindPinCheckbox();
           if(dayModal.style.display==='flex' && currentDayISO){ openDay(currentDayISO); }
           invalidateMonthCaches();
           decorateBadgesForMonth();
-          alert('Mise à jour effectuée.');
+          if(action === 'valider'){
+            showToast('Votre rendez-vous a bien été validé', 'success');
+          }else if(action === 'annuler'){
+            showToast('Votre rendez-vous a bien été annulé', 'success');
+          }else{
+            showToast('Mise à jour effectuée.', 'success');
+          }
         }else{
-          alert('Erreur lors de la mise à jour.');
+          showToast('Erreur lors de la mise à jour.', 'error');
         }
-      }).catch(()=>alert('Erreur réseau.'));
+      }).catch(()=>showToast('Erreur réseau.', 'error'));
     }
 
     function saveComment(uuid){
@@ -705,7 +800,7 @@ bindPinCheckbox();
         }else{
           alert('Erreur lors de l’enregistrement du commentaire.');
         }
-      }).catch(()=>alert('Erreur réseau.'));
+      }).catch(()=>showToast('Erreur réseau.', 'error'));
     }
 
     /* ========== Filtres (badges + actions) ========== */
@@ -808,22 +903,51 @@ bindPinCheckbox();
     prev.onclick = ()=>{ view.setMonth(view.getMonth()-1); renderCal(); };
     next.onclick = ()=>{ view.setMonth(view.getMonth()+1); renderCal(); };
 
-    // Tooltip global pour les cases avec RDV à valider
+    // Tooltip global selon l'onglet actif (a_venir/valide/annule)
     const globalTooltip = document.getElementById('dbtTooltip');
+    function getTooltipMeta(type, count){
+      if(type === 'valide'){
+        return {
+          text: `${count} rendez-vous validé${count > 1 ? 's' : ''}`,
+          bg: 'linear-gradient(135deg, #34d399, #10b981)',
+          border: '#10b981',
+          shadow: '0 8px 18px rgba(16, 185, 129, .32)',
+        };
+      }
+      if(type === 'annule'){
+        return {
+          text: `${count} rendez-vous annulé${count > 1 ? 's' : ''}`,
+          bg: 'linear-gradient(135deg, #fb7185, #f43f5e)',
+          border: '#f43f5e',
+          shadow: '0 8px 18px rgba(244, 63, 94, .32)',
+        };
+      }
+      return {
+        text: `${count} rendez-vous à valider`,
+        bg: 'linear-gradient(135deg, #fbbf24, #f97316)',
+        border: '#f59e0b',
+        shadow: '0 8px 18px rgba(249, 115, 22, .32)',
+      };
+    }
     grid.addEventListener('mouseover', (e)=>{
-      const cell = e.target.closest('.dbt-cell.day.has-unvalidated');
+      const cell = e.target.closest('.dbt-cell.day[data-status-count]');
       if(!cell) return;
-      const count = cell.getAttribute('data-unvalidated-count');
+      const count = Number(cell.getAttribute('data-status-count') || 0);
       if(!count) return;
+      const type = cell.getAttribute('data-status-type') || 'a_venir';
+      const meta = getTooltipMeta(type, count);
       const rect = cell.getBoundingClientRect();
-      globalTooltip.textContent = `${count} rendez-vous à valider`;
+      globalTooltip.textContent = meta.text;
+      globalTooltip.style.background = meta.bg;
+      globalTooltip.style.borderColor = meta.border;
+      globalTooltip.style.boxShadow = meta.shadow;
       globalTooltip.style.display = 'block';
       globalTooltip.style.top = `${Math.max(10, rect.top - 10)}px`;
       globalTooltip.style.left = `${rect.left + rect.width/2 - globalTooltip.offsetWidth/2}px`;
     });
     grid.addEventListener('mousemove', (e)=>{
       if(globalTooltip.style.display !== 'block') return;
-      const cell = e.target.closest('.dbt-cell.day.has-unvalidated');
+      const cell = e.target.closest('.dbt-cell.day[data-status-count]');
       if(!cell){ globalTooltip.style.display='none'; return; }
       const rect = cell.getBoundingClientRect();
       globalTooltip.style.top = `${Math.max(10, rect.top - 10)}px`;
@@ -831,7 +955,7 @@ bindPinCheckbox();
     });
     grid.addEventListener('mouseout', (e)=>{
       const to = e.relatedTarget;
-      if(!to || !to.closest || !to.closest('.dbt-cell.day.has-unvalidated')){
+      if(!to || !to.closest || !to.closest('.dbt-cell.day[data-status-count]')){
         globalTooltip.style.display='none';
       }
     });

@@ -219,24 +219,24 @@
   }
 
   .dbt-tabs.inside .dbt-tab[data-statut="a_venir"].dbt-tab-active{
-    color:#ff8f00; 
-    background: #ffffff; 
-    border-color: #ffb25e; 
+    color:#ffffff;
+    background: linear-gradient(135deg, #fbbf24, #f97316);
+    border-color: transparent;
     box-shadow: 0 2px 8px rgba(0,0,0, 18%);
   }
   
   .dbt-tabs.inside .dbt-tab[data-statut="valide"].dbt-tab-active{
-    color:#10b981; 
-    background:#ffffff; 
-    border-color:#12e19d; 
+    color:#ffffff;
+    background: linear-gradient(135deg, #34d399, #10b981);
+    border-color: transparent;
     box-shadow: 0 2px 8px rgba(0,0,0, 18%);
   }
   
   /* — Onglet "À rappeler" (rouge) */
   .dbt-tabs.inside .dbt-tab[data-statut="annule"].dbt-tab-active{
-    color:#ff0000; 
-    background: #ffffff; 
-    border-color:#ff5b5b; 
+    color:#ffffff;
+    background: linear-gradient(135deg, #fb7185, #f43f5e);
+    border-color: transparent;
     box-shadow: 0 2px 8px rgba(0,0,0, 18%);
   }
   /* --------- Carte calendrier --------- */
@@ -283,13 +283,19 @@
   }
   .dbt-cell.day{
     cursor:pointer;
-    transition:background .15s,border-color .15s,box-shadow .15s
+    transform: translateY(0);
+    transition:background .18s,border-color .18s,box-shadow .18s,transform .18s
 }
 
   .dbt-cell.day:hover{
-    border-color:#ff4343;
-    background:#fff8f5;
-    box-shadow:0 6px 20px rgba(255, 67, 67, 0.384);
+    border-color:#cfd8e3;
+    background:#f8fafc;
+    box-shadow:0 12px 24px rgba(15, 23, 42, 0.12);
+    transform: translateY(-3px);
+}
+
+  .dbt-cell.day:active{
+    transform: translateY(-1px);
 }
   .dbt-cell.empty{
     background:transparent;
@@ -753,25 +759,71 @@
 .dbt-bullet.green{ background:#10b981; }
 .dbt-bullet.red{ background:#ef4444; }
 
-/* --- Mise en évidence des jours avec RDV à valider (onglet "À venir") --- */
-.dbt-cell.day.has-unvalidated{
+/* --- Mise en évidence des jours selon onglet --- */
+.dbt-cell.day.has-unvalidated,
+.dbt-cell.day.has-validated,
+.dbt-cell.day.has-cancelled{
   position:relative;
-  background: linear-gradient(135deg,#fef2f2 0%,#fee2e2 100%);
-  border: 2px solid #fca5a5;
-  animation: pulse-subtle 2.2s ease-in-out infinite;
+  background:#ffffff;
+  border: 2px solid transparent;
+  animation:none;
 }
 
 .dbt-cell.day.has-unvalidated:hover{
-  animation-play-state: paused;
+  border-color:#f59e0b;
+  background:#fff7ed;
+  box-shadow: 0 8px 20px rgba(249, 115, 22, 0.2);
 }
 
-@keyframes pulse-subtle{
-  0%,100%{ transform:translateZ(0) scale(1); }
-  50%    { transform:translateZ(0) scale(1.006); }
+.dbt-cell.day.has-unvalidated{
+  border-color:#f59e0b;
+  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.14);
 }
+
+.dbt-cell.day.has-validated{
+  border-color:#10b981;
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.14);
+}
+
+.dbt-cell.day.has-validated:hover{
+  border-color:#10b981;
+  background:#ecfdf5;
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.2);
+}
+
+.dbt-cell.day.has-cancelled{
+  border-color:#f43f5e;
+  box-shadow: 0 6px 16px rgba(244, 63, 94, 0.14);
+}
+
+.dbt-cell.day.has-cancelled:hover{
+  border-color:#f43f5e;
+  background:#fff1f2;
+  box-shadow: 0 8px 20px rgba(244, 63, 94, 0.2);
+}
+
+.dbt-cell.day.has-unvalidated::after,
+.dbt-cell.day.has-validated::after,
+.dbt-cell.day.has-cancelled::after{
+  content:"";
+  position:absolute;
+  top:8px;
+  right:8px;
+  width:8px;
+  height:8px;
+  border-radius:999px;
+}
+
+.dbt-cell.day.has-unvalidated::after{ background:#f59e0b; }
+.dbt-cell.day.has-validated::after{ background:#10b981; }
+.dbt-cell.day.has-cancelled::after{ background:#f43f5e; }
 
 @media (prefers-reduced-motion: reduce){
-  .dbt-cell.day.has-unvalidated{ animation:none; }
+  .dbt-cell.day.has-unvalidated,
+  .dbt-cell.day.has-validated,
+  .dbt-cell.day.has-cancelled{
+    animation:none;
+  }
 }
 
 /* === SCROLL FIX (map tournée) === */

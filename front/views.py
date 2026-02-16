@@ -840,56 +840,66 @@ def new_client(request):
             ville=ville
         )
 
-        # Création d'un rendez-vous si besoin
-    date_rdv = request.POST.get('date_rdv')
-    heure_rdv = request.POST.get('heure_rdv')
-    objet = request.POST.get('objet')
-    notes = request.POST.get('notes')
+        # Création d'un rendez-vous si date+heure sont fournies
+        date_rdv = request.POST.get('date_rdv')
+        heure_rdv = request.POST.get('heure_rdv')
+        objet = request.POST.get('objet')
+        notes = request.POST.get('notes')
 
-    rdv, created = Rendezvous.objects.get_or_create(
-        client=client,
-        commercial=commercial,
-        date_rdv=date_rdv,
-        heure_rdv=heure_rdv,
-        defaults={
-            'objet': objet,
-            'notes': notes,
-            'statut_rdv': 'a_venir',
-            'rs_nom': client.rs_nom,
-    }
-)
+        if date_rdv and heure_rdv:
+            rdv, created = Rendezvous.objects.get_or_create(
+                client=client,
+                commercial=commercial,
+                date_rdv=date_rdv,
+                heure_rdv=heure_rdv,
+                defaults={
+                    'objet': objet,
+                    'notes': notes,
+                    'statut_rdv': 'a_venir',
+                    'rs_nom': client.rs_nom,
+                }
+            )
 
-# Optionnel : si le RDV existait déjà, on peut mettre à jour objet/notes
-# (si tu veux que le dernier submit écrase l'ancien)
-# if not created:
-#     rdv.objet = objet
-#     rdv.notes = notes
-#     rdv.save(update_fields=["objet", "notes"])
+            # Optionnel : si le RDV existait déjà, on peut mettre à jour objet/notes
+            # (si tu veux que le dernier submit écrase l'ancien)
+            # if not created:
+            #     rdv.objet = objet
+            #     rdv.notes = notes
+            #     rdv.save(update_fields=["objet", "notes"])
 
-    if created:
-        ActivityLog.objects.create(
-            commercial=commercial,
-            action_type='RDV_AJOUTE',
-            description=f'Nouveau RDV ajouté pour {client.rs_nom}'
-        )
+            if created:
+                ActivityLog.objects.create(
+                    commercial=commercial,
+                    action_type='RDV_AJOUTE',
+                    description=f'Nouveau RDV ajouté pour {client.rs_nom}'
+                )
 
-        # Nettoyage des données temporaires
+                # Nettoyage des données temporaires
+                request.session.pop('client_temp', None)
+                request.session.pop('rdv_temp', None)
+
+                # Affichage notification succès puis redirection JS
+                return render(request, 'front/new_client.html', {
+                    'client_temp': None,
+                    'rdv_temp': None,
+                    'success': True
+                })
+            else:
+                error_message = "⚠️ RDV déjà existant (doublon évité)."
+                return render(request, 'front/new_client.html', {
+                    'client_temp': request.session.get('client_temp'),
+                    'rdv_temp': request.session.get('rdv_temp'),
+                    'success': False,
+                    'error': error_message,
+                })
+
+        # Si pas de RDV saisi: on valide juste la création du client
         request.session.pop('client_temp', None)
         request.session.pop('rdv_temp', None)
-
-        # Affichage notification succès puis redirection JS
         return render(request, 'front/new_client.html', {
             'client_temp': None,
             'rdv_temp': None,
             'success': True
-        })
-    else:
-        error_message = "⚠️ RDV déjà existant (doublon évité)."
-        return render(request, 'front/new_client.html', {
-            'client_temp': request.session.get('client_temp'),
-            'rdv_temp': request.session.get('rdv_temp'),
-            'success': False,
-            'error': error_message,
         })
 
     # En GET, on récupère le flag de succès éventuel

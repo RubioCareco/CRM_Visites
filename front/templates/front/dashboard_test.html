@@ -218,25 +218,21 @@
     <div class="dbt-header">
       <h1 class="dbt-title">Tableau de bord</h1>
 
-      <div class="dbt-user-wrap" id="dbtUserWrap">
-        <div class="dbt-user" id="dbtUserBtn" role="button" aria-haspopup="true" aria-expanded="false">
+      <div class="user-container" id="dbtUserWrap">
+        <div class="user-profile" id="dbtUserBtn" role="button" aria-haspopup="true" aria-expanded="false">
           <i class="fa fa-user"></i>
-          <div class="dbt-user-info">
-            <div class="dbt-user-name">{% firstof commercial.prenom commercial.nom request.session.commercial_nom 'Utilisateur' %}</div>
-            <div class="dbt-user-role">
-              {% if request.session.role == 'responsable' %}Responsable{% elif request.session.role == 'admin' %}Admin{% else %}Commercial{% endif %}
-            </div>
-          </div>
-          <i class="fa fa-chevron-down" style="margin-left:6px;color:#9aa7b1;font-size:15px;align-items:center;"></i>
+          <span>{% firstof commercial.prenom commercial.nom request.session.commercial_nom 'Utilisateur' %}</span>
         </div>
 
-        <nav id="dbtUserMenu" class="dbt-user-menu" aria-label="Menu utilisateur">
-          <a href="{% url 'profil' %}">Profil</a>
-          <a href="{% url 'client_file' %}">Fichier Clients</a>
-          <a href="{% url 'historique_rdv' %}">Historique RDV</a>
-          <a href="{% url 'objectif_annuel' %}">Objectifs annuels</a>
-          <a href="{% url 'logout' %}" class="logout">Se déconnecter</a>
-        </nav>
+        <div id="dbtUserMenu" class="user-menu" aria-label="Menu utilisateur">
+          <ul>
+            <li><a href="{% url 'profil' %}" class="menu-link">Profil</a></li>
+            <li><a href="{% url 'client_file' %}" class="menu-link">Fichier Clients</a></li>
+            <li><a href="{% url 'historique_rdv' %}" class="menu-link">Historique RDV</a></li>
+            <li><a href="{% url 'objectif_annuel' %}" class="menu-link">Objectifs annuels</a></li>
+            <li><a href="{% url 'logout' %}" class="logout-btn">Se déconnecter</a></li>
+          </ul>
+        </div>
       </div>
     </div>
 
@@ -316,7 +312,7 @@
       </div>
     </div>
   </div>
-</div>\n
+</div>
 
 <div id="dbtTooltip" class="dbt-tooltip"></div>
 <div id="dbtToastStack" class="dbt-toast-stack" aria-live="polite" aria-atomic="false"></div>
@@ -331,8 +327,10 @@
   <!-- Modale JOUR -->
   <div id="dbtDayModal" class="dbt-day-modal" style="display:none;">
     <div class="dbt-day-modal-content">
-      <button id="dbtCloseDay" class="dbt-day-close" aria-label="Fermer">×</button>
-      <div id="dbtDayTitle" class="dbt-day-title">Jour</div>
+      <div class="dbt-day-header">
+        <div id="dbtDayTitle" class="dbt-day-title">Jour</div>
+        <button id="dbtCloseDay" class="dbt-day-close" aria-label="Fermer">×</button>
+      </div>
       <div id="dbtDayList" class="dbt-day-list"></div>
       <div class="dbt-day-actions">
         <button hidden id="dbtCloseDay2" class="dbt-btn">Fermer</button>
@@ -343,8 +341,10 @@
   <!-- Modale CLIENT -->
   <div id="dbtClientModal" class="dbt-client-modal">
     <div class="dbt-client-modal-card">
-      <button class="dbt-client-close" id="dbtClientClose">×</button>
-      <h3 id="dbtClientTitle" class="clientTitle" style="margin:0 0 6px 0">Client</h3>
+      <div class="dbt-client-header">
+        <h3 id="dbtClientTitle" class="dbt-client-title">Client</h3>
+        <button class="dbt-client-close" id="dbtClientClose" aria-label="Fermer">×</button>
+      </div>
       <div id="dbtClientInfo" style="color:#444"></div>
 
       <label for="dbtComment" style="display:block;margin:12px 0 6px">Commentaire :</label>
@@ -355,11 +355,11 @@
 
       <div id="dbtPDFContainer" style="text-align:center;margin:10px 0"></div>
 
-      <div id="dbtModalActions" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;align-items:center;justify-content:center;">
+      <div id="dbtModalActions" style="display:grid;grid-template-columns:repeat(2,max-content);gap:10px;margin-top:10px;align-items:center;justify-content:center;">
         <!-- Onglet A VENIR -->
         <button class="dbt-action-button" id="dbtBtnValider"><i class="fa fa-check"></i> Valider le rendez-vous</button>
         <button class="dbt-action-button" id="dbtBtnAnnuler"><i class="fa fa-xmark"></i> Annuler le rendez-vous</button>
-        <button class="dbt-action-button" id="dbtBtnForm" style="display:none"><i class="fa fa-clipboard-list"></i> Compléter le formulaire</button>
+        <button class="dbt-action-button" id="dbtBtnForm" style="display:none;grid-column:1 / -1;justify-self:center;"><i class="fa fa-clipboard-list"></i> Compléter le formulaire</button>
 
         <!-- Onglets VALIDE / ANNULE -->
         <button class="dbt-action-button" id="dbtBtnSaveComment" style="display:none"><i class="fa fa-comment-dots"></i> Valider le commentaire</button>

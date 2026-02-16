@@ -67,33 +67,107 @@
     font-size: 45px;
     color:#666}
 
-  .dbt-user{
+  .user-container{
+    position:relative;
+    display:flex;
+    align-items:center;
+  }
+
+  .user-profile{
     display:flex;
     align-items:center;
     gap:10px;
-    background:#ffffff;
-    border:1px solid #e7ecf5;
-    padding:6px 10px;
-    border-radius:16px;
     cursor:pointer;
+    background:#ffffff;
+    border-radius:999px;
+    padding:8px 18px;
+    box-shadow:0 16px 40px rgba(15, 23, 42, 0.12);
+    border:1px solid rgba(148, 163, 184, 0.35);
+    color:#111827;
+    font-size:0.95rem;
+    transition:box-shadow .2s ease, border-color .2s ease, background .2s ease;
+  }
+  .user-profile:hover{
+    box-shadow:0 20px 46px rgba(15, 23, 42, 0.16);
+    border-color:rgba(148, 163, 184, 0.55);
+    background:#fff;
   }
 
-  .dbt-user i{
-    color:#9aa7b1;
-    font-size: 25px;
-    margin-left: 10px;
-    margin-right: 10px;
-
-}
-
-  .dbt-user-name{
-    font-weight:600;
-    font-size:20px}
-
-  .dbt-user-role{
+  .user-profile i{
     font-size:18px;
-    color:#8a96a3;
-    margin-top:2px}
+    color:#9ca3af;
+    background:#f3f4f6;
+    border-radius:999px;
+    padding:6px;
+    margin:0;
+  }
+
+  .user-menu{
+    position:absolute;
+    top:110%;
+    right:0;
+    z-index:20;
+    display:none;
+    background:#ffffff;
+    border-radius:14px;
+    padding:12px 16px;
+    box-shadow:0 18px 45px rgba(15, 23, 42, 0.15);
+    border:1px solid rgba(148, 163, 184, 0.35);
+    color:#111827;
+    min-width:240px;
+    transform:translateY(0);
+    transition:box-shadow .2s ease, transform .2s ease;
+  }
+  .user-menu:hover{
+    box-shadow:0 22px 52px rgba(15, 23, 42, 0.2);
+    transform:translateY(-2px);
+  }
+
+  .user-menu::before{
+    content:"";
+    position:absolute;
+    top:-7px;
+    right:20px;
+    width:0;
+    height:0;
+    border-left:7px solid transparent;
+    border-right:7px solid transparent;
+    border-bottom:7px solid #ffffff;
+  }
+
+  .user-menu ul{
+    list-style:none;
+    padding:0;
+    margin:0;
+  }
+
+  .user-menu li{
+    margin-bottom:8px;
+  }
+
+  .user-menu li:last-child{
+    margin-bottom:0;
+  }
+
+  .user-menu .menu-link,
+  .user-menu .logout-btn{
+    display:block;
+    padding:8px 12px;
+    border-radius:8px;
+    text-decoration:none;
+    font-size:1rem;
+    color:#111827;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  }
+
+  .user-menu .logout-btn{
+    color:#dc2626;
+  }
+
+  .user-menu a:hover{
+    background:#f3f4f6;
+    transform:translateX(4px);
+  }
   
   /* --------- Search & actions --------- */
   .dbt-search-row{
@@ -326,19 +400,32 @@
   }
   .dbt-day-modal-content{
     background:#ffffff;
-    border:1px solid #e7ecf5;
+    border:1px solid #5f5a5a;
     border-radius:18px;
     min-width:360px;
     max-width:640px;
     width:min(92vw,640px);
     padding:18px 18px 12px 18px;
     box-shadow:0 16px 60px rgba(0,0,0,0.25);
-    position:relative
+    position:relative;
+    overflow:hidden;
+  }
+
+  .dbt-day-header{
+    background:#181212b8;
+    color:#fff;
+    padding:16px 20px;
+    border-radius:18px 18px 0 0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    margin:-18px -18px 12px -18px;
   }
 
   .dbt-day-close{
     position: absolute;
-    top: 16px;
+    top: 50%;
     right: 16px;
     width: 32px;
     height: 32px;
@@ -354,6 +441,7 @@
     box-sizing: border-box;
     padding: 0;
     border: #ffffff;
+    transform: translateY(-50%);
 }
 
   .dbt-day-close:hover{
@@ -362,9 +450,9 @@
   }
 
   .dbt-day-title{
-    font-size: 1.4rem;
-    color:#666;
-    margin-bottom:10px;
+    font-size: 1.15rem;
+    color:#fff;
+    margin:0;
     text-align: center;
     justify-content: center;
     font-weight: 800;
@@ -407,16 +495,37 @@
     min-width:360px;
     max-width:640px;
     width:min(92vw,640px);
-    border:1px solid #e7ecf5;
+    border:1px solid #5f5a5a;
     border-radius:18px;
     padding:18px;
     box-shadow:0 16px 60px rgba(0,0,0,.25);
-    position:relative
+    position:relative;
+    overflow:hidden;
+  }
+
+  .dbt-client-header{
+    background:#181212b8;
+    color:#fff;
+    padding:16px 20px;
+    border-radius:18px 18px 0 0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    margin:-18px -18px 14px -18px;
+  }
+
+  .dbt-client-title{
+    margin:0;
+    font-weight:700;
+    font-size:1.15rem;
+    text-align:center;
+    color:#fff;
   }
 
   .dbt-client-close{
     position:absolute;
-    top:16px;
+    top:50%;
     right:16px;
     width:32px;
     height:32px;
@@ -432,18 +541,12 @@
     box-sizing:border-box;
     padding:0;
     border:none;
+    transform:translateY(-50%);
   }
 
   .dbt-client-close:hover{
     background-color: #ef4444;
     color:#ffffff
-  }
-
-  .clientTitle{
-    display:flex;
-    justify-content: center;
-    align-items: center;
-    color: #666;
   }
 
 
@@ -507,10 +610,34 @@
   color:#fff;
   padding:20px 25px;
   border-radius:20px 20px 0 0;
-  display:flex;align-items:center;justify-content:space-between;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
 }
-.dbt-filter-title{ margin:0; font-weight:600; }
-.dbt-filter-close{ background:transparent; border:none; color:#fff; font-size:22px; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.dbt-filter-title{
+  margin:0;
+  font-weight:700;
+  font-size:1.15rem;
+  text-align:center;
+}
+.dbt-filter-close{
+  background:transparent;
+  border:none;
+  color:#fff;
+  font-size:22px;
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  position:absolute;
+  right:16px;
+  top:50%;
+  transform:translateY(-50%);
+}
 .dbt-filter-close:hover{ background:#ef4444; color:#fff; }
 
 .dbt-filter-body{ padding:20px 25px; }
@@ -702,37 +829,6 @@
   color:#ef4444;
   border-color:#ef4444;
 }
-/* =========================================================
-   PATCH styles perdus : menu user + badges + jours RDV
-   ========================================================= */
-
-/* --- Menu utilisateur (dropdown) --- */
-.dbt-user-wrap{ position:relative; }
-
-.dbt-user-menu{
-  position:absolute;
-  right:0;
-  top:46px;
-  display:none;                 /* IMPORTANT: cache par défaut */
-  background:#fff;
-  border:1px solid #e7ecf5;
-  border-radius:12px;
-  min-width:220px;
-  box-shadow:0 12px 28px rgba(22,39,94,.12);
-  padding:8px 0;
-  z-index:9500;
-}
-
-.dbt-user-menu a{
-  display:block;
-  padding:10px 14px;
-  text-decoration:none;
-  color:#111;
-}
-
-.dbt-user-menu a:hover{ background:#f8fafc; }
-.dbt-user-menu a.logout{ color:#e11d48; }
-
 /* --- Badges sur les jours (compteurs) --- */
 .dbt-cell.day{ position:relative; }
 

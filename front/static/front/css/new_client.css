@@ -36,8 +36,9 @@ body {
   
   .nc-close-btn {
     position: absolute;
-    top: 20px;
-    right: 36px;
+    top: 50%;
+    right: 16px;
+    transform: translateY(-50%);
     font-size: 1.3em;
     color: #ff3b3b;
     background: none;
@@ -91,6 +92,11 @@ body {
   }
   .nc-accordion-header:hover {
     background: rgba(255,0,0,0.08);
+  }
+  .nc-accordion-header > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
   }
   
   .nc-chevron {
@@ -181,16 +187,18 @@ body {
     margin-top: 10px;
   }
   .nc-action-btn {
-    background: #ff3b3b;
-    color: #fff;
-    border: none;
+    position: relative;
+    overflow: hidden;
+    background: #fff;
+    color: #ff3b3b;
+    border: 1px solid #ff3b3b;
     border-radius: 8px;
     padding: 13px 0;
     font-weight: 600;
     font-size: 1.08em;
     cursor: pointer;
     box-shadow: 0 2px 8px 0 rgba(211,47,47,0.10);
-    transition: background 0.2s, box-shadow 0.2s;
+    transition: color 0.25s ease, box-shadow 0.25s ease;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -198,9 +206,30 @@ body {
     justify-content: center;
     max-width: 320px;
   }
-  .nc-action-btn:hover {
+  .nc-action-btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
     background: #ff3b3b;
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.3s ease;
+    z-index: 0;
+  }
+  .nc-action-btn i {
+    position: relative;
+    z-index: 1;
+  }
+  .nc-action-btn span {
+    position: relative;
+    z-index: 1;
+  }
+  .nc-action-btn:hover {
+    color: #fff;
     box-shadow: 0 4px 16px 0 rgba(255,59,59,0.15);
+  }
+  .nc-action-btn:hover::before {
+    transform: scaleX(1);
   }
   
   @media (max-width: 700px) {
@@ -220,15 +249,19 @@ body {
   .nc-card-header {
     display: flex;
     flex-direction: row;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding-bottom: 32px;
-    margin-bottom: 16px;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: #181212b8;
+    color: #fff;
+    border-radius: 16px 16px 0 0;
+    margin: -64px -64px 20px -64px;
+    padding: 16px 20px;
   }
   .nc-card-title {
-    font-size: 1.45em;
-    font-weight: 600;
-    color: #666;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
     letter-spacing: 0.5px;
     text-align: center;
     flex: 1;

@@ -340,7 +340,11 @@ def get_client_comments(request, client_id):
 
 @login_required
 def dashboard_test(request):
-    return render(request, 'front/dashboard_test.html', {})
+    commercial = None
+    commercial_id = request.session.get('commercial_id')
+    if commercial_id:
+        commercial = Commercial.objects.filter(id=commercial_id).first()
+    return render(request, 'front/dashboard_test.html', {'commercial': commercial})
 
 reset_tokens = {}
 

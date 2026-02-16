@@ -79,7 +79,7 @@
 </style>
 </head>
 
-<body class="dbt-body" data-commercial-id="{{ request.session.commercial_id|default:request.session.commercial_pk }}">
+<body class="dbt-body" data-commercial-id="{{ request.session.commercial_id|default:'' }}">
   <div class="dbt-wrapper">
     <!-- Header -->
     <div class="dbt-header">
@@ -89,8 +89,10 @@
         <div class="dbt-user" id="dbtUserBtn" role="button" aria-haspopup="true" aria-expanded="false">
           <i class="fa fa-user"></i>
           <div class="dbt-user-info">
-            <div class="dbt-user-name">{{ request.session.commercial_nom|default:'Utilisateur' }}</div>
-            <div class="dbt-user-role">{{ request.session.commercial_nom|default:'Commercial' }}</div>
+            <div class="dbt-user-name">{% firstof commercial.prenom commercial.nom request.session.commercial_nom 'Utilisateur' %}</div>
+            <div class="dbt-user-role">
+              {% if request.session.role == 'responsable' %}Responsable{% elif request.session.role == 'admin' %}Admin{% else %}Commercial{% endif %}
+            </div>
           </div>
           <i class="fa fa-chevron-down" style="margin-left:6px;color:#9aa7b1;font-size:15px;align-items:center;"></i>
         </div>

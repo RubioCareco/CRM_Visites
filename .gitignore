@@ -74,3 +74,7 @@ Date
 \n"
 12
 ×
+
+# local (WSL)
+.venv-wsl/
+python/

@@ -33,9 +33,13 @@ if local_env.exists():
 SECRET_KEY = env('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env.bool("DEBUG", default=(ENV != "prod"))
+DEBUG = env.bool('DEBUG', default=True)
 
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1", "web"])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+
+SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=(ENV == 'prod'))
+SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=True)
+CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=True)
 
 # Application definition
 
@@ -128,7 +132,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CSRF_USE_SESSIONS = False
 CSRF_TRUSTED_ORIGINS = env.list(
     "CSRF_TRUSTED_ORIGINS",
-    default=["http://127.0.0.1:8000", "http://localhost:8000",  "https://rcareco.eu.org", "https://crm.rcareco.eu.org"]
+    default=["http://127.0.0.1:8000", "http://localhost:8000"]
 )
 
 EMAIL_BACKEND = env(
@@ -139,11 +143,15 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="no-reply@rubio.fr")
 SITE_BASE_URL = env("SITE_BASE_URL", default="http://127.0.0.1:8000")
 
 # paramètres SMTP – à ne pas changer tant que le backend console
-EMAIL_HOST = env("EMAIL_HOST", default="")
-EMAIL_PORT = env.int("EMAIL_PORT", default=587)
-EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
-EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() == "true"
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
+SERVER_EMAIL = os.getenv("SERVER_EMAIL", DEFAULT_FROM_EMAIL)
+
 
 # Configuration des sessions pour la sécurité
 SESSION_COOKIE_AGE = 1800  # 30 minutes
@@ -169,6 +177,9 @@ HOLIDAYS_YEARS = env("HOLIDAYS_YEARS", default="2025,2026")
 # Mapbox
 MAPBOX_ACCESS_TOKEN = env("MAPBOX_ACCESS_TOKEN", default="")
 
+#Google maps
+GOOGLE_MAPS_API_KEY = env("GOOGLE_MAPS_API_KEY", default="")
+
 # Contraintes géographiques / Algorithmes
 MAX_RADIUS_KM = env.int("MAX_RADIUS_KM", default=40)
 MAX_DAILY_DISTANCE_KM = env.int("MAX_DAILY_DISTANCE_KM", default=220)
@@ -178,6 +189,7 @@ SAME_DAY_SPREAD_KM = env.float("SAME_DAY_SPREAD_KM", default=15.0)
 SAME_DAY_CLUSTER_SEED_LIMIT = env.int("SAME_DAY_CLUSTER_SEED_LIMIT", default=60)
 ROUTING_AVG_SPEED_KMH = env.int("ROUTING_AVG_SPEED_KMH", default=50)
 HORIZON_MAX_VISITS_PER_CLIENT = env.int("HORIZON_MAX_VISITS_PER_CLIENT", default=1)
+GOOGLE_MAPS_TRAVEL_MODE = env("GOOGLE_MAPS_TRAVEL_MODE", default="driving")
 
 # --- Sécurité derrière Nginx/Reverse proxy ---
 # Indique à Django que le client est en HTTPS quand Nginx envoie cet en-tête
@@ -186,18 +198,25 @@ USE_X_FORWARDED_HOST = True  # utile quand on est derrière un proxy
 
 # (si ce n'est pas déjà fait, on lit ces flags depuis l'env)
 SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=False)
-SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=(ENV == "prod"))
-CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=(ENV == "prod"))
-
+SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=False)
+CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=False)
 
 # ALLOWED_HOSTS / CSRF_TRUSTED_ORIGINS depuis l'env si pas déjà définis
-#ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=ALLOWED_HOSTS if 'ALLOWED_HOSTS' in globals() else [])
-#CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
-# Durée de validité des liens de réinit de mot de passe (en secondes)
-PASSWORD_RESET_TIMEOUT = env.int("PASSWORD_RESET_TIMEOUT", default=60*60*24)
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=ALLOWED_HOSTS if 'ALLOWED_HOSTS' in globals() else [])
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
 
-# Google Maps
-GOOGLE_MAPS_API_KEY = env("GOOGLE_MAPS_API_KEY", default="")
-GOOGLE_MAPS_TRAVEL_MODE = os.getenv("GOOGLE_MAPS_TRAVEL_MODE", "driving")
-GOOGLE_LOG_STATS = os.getenv("GOOGLE_LOG_STATS", "false").lower() == "true"
+# --- Staticfiles (prod) ---
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"   # => /app/staticfiles dans le conteneur
+
+# Répertoires sources (à ADAPTER à ton projet si besoin)
+# Exemple : si tes CSS sont dans front/static/front/css/...
+STATICFILES_DIRS = [
+    BASE_DIR / "front" / "static",      # <-- adapte si différent
+    BASE_DIR / "static",                # <-- adapte si tu as un dossier 'static'
+]
+
+# Hashing des fichiers (versionnés) pour casser le cache navigateur
+if not DEBUG:
+    STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"

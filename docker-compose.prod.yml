@@ -6,31 +6,29 @@ services:
         condition: service_healthy
     ports:
       - "80:80"
-      - "443:443"                            # publier en 80 en prod
+      - "443:443"                        # <- ajouter 443
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - staticfiles:/app/staticfiles:ro
-      - ./certbot/www:/var/www/certbot:rw
-      - ./certbot/conf:/etc/letsencrypt:rw
+      - ./certbot/www:/var/www/certbot:ro   # <- webroot ACME
+      - ./certbot/conf:/etc/letsencrypt:ro  # <- certs Let’s Encrypt
     networks: [app_net]
     restart: unless-stopped
 
   web:
     image: ghcr.io/rubiocareco/crm_visites-web:latest
-    pull_policy: always
+    pull_policy: always                    # toujours tirer la dernière image
     env_file: .env.prod
     depends_on:
-      db:
-        condition: service_started        # ou service_healthy si ton db a un healthcheck
-    ports: []                             # PAS d’exposition directe en prod
+      - db
     expose:
-      - "8000"
+      - "8000"                             # exposé uniquement au réseau interne
     volumes:
       - staticfiles:/app/staticfiles
     healthcheck:
       test:
         - CMD-SHELL
-        - curl -fsS http://127.0.0.1:8000/healthz -o /dev/null || exit 1
+        - python -c "import sys,urllib.request as u;r=u.urlopen('http://127.0.0.1:8000/',timeout=3);sys.exit(0 if 200<=r.status<400 else 1)"
       interval: 15s
       timeout: 5s
       retries: 20
@@ -41,7 +39,7 @@ services:
       - "host.docker.internal:host-gateway"
 
   db:
-    networks: [app_net]                   # hérite du service base
+    networks: [app_net]                     # hérite de la définition de base
 
 volumes:
   staticfiles:
@@ -49,4 +47,3 @@ volumes:
 networks:
   app_net:
     driver: bridge
-

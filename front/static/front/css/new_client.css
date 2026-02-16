@@ -17,7 +17,7 @@ body {
   
   .nc-card {
     background: rgb(255, 255, 255);
-    border-radius: 16px;
+    border-radius: 20px;
     box-shadow: 0 8px 32px 0 rgba(0,0,0,0.45);
     width: 600px;
     max-width: 96vw;
@@ -39,23 +39,23 @@ body {
     top: 50%;
     right: 16px;
     transform: translateY(-50%);
-    font-size: 1.3em;
-    color: #ff3b3b;
-    background: none;
+    font-size: 22px;
+    color: #fff;
+    background: transparent;
     border: none;
     cursor: pointer;
     z-index: 2;
     transition: color 0.2s, background 0.2s;
     border-radius: 50%;
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
   .nc-close-btn:hover {
     color: #fff;
-    background: #ff3b3b;
+    background: #ef4444;
   }
   
   .nc-accordion {
@@ -97,6 +97,9 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 10px;
+  }
+  .nc-accordion-header > span > i {
+    color: #ff3b3b;
   }
   
   .nc-chevron {
@@ -164,6 +167,7 @@ body {
     margin-right: 10px;
     font-size: 1.1em;
     min-width: 18px;
+    color: #ff3b3b;
   }
   .nc-field input {
     border: none;
@@ -254,15 +258,15 @@ body {
     position: relative;
     background: #181212b8;
     color: #fff;
-    border-radius: 16px 16px 0 0;
+    border-radius: 20px 20px 0 0;
     margin: -64px -64px 20px -64px;
-    padding: 16px 20px;
+    padding: 20px 25px;
   }
   .nc-card-title {
-    font-size: 1.5rem;
+    font-size: 1.15rem;
     font-weight: 700;
     color: #fff;
-    letter-spacing: 0.5px;
+    margin: 0;
     text-align: center;
     flex: 1;
   }
@@ -322,6 +326,64 @@ body {
     opacity: 0;
     pointer-events: none;
     transition: bottom 0.6s cubic-bezier(.7,.2,.2,1), opacity 0.3s, background 0.2s;
+  }
+
+  .nc-toast-stack {
+    position: fixed;
+    top: 22px;
+    right: 22px;
+    z-index: 2147483647;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+  }
+
+  .nc-toast {
+    min-width: 280px;
+    max-width: min(92vw, 420px);
+    padding: 12px 14px;
+    border-radius: 12px;
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.22);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    pointer-events: auto;
+    transform: translateY(-8px);
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .nc-toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .nc-toast.success {
+    background: linear-gradient(135deg, #34d399, #10b981);
+    border: 1px solid #10b981;
+  }
+
+  .nc-toast button {
+    border: none;
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border-radius: 8px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nc-toast button:hover {
+    background: rgba(255, 255, 255, 0.3);
   }
   .import-toast.show {
     bottom: 32px;

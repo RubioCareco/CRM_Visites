@@ -882,7 +882,9 @@ def new_client(request):
                 return render(request, 'front/new_client.html', {
                     'client_temp': None,
                     'rdv_temp': None,
-                    'success': True
+                    'success': True,
+                    'success_message': 'Votre rendez-vous a bien été ajouté',
+                    'role': request.session.get('role'),
                 })
             else:
                 error_message = "⚠️ RDV déjà existant (doublon évité)."
@@ -891,6 +893,7 @@ def new_client(request):
                     'rdv_temp': request.session.get('rdv_temp'),
                     'success': False,
                     'error': error_message,
+                    'role': request.session.get('role'),
                 })
 
         # Si pas de RDV saisi: on valide juste la création du client
@@ -899,7 +902,9 @@ def new_client(request):
         return render(request, 'front/new_client.html', {
             'client_temp': None,
             'rdv_temp': None,
-            'success': True
+            'success': True,
+            'success_message': 'Client ajouté avec succès',
+            'role': request.session.get('role'),
         })
 
     # En GET, on récupère le flag de succès éventuel
@@ -910,6 +915,7 @@ def new_client(request):
         'client_temp': client_temp,
         'rdv_temp': rdv_temp,
         'success': success,
+        'success_message': 'Votre rendez-vous a bien été ajouté' if success else '',
         'role': request.session.get('role')
     })
 

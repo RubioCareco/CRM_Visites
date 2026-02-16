@@ -67,8 +67,11 @@
       </div>
     </div>
   </div>
-  <div class="success-message" style="display:none;">
-    Client ajouté avec succès
+  <div id="ncToastStack" class="nc-toast-stack" aria-live="polite" aria-atomic="true">
+    <div id="ncSuccessToast" class="nc-toast success" style="display:none;">
+      <span id="ncSuccessToastText">Opération effectuée avec succès</span>
+      <button type="button" id="ncSuccessToastClose" aria-label="Fermer">×</button>
+    </div>
   </div>
   <div id="import-toast" class="import-toast">
     <i class="fa-solid fa-circle-check"></i>
@@ -77,12 +80,27 @@
   {% if success %}
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      document.querySelector('.success-message').style.display = 'block';
+      const toast = document.getElementById('ncSuccessToast');
+      const toastText = document.getElementById('ncSuccessToastText');
+      const closeBtn = document.getElementById('ncSuccessToastClose');
+      if (!toast || !toastText) return;
+
+      toastText.textContent = '{{ success_message|default:"Opération effectuée avec succès"|escapejs }}';
+      toast.style.display = 'flex';
+      requestAnimationFrame(() => toast.classList.add('show'));
+
+      const closeToast = () => {
+        toast.classList.remove('show');
+        setTimeout(() => { toast.style.display = 'none'; }, 220);
+      };
+      if (closeBtn) closeBtn.addEventListener('click', closeToast);
+
+      setTimeout(closeToast, 2200);
       setTimeout(function() {
         const role = '{{ role|default:"" }}';
         const target = (role === 'responsable' || role === 'admin') ? '/dashboard-responsable/' : '/dashboard-test/';
         window.location.href = target;
-      }, 2000);
+      }, 2500);
     });
   </script>
   {% endif %}

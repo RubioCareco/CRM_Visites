@@ -74,9 +74,12 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+<style id="dbtHideCommercialCSS">
+#dbtMapCommercial{display:none;}
+</style>
 </head>
 
-<body class="dbt-body">
+<body class="dbt-body" data-commercial-id="{{ request.session.commercial_id|default:request.session.commercial_pk }}">
   <div class="dbt-wrapper">
     <!-- Header -->
     <div class="dbt-header">
@@ -147,21 +150,41 @@
 <div style="margin-top:14px;padding:14px;border-radius:14px;background:#fff;border:1px solid #e5e7eb;">
   <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
     <div style="font-weight:700;">Carte (clients + tournée du jour)</div>
+
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-      <label style="font-size:12px;color:#64748b;">Commercial</label>
-      <select id="dbtMapCommercial" style="padding:8px 10px;border:1px solid #e5e7eb;border-radius:10px;min-width:180px;"></select>
+      <!-- commercial caché car commercial connecté -->
+      <select id="dbtMapCommercial" style="display:none;padding:8px 10px;border:1px solid #e5e7eb;border-radius:10px;min-width:180px;"></select>
+
       <label style="font-size:12px;color:#64748b;">Date</label>
       <input id="dbtMapDate" type="date" style="padding:8px 10px;border:1px solid #e5e7eb;border-radius:10px;" />
+
       <button id="dbtMapLoad" type="button" style="padding:9px 12px;border-radius:10px;border:1px solid #111827;background:#111827;color:#fff;cursor:pointer;">
         Charger
       </button>
+
       <div id="dbtMapMeta" style="font-size:12px;color:#64748b;">—</div>
     </div>
   </div>
-  <div id="dbtMap" style="height:460px;margin-top:12px;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;"></div>
-</div>
 
-      <div id="dbtTooltip" class="dbt-tooltip"></div>
+  <div style="display:flex;gap:12px;margin-top:12px;align-items:stretch;flex-wrap:wrap;">
+    <div id="dbtMap" style="flex:1;min-width:360px;height:460px;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;"></div>
+
+    <div id="dbtSelectedPanel" style="flex:0 0 340px;min-width:300px;height:460px;border-radius:14px;border:1px solid #e5e7eb;background:#fafafa;padding:12px;overflow:auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;">
+        <div style="font-weight:800;">Clients sélectionnés (<span id="dbtSelCount">0</span>)</div>
+        <button id="dbtSelClear" type="button" style="padding:6px 10px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;cursor:pointer;font-size:12px;">
+          Vider
+        </button><button id="dbtValidateTournee" type="button" style="margin-left:8px;padding:6px 10px;border-radius:10px;border:1px solid #111827;background:#111827;color:#fff;cursor:pointer;font-size:12px;">Valider la tournée</button>
+      </div>
+
+      <div id="dbtSelectedList" style="display:flex;flex-direction:column;gap:8px;">
+        <div style="color:#64748b;font-size:12px;">Clique sur des clients sur la carte pour les ajouter ici.</div>
+      </div>
+    </div>
+  </div>
+</div>\n
+
+<div id="dbtTooltip" class="dbt-tooltip"></div>
     </div>
 
     <div class="dbt-footer-links">
@@ -1109,6 +1132,97 @@ document.addEventListener("click", async (e) => {
 
 <script>
 // MAP_TOURNEE_LEAFLET
+
+  // DBT DEBUG helper (logs uniquement si window.DBT_DEBUG = true)
+  window.DBT_DEBUG = window.DBT_DEBUG || false;
+  function dbtDlog(){
+    if (window.DBT_DEBUG && console && console.log) console.log.apply(console, arguments);
+  }
+
+  // DBT_VALIDATE_TOURNEE_HANDLER_ONLY_V2
+  function dbtGetSelectedIds(){
+    if (window.dbtSelectedClientIds && typeof window.dbtSelectedClientIds.forEach === "function"){
+      return Array.from(window.dbtSelectedClientIds);
+    }
+    // fallback si c’est un array
+    if (Array.isArray(window.dbtSelectedClientIds)) return window.dbtSelectedClientIds;
+    return [];
+  }
+
+  function dbtGetCommercialIdSafe(){
+    try{
+      if (typeof window.dbtGetCommercialId === "function"){
+        var v = Number(window.dbtGetCommercialId() || 0);
+        if (v) return v;
+      }
+    }catch(e){}
+    // fallback (si jamais un select existe)
+    var comEl =
+      document.querySelector("#dbtCommercialSelect") ||
+      document.querySelector("select[name=\"commercial_id\"]") ||
+      document.querySelector("select[name=\"commercial\"]");
+    var cid = comEl ? Number(comEl.value || 0) : 0;
+    if (cid) return cid;
+
+    // dernier fallback : dataset global
+    var ds = (document.body && document.body.dataset) ? document.body.dataset : {};
+    var cid2 = Number(ds.commercialId || ds.commercial_id || 0);
+    return cid2 || 0;
+  }
+
+  async function dbtValidateTournee(){
+    var dateEl = document.querySelector("#dbtMapDate") || document.querySelector("input[type=\"date\"]");
+    var date = dateEl ? (dateEl.value || "").trim() : "";
+
+    var commercial_id = dbtGetCommercialIdSafe();
+    var ids = dbtGetSelectedIds().map(function(x){ return Number(x); }).filter(Boolean);
+
+    if (!commercial_id){
+      alert("Commercial introuvable (id).");
+      return;
+    }
+    if (!date){
+      alert("Date introuvable.");
+      return;
+    }
+    if (!ids.length){
+      alert("Aucun client sélectionné.");
+      return;
+    }
+
+    if (!confirm("Remplacer la tournée du " + date + " par " + ids.length + " client(s) sélectionné(s) ?")){
+      return;
+    }
+
+    var res = await fetch("/api/tournee/replace/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ commercial_id: commercial_id, date: date, client_ids: ids })
+    });
+
+    var txt = await res.text();
+    if (!res.ok){
+      console.error("api/tournee/replace failed:", res.status, txt);
+      alert("Erreur API (" + res.status + "). Voir console.");
+      return;
+    }
+
+    console.log("✅ replace tournee OK:", txt);
+    alert("Tournée mise à jour ✅");
+
+    // optionnel: recharge la tournée si tu as une fonction existante
+    if (typeof window.dbtLoadTournee === "function"){
+      try { window.dbtLoadTournee(); } catch(e){}
+    }
+  }
+
+  document.addEventListener("click", function(ev){
+    if (ev && ev.target && ev.target.id === "dbtValidateTournee"){
+      ev.preventDefault();
+      dbtValidateTournee();
+    }
+  });
+
 (function(){
   function isoToday(){
     var d=new Date(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
@@ -1124,7 +1238,7 @@ document.addEventListener("click", async (e) => {
   dt.value = isoToday();
 
   var map=L.map("dbtMap");
-map.on("click", function(e){ console.log("MAP CLICK", e.latlng); });
+map.on("click", function(e){ dbtDlog("MAP CLICK", e.latlng); });
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19, attribution:"&copy; OpenStreetMap"}).addTo(map);
   var gClients=L.layerGroup().addTo(map);
@@ -1137,7 +1251,8 @@ map.on("click", function(e){ console.log("MAP CLICK", e.latlng); });
       id = Number(id);
       if (window.dbtSelectedClientIds.has(id)) window.dbtSelectedClientIds.delete(id);
       else window.dbtSelectedClientIds.add(id);
-      console.log("SELECTED CLIENT IDS =", Array.from(window.dbtSelectedClientIds));
+      dbtDlog("SELECTED CLIENT IDS =", Array.from(window.dbtSelectedClientIds));
+    if (window.dbtRenderSelectedSidebar) window.dbtRenderSelectedSidebar();
     }
 
 
@@ -1168,6 +1283,9 @@ map.on("click", function(e){ console.log("MAP CLICK", e.latlng); });
       var pts=[];
 
       (data.clients||[]).forEach(c=>{
+          window.dbtClientsById = window.dbtClientsById || {};
+          window.dbtClientsById[Number(c.id)] = c;
+
         var ll=[c.lat,c.lng]; pts.push(ll);
         // ✅ Client selectable
 var mk = L.circleMarker(ll, {radius: 8, weight: 2, fillOpacity: 0.85});
@@ -1181,7 +1299,7 @@ function refreshStyle(){
 refreshStyle();
 
 mk.on("click", function(ev){
-  console.log("CLIENT MARKER CLICK", mk._clientId, ll);
+  dbtDlog("CLIENT MARKER CLICK", mk._clientId, ll);
   if (ev && ev.originalEvent) ev.originalEvent.stopPropagation();
   dbtToggleSelected(mk._clientId);
   refreshStyle();
@@ -1216,5 +1334,6 @@ mk.addTo(gClients).bindPopup("<b>"+(c.nom||"Client")+"</b>");
 })();
 </script>
 
+<script src="/static/front/dbt_selected_sidebar.js"></script>
 </body>
 </html>

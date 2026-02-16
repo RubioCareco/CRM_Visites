@@ -2,6 +2,8 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path("api/tournee/replace/", views.api_replace_tournee, name="api_replace_tournee"),
+
     # Auth
     path('', views.login_view, name='login'),
     path('login/', views.login_view, name='login_page'),

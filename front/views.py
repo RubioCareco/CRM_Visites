@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.utils.dateparse import parse_date
 from .models import Commercial, Rendezvous, CommentaireRdv, SatisfactionB2B, FrontClient, ActivityLog, ClientVisitStats
 from django.contrib.auth.hashers import check_password, make_password
 from functools import wraps
@@ -4111,3 +4112,76 @@ def api_map_tournee(request):
         "tournee": tournee,
         "counts": {"clients": len(clients), "rdvs": len(tournee), "points": len(tournee), "rdv_total": rdv_total},
     })
+
+# API_REPLACE_TOURNEE_V2
+@csrf_exempt
+@require_POST
+def api_replace_tournee(request):
+    # API_REPLACE_TOURNEE_SAFEJSON_V1
+    try:
+
+        import json
+        try:
+            payload = json.loads((request.body or b"{}").decode("utf-8"))
+        except Exception:
+            return JsonResponse({"ok": False, "error": "invalid_json"}, status=400)
+
+        commercial_id = int(payload.get("commercial_id") or 0)
+        date_str = (payload.get("date") or "").strip()
+        client_ids = payload.get("client_ids") or []
+
+        if (not commercial_id) or (not date_str) or (not isinstance(client_ids, list)) or (not client_ids):
+            return JsonResponse({"ok": False, "error": "missing_fields"}, status=400)
+
+        d = parse_date(date_str)
+        if not d:
+            return JsonResponse({"ok": False, "error": "invalid_date"}, status=400)
+
+        from .models import Rendezvous
+        qs = Rendezvous.objects.filter(commercial_id=commercial_id, date_rdv=d).order_by("heure_rdv", "id")
+        rdvs = list(qs)
+
+        n_update = min(len(rdvs), len(client_ids))
+        updated = 0
+        for i in range(n_update):
+            rv = rdvs[i]
+            cid = int(client_ids[i])
+            if getattr(rv, "client_id", None) != cid:
+                rv.client_id = cid
+                rv.save(update_fields=["client"])
+            updated += 1
+
+        created = 0
+        if len(client_ids) > len(rdvs):
+            from datetime import time, datetime, timedelta
+            if rdvs:
+                last_h = rdvs[-1].heure_rdv
+                base_dt = datetime.combine(d, last_h) + timedelta(minutes=30)
+            else:
+                base_dt = datetime.combine(d, time(9, 0))
+            for j in range(len(rdvs), len(client_ids)):
+                cid = int(client_ids[j])
+                rv = Rendezvous(commercial_id=commercial_id, client_id=cid, date_rdv=d, heure_rdv=base_dt.time())
+                rv.save()
+                created += 1
+                base_dt = base_dt + timedelta(minutes=30)
+
+        deleted = 0
+        if len(client_ids) < len(rdvs):
+            extra = rdvs[len(client_ids):]
+            deleted = len(extra)
+            for rv in extra:
+                rv.delete()
+
+        return JsonResponse({
+            "ok": True,
+            "date": date_str,
+            "commercial_id": commercial_id,
+            "updated": updated,
+            "created": created,
+            "deleted": deleted,
+        })
+
+    except Exception as e:
+        from django.http import JsonResponse as _JR
+        return _JR({"ok": False, "error": "server_error", "detail": f"{type(e).__name__}: {e}"}, status=500)

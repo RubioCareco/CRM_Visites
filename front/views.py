@@ -189,9 +189,14 @@ def api_rdvs_by_date(request):
                 'heure': rdv.heure_rdv.strftime('%H:%M') if rdv.heure_rdv else '',
                 'client': {
                     'id': client.id if client else None,
+                    'civilite': getattr(client, 'civilite', '') or '',
                     'nom': getattr(client, 'nom', '') or '',
                     'prenom': getattr(client, 'prenom', '') or '',
-                    'rs_nom': getattr(client, 'rs_nom', '') or ''
+                    'rs_nom': getattr(client, 'rs_nom', '') or '',
+                    'telephone': getattr(client, 'telephone', '') or '',
+                    'email': getattr(client, 'email', '') or '',
+                    'code_comptable': getattr(client, 'code_comptable', '') or '',
+                    'classement_client': getattr(client, 'classement_client', '') or '',
                 } if client else None,
                 'adresse': adresse,
                 'statut': rdv.statut_rdv,
@@ -4082,6 +4087,10 @@ def api_map_tournee(request):
             "ville": a.ville,
             "adresse": a.adresse,
             "code_postal": a.code_postal,
+            "telephone": c.telephone,
+            "email": c.email,
+            "classement_client": c.classement_client,
+            "code_comptable": c.code_comptable,
         })
     rdvs_qs = (Rendezvous.objects
         .filter(commercial_id=com_id, date_rdv=d)
@@ -4107,6 +4116,13 @@ def api_map_tournee(request):
             "heure": str(r.heure_rdv) if r.heure_rdv else "",
             "lat": float(a.latitude),
             "lng": float(a.longitude),
+            "ville": a.ville,
+            "adresse": a.adresse,
+            "code_postal": a.code_postal,
+            "telephone": c.telephone if c else "",
+            "email": c.email if c else "",
+            "classement_client": c.classement_client if c else "",
+            "code_comptable": c.code_comptable if c else "",
         })
 
     return JsonResponse({

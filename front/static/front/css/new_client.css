@@ -39,7 +39,7 @@ body {
     top: 50%;
     right: 16px;
     transform: translateY(-50%);
-    font-size: 22px;
+    font-size: 0;
     color: #fff;
     background: transparent;
     border: none;
@@ -52,6 +52,15 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+  .nc-close-btn i {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 18px;
+    line-height: 1;
   }
   .nc-close-btn:hover {
     color: #fff;

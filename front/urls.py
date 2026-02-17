@@ -60,6 +60,7 @@ urlpatterns = [
 
     path('api/clients-by-commercial/', views.api_clients_by_commercial, name='api_clients_by_commercial'),
     path('api/commerciaux/', views.api_commerciaux, name='api_commerciaux'),
+    path('api/insee/siret/<str:siret>/', views.api_insee_siret, name='api_insee_siret'),
 
     path('api/map-tournee/', views.api_map_tournee, name='api_map_tournee'),
 

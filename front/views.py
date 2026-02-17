@@ -18,8 +18,10 @@ import base64
 from django.template.loader import render_to_string
 from xhtml2pdf import pisa
 from io import BytesIO
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.views.decorators.http import require_GET, require_POST
+from .siret_utils import validate_siret, normalize_siret
+from .insee_service import fetch_company_by_siret
 
 # =========================
 # UNPIN COMMENT (API)
@@ -797,11 +799,30 @@ def new_client(request):
 
     if request.method == 'POST':
         if 'add_rdv' in request.POST:
+            is_valid_siret, cleaned_siret, siret_error = validate_siret(request.POST.get('siret'))
+            if not is_valid_siret:
+                return render(request, 'front/new_client.html', {
+                    'client_temp': {
+                        'nom': request.POST.get('nom'),
+                        'prenom': request.POST.get('prenom'),
+                        'entreprise': request.POST.get('entreprise'),
+                        'siret': cleaned_siret,
+                        'adresse': request.POST.get('adresse'),
+                        'code_postal': request.POST.get('code_postal'),
+                        'ville': request.POST.get('ville'),
+                        'email': request.POST.get('email'),
+                        'telephone': request.POST.get('telephone'),
+                    },
+                    'rdv_temp': request.session.get('rdv_temp'),
+                    'success': False,
+                    'error': siret_error,
+                    'role': request.session.get('role'),
+                })
             request.session['client_temp'] = {
                 'nom': request.POST.get('nom'),
                 'prenom': request.POST.get('prenom'),
                 'entreprise': request.POST.get('entreprise'),
-                'siret': request.POST.get('siret'),
+                'siret': cleaned_siret,
                 'adresse': request.POST.get('adresse'),
                 'code_postal': request.POST.get('code_postal'),
                 'ville': request.POST.get('ville'),
@@ -815,14 +836,34 @@ def new_client(request):
         nom = request.POST.get('nom') or temp_data.get('nom')
         prenom = request.POST.get('prenom') or temp_data.get('prenom')
         entreprise = request.POST.get('entreprise') or temp_data.get('entreprise')
-        siret = request.POST.get('siret') or temp_data.get('siret')
+        raw_siret = request.POST.get('siret') or temp_data.get('siret')
         adresse = request.POST.get('adresse') or temp_data.get('adresse')
         code_postal = request.POST.get('code_postal') or temp_data.get('code_postal')
         ville = request.POST.get('ville') or temp_data.get('ville')
         email = request.POST.get('email') or temp_data.get('email')
         telephone = request.POST.get('telephone') or temp_data.get('telephone')
 
-        client = FrontClient.objects.create(
+        is_valid_siret, siret, siret_error = validate_siret(raw_siret)
+        if not is_valid_siret:
+            return render(request, 'front/new_client.html', {
+                'client_temp': {
+                    'nom': nom,
+                    'prenom': prenom,
+                    'entreprise': entreprise,
+                    'siret': siret,
+                    'adresse': adresse,
+                    'code_postal': code_postal,
+                    'ville': ville,
+                    'email': email,
+                    'telephone': telephone,
+                },
+                'rdv_temp': request.session.get('rdv_temp'),
+                'success': False,
+                'error': siret_error,
+                'role': request.session.get('role'),
+            })
+
+        client = FrontClient(
             nom=nom,
             prenom=prenom,
             rs_nom=entreprise,
@@ -831,6 +872,27 @@ def new_client(request):
             telephone=telephone,
             commercial=commercial
         )
+        try:
+            client.full_clean()
+            client.save()
+        except ValidationError:
+            return render(request, 'front/new_client.html', {
+                'client_temp': {
+                    'nom': nom,
+                    'prenom': prenom,
+                    'entreprise': entreprise,
+                    'siret': siret,
+                    'adresse': adresse,
+                    'code_postal': code_postal,
+                    'ville': ville,
+                    'email': email,
+                    'telephone': telephone,
+                },
+                'rdv_temp': request.session.get('rdv_temp'),
+                'success': False,
+                'error': "Numéro SIRET invalide : 14 chiffres et contrôle requis.",
+                'role': request.session.get('role'),
+            })
 
         # Ajout : création de l'adresse liée
         Adresse.objects.create(
@@ -918,6 +980,18 @@ def new_client(request):
         'success_message': 'Votre rendez-vous a bien été ajouté' if success else '',
         'role': request.session.get('role')
     })
+
+
+@login_required
+@require_GET
+def api_insee_siret(request, siret):
+    cleaned = normalize_siret(siret)
+    is_valid, cleaned, error_message = validate_siret(cleaned)
+    if not is_valid:
+        return JsonResponse({"success": False, "error": error_message}, status=400)
+
+    payload, status_code = fetch_company_by_siret(cleaned)
+    return JsonResponse(payload, status=status_code)
 
 # ➕ Nouveau rendez-vous
 def get_client_comments(request, client_id):
@@ -1373,6 +1447,17 @@ def update_statut(request, uuid, statut):
     rdv = get_object_or_404(Rendezvous, uuid=uuid)
     if not (request.user.is_superuser or (rdv.commercial and rdv.commercial.id == request.session.get('commercial_id'))):
         raise PermissionDenied("Vous n'avez pas le droit d'accéder à ce rendez-vous.")
+    if (
+        request.method == 'POST'
+        and statut in {"valider", "annuler"}
+        and rdv.commercial
+        and rdv.commercial.is_absent
+        and not request.user.is_superuser
+    ):
+        return JsonResponse(
+            {"status": "error", "message": "Commercial absent: action bloquée."},
+            status=403,
+        )
 
     if request.method == 'POST':
         data = json.loads(request.body)

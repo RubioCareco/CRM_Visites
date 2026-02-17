@@ -1,6 +1,7 @@
 services:
   web_preview:
     build: .
+    env_file: .env
     # On force un mode "dev" sûr pour la preview
     environment:
       ENV: dev

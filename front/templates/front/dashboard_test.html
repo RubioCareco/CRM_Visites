@@ -212,8 +212,17 @@
 </style>
 </head>
 
-<body class="dbt-body" data-commercial-id="{{ request.session.commercial_id|default:'' }}">
+<body class="dbt-body{% if commercial.is_absent %} dbt-absent{% endif %}"
+      data-commercial-id="{{ request.session.commercial_id|default:'' }}"
+      data-commercial-absent="{{ commercial.is_absent|yesno:'1,0' }}">
   <div class="dbt-wrapper">
+    {% if commercial.is_absent %}
+    <div class="dbt-absence-banner" role="status" aria-live="polite">
+      <i class="fa fa-snowflake"></i>
+      <span>Vous êtes indiqué absent. Ajout et suppression de rendez-vous temporairement désactivés.</span>
+      <button type="button" id="dbtAbsenceClose" class="dbt-absence-close" aria-label="Fermer le message">×</button>
+    </div>
+    {% endif %}
     <!-- Header -->
     <div class="dbt-header">
       <h1 class="dbt-title">Tableau de bord</h1>
@@ -449,12 +458,15 @@
     const btnForm      = document.getElementById('dbtBtnForm');
     const btnSaveCom   = document.getElementById('dbtBtnSaveComment');
     const btnNewRDV    = document.getElementById('dbtBtnNewRDV');
+    const validateTourneeBtn = document.getElementById('dbtValidateTournee');
     const toastStack   = document.getElementById('dbtToastStack');
+    const isCommercialAbsent = document.body.dataset.commercialAbsent === '1';
 
     const statutCbs    = document.querySelectorAll('.dbt-statut-filter'); // peut être vide, ok
     const dateFromEl   = document.getElementById('dbtDateFrom');
     const dateToEl     = document.getElementById('dbtDateTo');
     const rdvAValiderEl= document.getElementById('dbtRdvAValider');
+    const absenceCloseBtn = document.getElementById('dbtAbsenceClose');
 
     let view            = new Date();
     let statut          = 'a_venir';
@@ -495,6 +507,23 @@
 
       requestAnimationFrame(()=> toast.classList.add('show'));
       setTimeout(removeToast, 7000);
+    }
+    window.dbtShowToast = showToast;
+    window.dbtIsCommercialAbsent = isCommercialAbsent;
+
+    function showAbsentBlockedToast(){
+      showToast("Vous êtes absent : action indisponible sur les rendez-vous.", "error");
+    }
+
+    if(isCommercialAbsent && validateTourneeBtn){
+      validateTourneeBtn.disabled = true;
+      validateTourneeBtn.title = "Indisponible pendant votre absence";
+    }
+    if(absenceCloseBtn){
+      absenceCloseBtn.addEventListener('click', ()=>{
+        const banner = absenceCloseBtn.closest('.dbt-absence-banner');
+        if(banner) banner.style.display = 'none';
+      });
     }
 
     /* ========== Calendrier ========== */
@@ -781,6 +810,22 @@
         btnSaveCom.style.display='inline-flex';
         btnNewRDV.style.display='inline-flex';
       }
+
+      if(isCommercialAbsent){
+        btnValider.disabled = true;
+        btnAnnuler.disabled = true;
+        btnNewRDV.disabled = true;
+        btnValider.title = "Indisponible pendant votre absence";
+        btnAnnuler.title = "Indisponible pendant votre absence";
+        btnNewRDV.title = "Indisponible pendant votre absence";
+      } else {
+        btnValider.disabled = false;
+        btnAnnuler.disabled = false;
+        btnNewRDV.disabled = false;
+        btnValider.removeAttribute('title');
+        btnAnnuler.removeAttribute('title');
+        btnNewRDV.removeAttribute('title');
+      }
     }
 
     function openClientModal(rdv){
@@ -818,8 +863,14 @@ bindPinCheckbox();
         }
       });
 
-      btnValider.onclick = ()=> updateStatut(rdv.uuid,'valider');
-      btnAnnuler.onclick = ()=> updateStatut(rdv.uuid,'annuler');
+      btnValider.onclick = ()=>{
+        if(isCommercialAbsent){ showAbsentBlockedToast(); return; }
+        updateStatut(rdv.uuid,'valider');
+      };
+      btnAnnuler.onclick = ()=>{
+        if(isCommercialAbsent){ showAbsentBlockedToast(); return; }
+        updateStatut(rdv.uuid,'annuler');
+      };
       btnForm.onclick    = ()=>{
         const rs = clientTitle.textContent.trim();
         const url = `/satisfaction-b2b/?rs_nom=${encodeURIComponent(rs)}&rdv_id=${rdv.uuid}`;
@@ -828,6 +879,7 @@ bindPinCheckbox();
       };
       btnSaveCom.onclick = ()=> saveComment(rdv.uuid);
       btnNewRDV.onclick  = ()=>{
+        if(isCommercialAbsent){ showAbsentBlockedToast(); return; }
         const next = '/dashboard_test/';
         if (currentRDV && currentRDV.client_id) {
           const url = `${ADD_RDV_URL}?client_id=${encodeURIComponent(currentRDV.client_id)}&next=${encodeURIComponent(next)}`;
@@ -849,6 +901,10 @@ bindPinCheckbox();
     }
 
     function updateStatut(uuid, action){
+      if(isCommercialAbsent && (action === 'valider' || action === 'annuler')){
+        showAbsentBlockedToast();
+        return;
+      }
       const isPinned = (document.getElementById('pinNewComment') && document.getElementById('pinNewComment').checked);
         const body = JSON.stringify({ commentaire: commentEl.value, is_pinned: !!isPinned });
       fetch(`/update-statut/${uuid}/${action}/`, {
@@ -1389,6 +1445,12 @@ document.addEventListener("click", async (e) => {
   }
 
   async function dbtValidateTournee(){
+    if (window.dbtIsCommercialAbsent){
+      if (typeof window.dbtShowToast === "function") {
+        window.dbtShowToast("Vous êtes absent : validation de tournée indisponible.", "error");
+      }
+      return;
+    }
     var dateEl = document.querySelector("#dbtMapDate") || document.querySelector("input[type=\"date\"]");
     var date = dateEl ? (dateEl.value || "").trim() : "";
 

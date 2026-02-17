@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 import uuid
+from .siret_utils import validate_siret
 
 
 class Commercial(models.Model):
@@ -231,6 +233,13 @@ class FrontClient(models.Model):
         null=True,
         help_text="Type de client (A, B, C) pour déterminer l'objectif annuel de visites",
     )
+
+    def clean(self):
+        super().clean()
+        is_valid, cleaned, error = validate_siret(self.siret)
+        if not is_valid:
+            raise ValidationError({"siret": error})
+        self.siret = cleaned or None
 
     class Meta:
         db_table = 'front_client'

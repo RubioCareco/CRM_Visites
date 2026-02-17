@@ -159,6 +159,7 @@ body {
   .nc-fields-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    align-items: start;
     gap: 14px 18px;
     margin: 24px 0 22px 0;
   }
@@ -171,6 +172,69 @@ body {
     padding: 7px 12px;
     color: #ffffffb7;
     font-size: 1.08em;
+  }
+  .nc-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .nc-siret {
+    border: 1.5px solid rgba(255,255,255,0.13);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .nc-siret.siret-invalid {
+    border-color: #ff3b3b;
+    box-shadow: 0 0 0 1px rgba(255, 59, 59, 0.25);
+  }
+  .nc-siret.siret-valid {
+    border-color: #10b981;
+    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.25);
+  }
+  .nc-siret-hint {
+    display: none;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    backdrop-filter: blur(4px);
+    width: 100%;
+    max-width: 100%;
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .nc-siret-hint.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .nc-siret-hint-info {
+    color: #334155;
+    background: rgba(148, 163, 184, 0.22);
+    border-color: rgba(148, 163, 184, 0.48);
+  }
+  .nc-siret-hint-error {
+    color: #7f1d1d;
+    background: rgba(239, 68, 68, 0.24);
+    border-color: rgba(239, 68, 68, 0.52);
+  }
+  .nc-siret-hint-success {
+    color: #065f46;
+    background: rgba(16, 185, 129, 0.24);
+    border-color: rgba(16, 185, 129, 0.52);
+  }
+  .nc-siret-hint-loading {
+    color: #1e3a8a;
+    background: rgba(59, 130, 246, 0.24);
+    border-color: rgba(59, 130, 246, 0.52);
+  }
+  .nc-siret-hint-warn {
+    color: #7c2d12;
+    background: rgba(249, 115, 22, 0.2);
+    border-color: rgba(249, 115, 22, 0.48);
   }
   .nc-field i {
     margin-right: 10px;
@@ -374,6 +438,10 @@ body {
   .nc-toast.success {
     background: linear-gradient(135deg, #34d399, #10b981);
     border: 1px solid #10b981;
+  }
+  .nc-toast.error {
+    background: linear-gradient(135deg, #ff6b6b, #ff3b3b);
+    border: 1px solid #ff3b3b;
   }
 
   .nc-toast button {

@@ -189,15 +189,16 @@
 
   <!-- Barre de recherche -->
   <div class="search-bar" style="position:relative;">
+    <i class="fa fa-search cf-search-icon" aria-hidden="true"></i>
     <input type="text" id="clientSearchBar" placeholder="Rechercher par clients, entreprises ..." autocomplete="off">
     <ul id="clientSearchSuggestions" class="autocomplete-results" style="position:absolute;left:0;right:0;top:38px;z-index:10;background:rgba(30,30,30,0.95);color:#fff;border-radius:0 0 8px 8px;max-height:180px;overflow-y:auto;display:none;"></ul>
   </div>
 
   <div class="cards" style="display:flex;justify-content:center;align-items:flex-start;min-height:10vh; border-radius: 15px;">
     <div class="card" style="width:90%;max-width:1600px;margin:40px auto 0 auto;min-height:850px;background-color: rgb(250, 250, 250);color: #444444e3;box-shadow: 0 26px 72px rgba(15, 23, 42, .14), 0 6px 16px rgba(15, 23, 42, .06);border-radius: 15px;">
-      <h2 style="text-align:center;margin-bottom:24px;">
-        Liste des clients
-      </h2>
+      <div class="client-list-header">
+        <h2>Liste des clients</h2>
+      </div>
 
       <!-- Pagination + filtre commercial -->
       <div class="pagination-container" style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-left:25px;">
@@ -269,8 +270,12 @@
             <input type="text" id="filterVille" name="filterVille" class="date-input" placeholder="Ville...">
           </div>
           <div class="filter-panel-footer">
-            <button id="applyClientFiltersBtn" class="apply-btn" type="submit">Appliquer</button>
-            <button id="resetClientFilters" class="reset-link" type="button">Réinitialiser</button>
+            <button id="applyClientFiltersBtn" class="apply-btn" type="submit">
+              <i class="fa fa-check"></i> <span>Appliquer</span>
+            </button>
+            <button id="resetClientFilters" class="reset-link" type="button">
+              <i class="fa fa-rotate-left"></i> <span>Réinitialiser</span>
+            </button>
           </div>
         </form>
       </div>
@@ -402,6 +407,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const modifyBtn = document.getElementById('modifyBtn');
   const saveBtn = document.getElementById('saveBtn');
   const cancelBtn = document.getElementById('cancelBtn');
+  const addRdvBtn = document.getElementById('addRdvBtn');
   const editableFields = [
     document.getElementById('inputAdresse'),
     document.getElementById('inputCP'),
@@ -595,6 +601,7 @@ document.addEventListener("DOMContentLoaded", function () {
     modifyBtn.style.display = 'inline-block';
     saveBtn.style.display = 'none';
     cancelBtn.style.display = 'none';
+    if (addRdvBtn) addRdvBtn.style.display = 'inline-flex';
 
     const btnRdv = document.getElementById('addRdvBtn');
     if (btnRdv) {
@@ -615,6 +622,7 @@ document.addEventListener("DOMContentLoaded", function () {
     modifyBtn.style.display = 'none';
     saveBtn.style.display = 'inline-flex';
     cancelBtn.style.display = 'inline-flex';
+    if (addRdvBtn) addRdvBtn.style.display = 'none';
   });
 
   cancelBtn.addEventListener('click', function () {
@@ -625,6 +633,7 @@ document.addEventListener("DOMContentLoaded", function () {
     modifyBtn.style.display = 'inline-block';
     saveBtn.style.display = 'none';
     cancelBtn.style.display = 'none';
+    if (addRdvBtn) addRdvBtn.style.display = 'inline-flex';
   });
 
   saveBtn.addEventListener('click', function () {

@@ -72,11 +72,16 @@ body.dashboard::after,
   display: none !important;
 }
 
+/* autorise explicitement l'icône loupe dédiée de client_file */
+.search-bar .cf-search-icon{
+  display: inline-block !important;
+}
+
 #clientSearchBar{
   width: min(600px, 100%) !important;
   max-width: 100%;
   height: 44px !important;
-  padding: 8px 14px !important;
+  padding: 8px 14px 8px 40px !important;
   border-radius: 12px !important;
   border: 1px solid var(--line) !important;
   background: #fff !important;
@@ -85,6 +90,17 @@ body.dashboard::after,
   font-size: 1rem !important;
   margin-left: 0 !important; /* <- on enlève le décalage 780px */
   outline: none;
+}
+
+.cf-search-icon{
+  position: absolute;
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9aa3b2;
+  font-size: 0.95rem;
+  pointer-events: none;
+  z-index: 2;
 }
 
 #clientSearchBar::placeholder{
@@ -172,6 +188,25 @@ body.dashboard::after,
   color: var(--primary);
   font-size: 2rem;
   font-weight: 800;
+}
+
+.client-list-header{
+  background:#181212b8;
+  color:#fff;
+  padding:16px 20px;
+  border-radius:18px 18px 0 0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  margin:-18px -18px 16px -18px;
+}
+.client-list-header h2{
+  margin:0 !important;
+  color:#fff !important;
+  font-size:1.9rem;
+  font-weight:800;
+  text-align:center;
 }
 
 /* ---------- Ligne pagination + filtres (haut) ---------- */
@@ -318,7 +353,10 @@ table.client-table{
 
 /* Lignes “carte” */
 table.client-table tr.client-card td{
-  background: #fff !important;
+  background:
+    linear-gradient(90deg, #ff3b3b 0 0) no-repeat,
+    #fff !important;
+  background-size: 0% 100%, 100% 100% !important;
   border-top: 1px solid rgba(230,233,242,.95) !important;
   border-bottom: 1px solid rgba(230,233,242,.95) !important;
   padding: 10px 12px !important;
@@ -327,6 +365,7 @@ table.client-table tr.client-card td{
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: background-size .3s ease, color .25s ease, border-color .25s ease;
 }
 
 /* Arrondis gauche/droite */
@@ -342,12 +381,26 @@ table.client-table tr.client-card td:last-child{
 }
 
 table.client-table tr.client-card{
-  transition: transform .14s ease, box-shadow .18s ease;
+  transition: transform .14s ease, box-shadow .25s ease;
 }
 
 table.client-table tr.client-card:hover{
   transform: translateY(-1px);
-  box-shadow: 0 12px 26px rgba(17,24,39,.10);
+  box-shadow: 0 4px 16px 0 rgba(255,59,59,0.15);
+}
+
+table.client-table tr.client-card:hover td{
+  background-size: 100% 100%, 100% 100% !important;
+  color: #fff !important;
+  border-top-color: #ff3b3b !important;
+  border-bottom-color: #ff3b3b !important;
+}
+
+table.client-table tr.client-card:hover td:first-child{
+  border-left-color: #ff3b3b !important;
+}
+table.client-table tr.client-card:hover td:last-child{
+  border-right-color: #ff3b3b !important;
 }
 
 /* ---------- Pagination bas ---------- */
@@ -457,6 +510,7 @@ table.client-table tr.client-card:hover{
 /* boutons modal (on unifie le rendu sans casser tes inline couleurs) */
 #clientModal .modal-buttons .action-button{
   position: relative !important;
+  isolation: isolate;
   overflow: hidden !important;
   align-items: center !important;
   justify-content: center !important;
@@ -486,11 +540,7 @@ table.client-table tr.client-card:hover{
   transform: scaleX(0);
   transform-origin: left center;
   transition: transform 0.3s ease;
-  z-index: 0;
-}
-#clientModal .modal-buttons .action-button > *{
-  position: relative;
-  z-index: 1;
+  z-index: -1;
 }
 #clientModal .modal-buttons .action-button:hover::before{
   transform: scaleX(1);

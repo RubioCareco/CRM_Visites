@@ -399,6 +399,7 @@ body{
   overflow: hidden; /* conserver les cartes dans le conteneur */
   color: #444;
   background: #fff; /* la carte blanche est maintenant le conteneur centré */
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16), 0 4px 14px rgba(15, 23, 42, 0.10);
 }
 
 .status-valid {
@@ -1895,6 +1896,9 @@ body .dashboard .filter-reset-btn:hover::before{
   display:flex !important;
   align-items:center !important;
   gap:8px !important;
+  position: fixed !important;
+  isolation: isolate;
+  overflow: hidden;
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif !important;
   font-size:1.15rem !important;
   font-weight:400 !important;
@@ -1906,11 +1910,70 @@ body .dashboard .filter-reset-btn:hover::before{
   border-radius:8px !important;
   box-shadow:0 6px 18px rgba(17,24,39,.08) !important;
   text-decoration:none !important;
+  transition: color .25s ease, box-shadow .25s ease !important;
+}
+#backDashboardBtn::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:#ff3b3b;
+  transform:scaleX(0);
+  transform-origin:right center; /* droite -> gauche */
+  transition:transform .3s ease;
+  z-index:-1;
 }
 #backDashboardBtn:hover{
-  background:#f6f7fb !important;
-  box-shadow:0 12px 22px rgba(17,24,39,.12) !important;
+  color:#fff !important;
+  box-shadow:0 4px 16px rgba(255,59,59,0.15) !important;
   transform:translateY(-1px) scale(1.01) !important;
-  color:#111827 !important;
   text-decoration:none !important;
+}
+#backDashboardBtn:hover::before{
+  transform:scaleX(1);
+}
+
+/* === Hover cartes historique: animation plus fluide === */
+body .dashboard .visit-entry,
+body .dashboard .reminder-entry{
+  transition:
+    box-shadow .32s cubic-bezier(.22,.61,.36,1),
+    background-color .28s ease !important;
+  transform: none !important;
+  will-change: box-shadow;
+}
+
+body .dashboard .visit-entry:hover,
+body .dashboard .reminder-entry:hover{
+  transform: none !important;
+  box-shadow: 0 10px 24px rgba(255,59,59,0.12), 0 3px 10px rgba(15,23,42,0.08) !important;
+}
+
+/* Neutralise les anciens hover "scale" qui floutent le texte */
+body .dashboard .visit-entry:hover,
+body .dashboard .upcoming-entry:hover,
+body .dashboard .reminder-entry:hover{
+  transform: none !important;
+}
+
+/* Evite la coupe des infos "Dernieres visites" dans tous les onglets */
+body .dashboard .visit-entry,
+body .dashboard .reminder-entry{
+  grid-template-columns: 1.25fr 0.72fr 2.5fr !important;
+}
+
+body .dashboard .info-container{
+  min-width: 420px !important;
+}
+
+body .dashboard .info-container p,
+body .dashboard .info-container .infos-adresse,
+body .dashboard .info-container .last-visit{
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+body .dashboard .info-container .infos-adresse{
+  flex-wrap: wrap !important;
+  row-gap: 4px;
 }

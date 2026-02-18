@@ -708,6 +708,7 @@ table.client-table tr.client-card:hover td:last-child{
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
+  gap: 9px !important;
   width: 100% !important;
   max-width: 320px !important;
   transition: color .25s ease, box-shadow .25s ease !important;
@@ -733,6 +734,7 @@ table.client-table tr.client-card:hover td:last-child{
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
+  gap: 9px !important;
   width: 100% !important;
   max-width: 320px !important;
   transition: color .25s ease, box-shadow .25s ease !important;
@@ -777,6 +779,32 @@ table.client-table tr.client-card:hover td:last-child{
   transform: translateY(-1px) scale(1.01) !important;
   color: #111827 !important;
   text-decoration: none !important;
+}
+
+/* Effet hover du bouton retour (droite -> gauche), identique a historique_rdv */
+#backDashboardBtn{
+  position: fixed !important;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 8px !important;
+  transition: color .25s ease, box-shadow .25s ease !important;
+}
+#backDashboardBtn::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:#ff3b3b;
+  transform:scaleX(0);
+  transform-origin:right center;
+  transition:transform .3s ease;
+  z-index:-1;
+}
+#backDashboardBtn:hover{
+  color:#fff !important;
+  box-shadow:0 4px 16px rgba(255,59,59,0.15) !important;
+}
+#backDashboardBtn:hover::before{
+  transform:scaleX(1);
 }
 
 /* ---------- Responsive ---------- */

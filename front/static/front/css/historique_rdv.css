@@ -76,9 +76,10 @@ body{
 }
 
 .visit-entry, .reminder-entry {
-  width: 95%;
+  width: 97%;
   min-width: 340px;
   max-width: 100%;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
   margin: 8px auto;
     border-radius: 10px;
     padding: 20px 25px;
@@ -106,6 +107,7 @@ body{
   .client-name strong {
     font-size: 1.08rem;
     font-weight: 600;
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
     display: block;
     white-space: nowrap;
     overflow: hidden;
@@ -115,6 +117,7 @@ body{
   .client-name .infos-adresse {
     font-size: 0.9rem;
     color: #000000;
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -385,8 +388,8 @@ body{
 }
 
 .card {
-  width: 90%;
-  max-width: 1500px;
+  width: 94%;
+  max-width: 1620px;
   margin: 0 auto;
   min-height: auto;
   padding-top: 0;
@@ -1343,9 +1346,571 @@ body .dashboard .search-bar .search-icon {
   font-weight: 700;
 }
 .status-à-rappeler {
-  color: #e53935 !important;          /* rouge annulé */
+  color: #ff3b3b !important;          /* rouge annulé */
   font-weight: 700;
 }
 .status-à-rappeler i {                /* icône triangle */
-  color: #e53935 !important;
+  color: #ff3b3b !important;
+}
+
+/* === FINAL OVERRIDE: barre de recherche alignée sur client_file === */
+body .dashboard .search-bar{
+  position: relative !important;
+  max-width: 1400px !important;
+  width: 100% !important;
+  margin: 0 auto 12px auto !important;
+  padding: 0 12px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 12px !important;
+  flex-wrap: nowrap !important;
+  margin-left: 0 !important;
+}
+
+body .dashboard .search-bar #historiqueSearch{
+  width: min(600px, calc(100% - 24px)) !important;
+  max-width: min(600px, calc(100% - 24px)) !important;
+  flex: 0 1 auto !important;
+  height: 44px !important;
+  padding: 8px 14px 8px 48px !important;
+  border-radius: 12px !important;
+  border: 1px solid #e6e9f2 !important;
+  background: #fff !important;
+  color: #2b2b2b !important;
+  box-shadow: 0 6px 18px rgba(17,24,39,.08) !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+  outline: none !important;
+  margin: 0 !important;
+}
+
+body .dashboard .search-bar #historiqueSearch::placeholder{
+  color: #9aa3b2 !important;
+}
+
+body .dashboard .search-bar #historiqueSearch:focus{
+  border-color: rgba(229,57,53,.35) !important;
+  box-shadow: 0 0 0 4px rgba(229,57,53,.10), 0 6px 18px rgba(17,24,39,.08) !important;
+}
+
+body .dashboard .search-bar .hr-search-icon{
+  position: absolute !important;
+  left: 26px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  color: #9aa3b2 !important;
+  font-size: .95rem !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+  margin: 0 !important;
+}
+
+body .dashboard .search-bar #historiqueSearchSuggestions.autocomplete-results{
+  position: absolute !important;
+  left: 12px !important;
+  right: auto !important;
+  top: 46px !important;
+  width: min(600px, calc(100% - 24px)) !important;
+  z-index: 50 !important;
+  background: #fff !important;
+  color: #2b2b2b !important;
+  border: 1px solid #e6e9f2 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 26px rgba(17,24,39,.12) !important;
+  max-height: 220px !important;
+  overflow-y: auto !important;
+  display: none;
+}
+
+body .dashboard .search-bar #historiqueSearchSuggestions li,
+body .dashboard .search-bar #historiqueSearchSuggestions .autocomplete-item{
+  list-style: none;
+  padding: 10px 12px !important;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(230,233,242,.9);
+}
+
+body .dashboard .search-bar #historiqueSearchSuggestions li:last-child,
+body .dashboard .search-bar #historiqueSearchSuggestions .autocomplete-item:last-child{
+  border-bottom: none;
+}
+
+body .dashboard .search-bar #historiqueSearchSuggestions li:hover,
+body .dashboard .search-bar #historiqueSearchSuggestions .autocomplete-item:hover{
+  background: #f6f7fb !important;
+}
+
+@media (max-width: 640px){
+  body .dashboard .search-bar{
+    padding: 0 10px !important;
+    flex-wrap: wrap !important;
+  }
+  body .dashboard .search-bar #historiqueSearch{
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 46px !important;
+  }
+  body .dashboard .search-bar .hr-search-icon{
+    left: 22px !important;
+  }
+  body .dashboard .search-bar #historiqueSearchSuggestions.autocomplete-results{
+    left: 10px !important;
+    width: 100% !important;
+  }
+}
+
+/* === FINAL LAYOUT OVERRIDE: titre + barre comme client_file === */
+body .dashboard.content-wrapper{
+  max-width: 1400px !important;
+  margin: 24px auto 0 auto !important;
+  padding: 0 12px !important;
+  box-sizing: border-box !important;
+}
+
+body .dashboard .historique-title{
+  position: static !important;
+  left: auto !important;
+  top: auto !important;
+  width: 94% !important;
+  max-width: 1620px !important;
+  margin: 0 auto 14px auto !important;
+  padding: 0 !important;
+  color: #6b7280 !important;
+  font-size: clamp(2.1rem, 3.1vw, 3rem) !important;
+  line-height: 1.1 !important;
+  text-align: left !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+body .dashboard .search-bar{
+  width: 94% !important;
+  max-width: 1620px !important;
+  margin: 0 auto 12px auto !important;
+  padding: 0 !important;
+}
+
+/* Header page type client_file */
+body .dashboard .hr-page-header{
+  width: 94%;
+  max-width: 1620px;
+  margin: 0 auto 20px auto;
+  padding: 0;
+  --hr-title-text-offset: 52px;
+}
+
+body .dashboard .historique-title i{
+  color: #ff3b3b;
+  font-size: .9em;
+}
+
+body .dashboard .hr-page-subtitle{
+  margin: 8px 0 0 var(--hr-title-text-offset);
+  color: #ff3b3b;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+body .dashboard .hr-page-underline{
+  width: min(340px, 78%);
+  height: 4px;
+  border-radius: 999px;
+  margin: 12px 0 0 var(--hr-title-text-offset);
+  background: linear-gradient(90deg, #ff3b3b 0%, #ef4444 55%, rgba(239,68,68,0.12) 100%);
+}
+
+@media (max-width: 640px){
+  body .dashboard.content-wrapper{
+    margin-top: 18px !important;
+    padding: 0 10px !important;
+  }
+  body .dashboard .historique-title{
+    font-size: clamp(1.7rem, 8vw, 2.15rem) !important;
+    margin-bottom: 10px !important;
+    width: 100% !important;
+  }
+  body .dashboard .hr-page-header{
+    width: 100%;
+    --hr-title-text-offset: 44px;
+  }
+  body .dashboard .hr-page-subtitle{
+    font-size: .92rem;
+  }
+  body .dashboard .hr-page-underline{
+    width: min(300px, 72vw);
+    margin-top: 10px;
+  }
+  body .dashboard .search-bar{
+    width: 100% !important;
+  }
+}
+
+/* === Rouge unifié (comme add_rdv: #ff3b3b) === */
+body .dashboard .tab-btn.active{
+  background: #ff3b3b !important;
+}
+body .dashboard #filterBtnHistorique{
+  background: #ff3b3b !important;
+  border-color: #ff3b3b !important;
+}
+body .dashboard #filterBtnHistorique:hover{
+  background: #ff3b3b !important;
+  box-shadow: 0 4px 16px rgba(255,59,59,0.15) !important;
+}
+
+/* === Onglets "Rendez-vous validés" / "À rappeler": éviter la coupe du texte === */
+#tab-recent .visit-entry,
+#tab-rappeler .reminder-entry{
+  grid-template-columns: 1.35fr 0.72fr 2.4fr !important;
+}
+
+#tab-recent .info-container,
+#tab-rappeler .info-container{
+  min-width: 380px !important;
+}
+
+#tab-recent .visit-entry p,
+#tab-rappeler .reminder-entry p{
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+#tab-recent .info-container .infos-adresse,
+#tab-rappeler .info-container .infos-adresse{
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  flex-wrap: wrap !important;
+  row-gap: 4px;
+}
+
+#tab-recent .last-visit,
+#tab-rappeler .last-visit{
+  white-space: normal !important;
+}
+
+/* === Onglets: même forme que la barre de recherche === */
+body .dashboard .tabs-container{
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  border: 1px solid #e6e9f2 !important;
+  background: #fff !important;
+}
+
+body .dashboard .tab-btn{
+  border-radius: 0 !important;
+  border: none !important;
+  border-right: 1px solid #e6e9f2 !important;
+  background: #fff !important;
+  color: #111827 !important;
+  transition: background .2s ease, color .2s ease !important;
+}
+
+body .dashboard .tab-btn:last-child{
+  border-right: none !important;
+}
+
+body .dashboard .tab-btn.active{
+  background: #ff3b3b !important;
+  color: #fff !important;
+}
+
+/* === Scroll uniquement dans le container historique === */
+html, body{
+  height: 100% !important;
+}
+body{
+  overflow: hidden !important; /* stoppe le scroll global page */
+}
+
+body .dashboard.content-wrapper{
+  height: calc(100vh - 24px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+body .dashboard .cards{
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  margin-top: 6px !important;
+  margin-bottom: 0 !important;
+  overflow: hidden !important;
+}
+
+body .dashboard .card{
+  height: 100% !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+body .dashboard .tabs-container{
+  flex: 0 0 auto !important;
+}
+
+body .dashboard .tabs-content-scroll{
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: auto !important;  /* scroll ici */
+  overflow-x: hidden !important;
+  padding-bottom: 16px !important;
+  margin-right: 0 !important;
+}
+
+body .dashboard .back-button-container{
+  display: none !important; /* évite de pousser le layout en bas */
+}
+
+@media (max-width: 640px){
+  body .dashboard.content-wrapper{
+    height: calc(100vh - 14px) !important;
+  }
+  body .dashboard .tabs-content-scroll{
+    padding-bottom: 12px !important;
+  }
+}
+
+/* === Modal filtres historique = style client_file === */
+body .dashboard .filter-popover{
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  transform: translate(-50%, -50%) !important;
+  width: 520px !important;
+  max-width: 92vw !important;
+  background: #fff !important;
+  border-radius: 18px !important;
+  border: 1px solid #e6e9f2 !important;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3) !important;
+  color: #2b2b2b !important;
+  padding: 18px 18px 12px 18px !important;
+  overflow: hidden !important;
+  z-index: 10001 !important;
+}
+
+body .dashboard .hr-filter-header{
+  background:#181212b8;
+  color:#fff;
+  padding:16px 18px;
+  border-radius:16px 16px 0 0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  margin:-18px -18px 10px -18px;
+}
+
+body .dashboard .filter-popover-title{
+  margin:0;
+  font-size:1.2rem;
+  font-weight:900;
+  color:#fff;
+  text-align:center;
+}
+
+body .dashboard .filter-close-btn{
+  position:absolute !important;
+  top:50% !important;
+  right:14px !important;
+  transform:translateY(-50%) !important;
+  width:32px !important;
+  height:32px !important;
+  border-radius:999px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  background:transparent !important;
+  border:1px solid transparent !important;
+  color:#ef4444 !important;
+  font-size:28px !important;
+  line-height:1 !important;
+  padding:0 !important;
+  transition:background .2s ease,color .2s ease,border-color .2s ease !important;
+}
+body .dashboard .filter-close-btn:hover{
+  background:#ef4444 !important;
+  color:#fff !important;
+  border-color:#ef4444 !important;
+}
+
+body .dashboard .hr-filter-body{
+  padding: 0 6px;
+}
+
+body .dashboard .filter-type-buttons{
+  display:flex;
+  gap:10px;
+  justify-content:center;
+  margin: 10px 0 12px 0 !important;
+  flex-wrap:wrap;
+}
+
+body .dashboard .filter-type-btn{
+  border:1px solid #e6e9f2 !important;
+  background:#f6f7fb !important;
+  color:#374151 !important;
+  border-radius:10px !important;
+  padding:8px 14px !important;
+  font-size:.95rem !important;
+  font-weight:700 !important;
+  transition: background .2s ease,color .2s ease,border-color .2s ease !important;
+}
+body .dashboard .filter-type-btn.is-active{
+  background:#ff3b3b !important;
+  color:#fff !important;
+  border-color:#ff3b3b !important;
+}
+
+body .dashboard #filterInputsHistorique{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  margin-top:4px;
+}
+
+body .dashboard #filterInputsHistorique > *{
+  margin-left:auto !important;
+  margin-right:auto !important;
+}
+
+body .dashboard .filter-popover input[type="date"],
+body .dashboard .filter-popover input[type="week"],
+body .dashboard .filter-popover input[type="month"],
+body .dashboard .filter-popover input[type="number"],
+body .dashboard .filter-popover select{
+  display:block !important;
+  width: 320px !important;
+  max-width: 100% !important;
+  border:1px solid #e6e9f2 !important;
+  background:#fff !important;
+  color:#111827 !important;
+  border-radius:12px !important;
+  padding:10px 12px !important;
+  font-size:.95rem !important;
+  box-sizing:border-box !important;
+}
+
+body .dashboard .filter-popover #filterYear{
+  margin-left:auto !important;
+  margin-right:auto !important;
+  text-align:left !important;
+}
+
+body .dashboard .filter-popover input[type="date"]:focus,
+body .dashboard .filter-popover input[type="week"]:focus,
+body .dashboard .filter-popover input[type="month"]:focus,
+body .dashboard .filter-popover input[type="number"]:focus,
+body .dashboard .filter-popover select:focus{
+  outline:none;
+  border-color: rgba(229,57,53,.35) !important;
+  box-shadow: 0 0 0 4px rgba(229,57,53,.10) !important;
+}
+
+body .dashboard .filter-actions{
+  padding: 14px 0 4px 0 !important;
+  margin-top: 14px !important;
+  border-top:1px solid rgba(230,233,242,.95) !important;
+  display:flex;
+  justify-content:center;
+  gap:10px;
+}
+
+body .dashboard .filter-apply-btn,
+body .dashboard .filter-reset-btn{
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  background:#fff !important;
+  color:#ff3b3b !important;
+  border:1px solid #ff3b3b !important;
+  border-radius:8px !important;
+  padding:13px 0 !important;
+  font-size:1.08em !important;
+  font-weight:600 !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:100% !important;
+  max-width:220px !important;
+  cursor:pointer;
+  box-shadow:0 2px 8px rgba(211,47,47,0.10) !important;
+  transition:color .25s ease, box-shadow .25s ease !important;
+}
+body .dashboard .filter-apply-btn::before,
+body .dashboard .filter-reset-btn::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:#ff3b3b;
+  transform:scaleX(0);
+  transform-origin:left center;
+  transition:transform .3s ease;
+  z-index:-1;
+}
+body .dashboard .filter-apply-btn:hover,
+body .dashboard .filter-reset-btn:hover{
+  color:#fff !important;
+  box-shadow:0 4px 16px rgba(255,59,59,0.15) !important;
+}
+body .dashboard .filter-apply-btn:hover::before,
+body .dashboard .filter-reset-btn:hover::before{
+  transform:scaleX(1);
+}
+
+@media (max-width: 640px){
+  body .dashboard .filter-popover{
+    width: 94vw !important;
+    border-radius: 14px !important;
+    padding: 14px 14px 10px 14px !important;
+  }
+  body .dashboard .hr-filter-header{
+    margin:-14px -14px 10px -14px;
+    border-radius:14px 14px 0 0;
+    padding:12px 14px;
+  }
+  body .dashboard .filter-popover-title{
+    font-size:1.03rem;
+  }
+  body .dashboard .filter-actions{
+    flex-direction:column;
+    align-items:stretch;
+  }
+  body .dashboard .filter-apply-btn,
+  body .dashboard .filter-reset-btn{
+    max-width:100% !important;
+  }
+}
+
+/* === Bouton retour identique à client_file === */
+#backDashboardBtn{
+  display:flex !important;
+  align-items:center !important;
+  gap:8px !important;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif !important;
+  font-size:1.15rem !important;
+  font-weight:400 !important;
+  line-height:1.35 !important;
+  padding:8px 22px !important;
+  color:#111827 !important;
+  background:#fff !important;
+  border:1px solid #e6e9f2 !important;
+  border-radius:8px !important;
+  box-shadow:0 6px 18px rgba(17,24,39,.08) !important;
+  text-decoration:none !important;
+}
+#backDashboardBtn:hover{
+  background:#f6f7fb !important;
+  box-shadow:0 12px 22px rgba(17,24,39,.12) !important;
+  transform:translateY(-1px) scale(1.01) !important;
+  color:#111827 !important;
+  text-decoration:none !important;
 }

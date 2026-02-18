@@ -236,6 +236,34 @@
   cursor:default;
   background:#fff;
 }
+.dbt-map-popup-content{
+  min-width:220px;
+}
+@media (max-width: 768px){
+  .leaflet-popup-content-wrapper{
+    border-radius:12px;
+  }
+  .leaflet-popup-content{
+    margin:10px 12px !important;
+  }
+  .dbt-map-popup-content{
+    min-width:170px;
+    max-width:200px;
+  }
+  .dbt-map-popup-content .dbt-popup-add-btn{
+    min-height:28px;
+    padding:4px 10px;
+    font-size:11px;
+    margin-top:8px;
+  }
+  .dbt-map-popup-content div{
+    font-size:11px !important;
+    line-height:1.3 !important;
+  }
+  .dbt-map-popup-content div:first-child{
+    font-size:12px !important;
+  }
+}
 </style>
 </head>
 
@@ -314,16 +342,16 @@
       <div class="dbt-cal-grid" id="dbtCalGrid"></div>
 
 <!-- MAP_TOURNEE_BLOCK -->
-<div style="margin-top:14px;padding:14px;border-radius:14px;background:#fff;border:1px solid #e5e7eb;">
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-    <div style="font-weight:700;">Carte (clients + tournée du jour)</div>
+<div class="dbt-map-card">
+  <div class="dbt-map-card-head">
+    <div class="dbt-map-card-title">Carte (clients + tournée du jour)</div>
 
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+    <div class="dbt-map-toolbar">
       <!-- commercial caché car commercial connecté -->
-      <select id="dbtMapCommercial" style="display:none;padding:8px 10px;border:1px solid #e5e7eb;border-radius:10px;min-width:180px;"></select>
+      <select id="dbtMapCommercial"></select>
 
-      <label style="font-size:12px;color:#64748b;">Date</label>
-      <input id="dbtMapDate" type="date" style="padding:8px 10px;border:1px solid #e5e7eb;border-radius:10px;" />
+      <label class="dbt-map-toolbar-label">Date</label>
+      <input id="dbtMapDate" type="date" />
 
       <button id="dbtMapLoad" type="button" class="dbt-map-action-btn">
         Charger
@@ -332,19 +360,19 @@
     </div>
   </div>
 
-  <div style="display:flex;gap:12px;margin-top:12px;align-items:stretch;flex-wrap:wrap;">
-    <div id="dbtMap" style="flex:1;min-width:360px;height:460px;box-sizing:border-box;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;"></div>
+  <div class="dbt-map-layout">
+    <div id="dbtMap" class="dbt-map-canvas" style="min-height:280px;"></div>
 
-    <div id="dbtSelectedPanel" style="flex:0 0 340px;min-width:300px;height:460px;box-sizing:border-box;border-radius:14px;border:1px solid #e5e7eb;background:#fafafa;padding:12px;overflow:auto;">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;">
-        <div style="font-weight:800;">Clients sélectionnés (<span id="dbtSelCount">0</span>)</div>
+    <div id="dbtSelectedPanel" class="dbt-map-selected-panel" style="min-height:220px;">
+      <div class="dbt-map-selected-head">
+        <div class="dbt-map-selected-title">Clients sélectionnés (<span id="dbtSelCount">0</span>)</div>
         <button id="dbtSelClear" type="button" class="dbt-map-secondary-btn">
           Vider
-        </button><button id="dbtValidateTournee" type="button" class="dbt-map-action-btn" style="margin-left:8px;font-size:12px;">Valider la tournée</button>
+        </button><button id="dbtValidateTournee" type="button" class="dbt-map-action-btn dbt-map-validate-btn">Valider la tournée</button>
       </div>
 
-      <div id="dbtSelectedList" style="display:flex;flex-direction:column;gap:8px;">
-        <div style="color:#64748b;font-size:12px;">Clique sur des clients sur la carte pour les ajouter ici.</div>
+      <div id="dbtSelectedList" class="dbt-map-selected-list">
+        <div class="dbt-map-selected-empty">Clique sur des clients sur la carte pour les ajouter ici.</div>
       </div>
     </div>
   </div>
@@ -738,6 +766,7 @@
 
     /* ========== Modale Jour ========== */
     function openDay(isoDate){
+      if(globalTooltip) globalTooltip.style.display='none';
       currentDayISO = isoDate;
       dayTitle.textContent = fmtDay.format(new Date(isoDate+'T00:00:00'));
       dayList.innerHTML = '<div class="dbt-day-item" style="justify-content:center;background:#fff;border:none">Chargement…</div>';
@@ -1105,6 +1134,10 @@ bindPinCheckbox();
       };
     }
     grid.addEventListener('mouseover', (e)=>{
+      if(dayModal.style.display === 'flex'){
+        globalTooltip.style.display='none';
+        return;
+      }
       const cell = e.target.closest('.dbt-cell.day[data-status-count]');
       if(!cell) return;
       const count = Number(cell.getAttribute('data-status-count') || 0);
@@ -1121,6 +1154,10 @@ bindPinCheckbox();
       globalTooltip.style.left = `${rect.left + rect.width/2 - globalTooltip.offsetWidth/2}px`;
     });
     grid.addEventListener('mousemove', (e)=>{
+      if(dayModal.style.display === 'flex'){
+        globalTooltip.style.display='none';
+        return;
+      }
       if(globalTooltip.style.display !== 'block') return;
       const cell = e.target.closest('.dbt-cell.day[data-status-count]');
       if(!cell){ globalTooltip.style.display='none'; return; }
@@ -1135,9 +1172,9 @@ bindPinCheckbox();
       }
     });
 
-    dayClose1.onclick = ()=> dayModal.style.display='none';
-    dayClose2.onclick = ()=> dayModal.style.display='none';
-    dayModal.addEventListener('click',e=>{ if(e.target===dayModal) dayModal.style.display='none'; });
+    dayClose1.onclick = ()=>{ dayModal.style.display='none'; globalTooltip.style.display='none'; };
+    dayClose2.onclick = ()=>{ dayModal.style.display='none'; globalTooltip.style.display='none'; };
+    dayModal.addEventListener('click',e=>{ if(e.target===dayModal){ dayModal.style.display='none'; globalTooltip.style.display='none'; } });
 
     // OUVERTURE/FERMETURE MODALE FILTRES
     filterBtn.addEventListener('click', (e)=>{ e.stopPropagation(); toggleFilter(); });
@@ -1630,7 +1667,7 @@ map.on("click", function(e){ dbtDlog("MAP CLICK", e.latlng); });
   function clientPopupHtml(c){
     var isSelected = dbtIsSelected(c.id);
     return [
-      "<div style='min-width:220px'>",
+      "<div class='dbt-map-popup-content'>",
       "<div style='font-weight:800;font-size:13px;margin-bottom:6px'>"+esc(c.nom || "Client")+"</div>",
       "<div style='font-size:12px;line-height:1.35;color:#334155'><b>Adresse :</b> "+fullAddress(c)+"</div>",
       "<div style='font-size:12px;line-height:1.35;color:#334155'><b>Téléphone :</b> "+esc(c.telephone || "N/A")+"</div>",
@@ -1642,14 +1679,20 @@ map.on("click", function(e){ dbtDlog("MAP CLICK", e.latlng); });
     ].join("");
   }
   function tourPopupHtml(t, i){
+    var tid = Number(t.id || t.client_id || 0);
+    var canAdd = Number.isFinite(tid) && tid > 0;
+    var isSelected = canAdd ? dbtIsSelected(tid) : false;
     return [
-      "<div style='min-width:220px'>",
+      "<div class='dbt-map-popup-content'>",
       "<div style='font-weight:800;font-size:13px;margin-bottom:6px'>"+esc(t.label || ("RDV "+(i+1)))+"</div>",
       "<div style='font-size:12px;line-height:1.35;color:#334155'><b>Heure :</b> "+esc(t.heure || "N/A")+"</div>",
       "<div style='font-size:12px;line-height:1.35;color:#334155'><b>Adresse :</b> "+fullAddress(t)+"</div>",
       "<div style='font-size:12px;line-height:1.35;color:#334155'><b>Téléphone :</b> "+esc(t.telephone || "N/A")+"</div>",
       "<div style='font-size:12px;line-height:1.35;color:#334155'><b>Email :</b> "+emailHtml(t.email)+"</div>",
       "<div style='font-size:12px;line-height:1.35;color:#334155'><b>Type :</b> "+esc(t.classement_client || "N/A")+"</div>",
+      canAdd
+        ? "<button type='button' class='dbt-popup-add-btn' data-client-id='"+tid+"' "+(isSelected?"disabled":"")+">"+(isSelected?"Ajouté":"Ajouter")+"</button>"
+        : "",
       "</div>"
     ].join("");
   }
@@ -1730,6 +1773,11 @@ mk.addTo(gClients).bindPopup(clientPopupHtml(c));
   btn.addEventListener("click", loadMap);
   sel.addEventListener("change", loadMap);
   dt.addEventListener("change", loadMap);
+  window.addEventListener("resize", function(){
+    setTimeout(function(){
+      try { map.invalidateSize(); } catch(e){}
+    }, 120);
+  });
   document.addEventListener("click", function(ev){
     var addBtn = ev.target && ev.target.closest ? ev.target.closest(".dbt-popup-add-btn") : null;
     if(!addBtn) return;

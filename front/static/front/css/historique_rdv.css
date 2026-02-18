@@ -7,11 +7,15 @@ body{
 
 /* Liens footer – style identique à dashboard_test */
 .dbt-link{ color:#ef4444; text-decoration:none; font-size:14px; font-weight:500; }
+.dbt-link{
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+}
 .dbt-link:hover{ text-decoration:underline; }
 .dbt-footer-links{
   display:flex; gap:16px; align-items:center; justify-content:center;
   margin:14px 2px; color:#8a96a3; width:100%; box-sizing:border-box;
   position:relative; z-index:10;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
 }
 
 .tab-btn {
@@ -1878,23 +1882,39 @@ body .dashboard .filter-reset-btn:hover::before{
   body .dashboard .filter-popover{
     width: 94vw !important;
     border-radius: 14px !important;
-    padding: 14px 14px 10px 14px !important;
+    padding: 0 !important;
+    overflow: hidden !important;
   }
   body .dashboard .hr-filter-header{
-    margin:-14px -14px 10px -14px;
+    margin:0 !important;
+    width:100% !important;
+    box-sizing:border-box !important;
     border-radius:14px 14px 0 0;
     padding:12px 14px;
+  }
+  body .dashboard .hr-filter-body{
+    padding:12px 14px 10px !important;
   }
   body .dashboard .filter-popover-title{
     font-size:1.03rem;
   }
   body .dashboard .filter-actions{
-    flex-direction:column;
-    align-items:stretch;
+    flex-direction:row;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
   }
   body .dashboard .filter-apply-btn,
   body .dashboard .filter-reset-btn{
-    max-width:100% !important;
+    width:140px !important;
+    min-width:140px !important;
+    max-width:140px !important;
+    height:40px !important;
+    min-height:40px !important;
+    padding:9px 14px !important;
+    font-size:.95rem !important;
+    line-height:1 !important;
+    border-radius:8px !important;
   }
 }
 
@@ -2083,4 +2103,759 @@ body .no-rdv-message{
 body .dashboard .info-container .infos-adresse{
   flex-wrap: wrap !important;
   row-gap: 4px;
+}
+
+/* ===== Mobile clean override (prioritaire) ===== */
+@media (max-width: 768px){
+  body .dashboard.content-wrapper{
+    width:100% !important;
+    max-width:100% !important;
+    margin:0 !important;
+    padding:10px !important;
+    box-sizing:border-box !important;
+  }
+
+  body .dashboard .hr-page-header{
+    margin:4px 2px 10px !important;
+  }
+  body .dashboard .historique-title{
+    position:static !important;
+    margin:0 !important;
+    padding:0 !important;
+    font-size:1.9rem !important;
+    line-height:1.2 !important;
+    text-align:left !important;
+  }
+  body .dashboard .hr-page-subtitle{
+    margin-top:6px !important;
+    font-size:.82rem !important;
+    line-height:1.3 !important;
+  }
+  body .dashboard .hr-page-underline{
+    margin-top:6px !important;
+    width:165px !important;
+  }
+
+  body .dashboard .search-bar{
+    margin:10px 0 10px !important;
+    padding:0 !important;
+    gap:8px !important;
+    display:grid !important;
+    grid-template-columns: 1fr auto !important;
+    align-items:center !important;
+  }
+  body .dashboard .search-bar input{
+    width:100% !important;
+    max-width:none !important;
+    margin:0 !important;
+    height:40px !important;
+    padding:9px 12px 9px 34px !important;
+    font-size:.9rem !important;
+    border-radius:10px !important;
+  }
+  body .dashboard .search-bar .search-icon,
+  body .dashboard .hr-search-icon{
+    margin:0 !important;
+    left:10px !important;
+    font-size:.95rem !important;
+  }
+  body .dashboard #filterBtnHistorique{
+    margin:0 !important;
+    height:40px !important;
+    padding:0 12px !important;
+    border-radius:10px !important;
+    font-size:.9rem !important;
+    white-space:nowrap !important;
+  }
+
+  body .dashboard .cards{
+    margin-top:8px !important;
+    padding:0 !important;
+  }
+  body .dashboard .card{
+    width:100% !important;
+    max-width:none !important;
+    border-radius:12px !important;
+    overflow:hidden !important;
+  }
+
+  body .dashboard .tabs-container{
+    margin:0 !important;
+    width:100% !important;
+    display:grid !important;
+    grid-template-columns:repeat(3,1fr) !important;
+  }
+  body .dashboard .tab-btn{
+    font-size:.86rem !important;
+    line-height:1.2 !important;
+    padding:10px 6px !important;
+    margin:0 !important;
+    border-radius:0 !important;
+  }
+  body .dashboard .tab-btn:first-child{ border-top-left-radius:10px !important; }
+  body .dashboard .tab-btn:last-child{ border-top-right-radius:10px !important; }
+
+  body .dashboard .tabs-content-scroll{
+    max-height:none !important;
+    overflow:visible !important;
+    padding:10px !important;
+    margin:0 !important;
+  }
+
+  body .dashboard .visit-entry,
+  body .dashboard .reminder-entry{
+    width:100% !important;
+    min-width:0 !important;
+    margin:0 0 10px 0 !important;
+    padding:12px !important;
+    border-radius:10px !important;
+    box-shadow:0 3px 12px rgba(15,23,42,.08) !important;
+    display:flex !important;
+    flex-direction:column !important;
+    gap:8px !important;
+    min-height:0 !important;
+  }
+
+  body .dashboard .client-name,
+  body .dashboard .status-container,
+  body .dashboard .info-container{
+    width:100% !important;
+    min-width:0 !important;
+    padding:0 !important;
+    margin:0 !important;
+  }
+  body .dashboard .client-name strong{
+    font-size:1.02rem !important;
+    margin:0 0 2px 0 !important;
+    white-space:normal !important;
+    overflow:visible !important;
+    text-overflow:clip !important;
+  }
+  body .dashboard .client-name .infos-adresse{
+    font-size:.78rem !important;
+    line-height:1.35 !important;
+    white-space:normal !important;
+    overflow:visible !important;
+    text-overflow:clip !important;
+  }
+  body .dashboard .status.validée,
+  body .dashboard .status-à-rappeler{
+    font-size:.9rem !important;
+    min-width:0 !important;
+  }
+  body .dashboard .info-container .infos-adresse{
+    display:block !important;
+    font-size:.82rem !important;
+    line-height:1.35 !important;
+    white-space:normal !important;
+    overflow:visible !important;
+    text-overflow:clip !important;
+  }
+  body .dashboard .separator{ display:none !important; }
+  body .dashboard .last-visit{
+    display:block !important;
+    margin:4px 0 0 0 !important;
+  }
+
+  body .dashboard #backDashboardBtn{
+    position:static !important;
+    margin:10px auto 0 !important;
+    width:100% !important;
+    max-width:220px !important;
+    justify-content:center !important;
+  }
+  body .dashboard .dbt-footer-links{
+    margin:12px 0 6px !important;
+    flex-wrap:wrap !important;
+  }
+}
+
+@media (max-width: 480px){
+  body .dashboard .historique-title{ font-size:1.55rem !important; }
+  body .dashboard .tab-btn{
+    font-size:.78rem !important;
+    padding:9px 4px !important;
+  }
+}
+
+/* ===== Containers mobile style objectif_annuel ===== */
+@media (max-width: 768px){
+  body .dashboard.content-wrapper{
+    background: #f5f7fb !important;
+    border: 1px solid #e6e9f2 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 10px 28px rgba(15,23,42,.08) !important;
+  }
+
+  body .dashboard .hr-page-header{
+    background:#fff !important;
+    border:1px solid #e6e9f2 !important;
+    border-radius:14px !important;
+    box-shadow: 0 6px 18px rgba(15,23,42,.06) !important;
+    padding:12px 12px 10px !important;
+  }
+
+  body .dashboard .search-bar{
+    background:#fff !important;
+    border:1px solid #e6e9f2 !important;
+    border-radius:12px !important;
+    box-shadow: 0 6px 18px rgba(15,23,42,.05) !important;
+    padding:10px !important;
+  }
+
+  body .dashboard .cards{
+    background: transparent !important;
+    border: none !important;
+  }
+
+  body .dashboard .card{
+    background:#fff !important;
+    border:1px solid #e6e9f2 !important;
+    border-radius:14px !important;
+    box-shadow: 0 10px 24px rgba(15,23,42,.08) !important;
+  }
+
+  body .dashboard .tabs-content-scroll{
+    background:#fff !important;
+    border-radius:0 0 14px 14px !important;
+  }
+
+  body .dashboard .visit-entry,
+  body .dashboard .reminder-entry{
+    background:#f8fafc !important;
+    border:1px solid #e6e9f2 !important;
+    border-radius:12px !important;
+    box-shadow: 0 4px 12px rgba(15,23,42,.06) !important;
+  }
+}
+
+/* ===== Fix chevauchement: recherche -> filtre -> onglets ===== */
+@media (max-width: 768px){
+  body .dashboard .search-bar{
+    display:grid !important;
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "search"
+      "filter" !important;
+    gap:8px !important;
+    align-items:stretch !important;
+    margin-bottom:10px !important;
+    position:relative !important;
+    overflow:visible !important;
+  }
+
+  body .dashboard .search-bar #historiqueSearch{
+    grid-area:search;
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    margin:0 !important;
+    box-sizing:border-box !important;
+    display:block !important;
+    padding-left:38px !important;
+  }
+
+  body .dashboard #filterBtnHistorique{
+    grid-area:filter;
+    width:100% !important;
+    margin:0 !important;
+    justify-content:center !important;
+    height:40px !important;
+  }
+
+  body .dashboard .tabs-container{
+    margin-top:8px !important;
+    position:relative !important;
+    z-index:1 !important;
+  }
+
+  /* Loupe correctement positionnee dans l'input mobile */
+  body .dashboard .search-bar .hr-search-icon,
+  body .dashboard .search-bar .search-icon{
+    position:absolute !important;
+    left:20px !important;
+    top:30px !important;
+    transform:translateY(-50%) !important;
+    margin:0 !important;
+    z-index:2 !important;
+    pointer-events:none !important;
+  }
+}
+
+@media (max-width: 480px){
+  body .dashboard .search-bar{
+    padding:8px !important;
+  }
+  body .dashboard .search-bar #historiqueSearch{
+    height:38px !important;
+    padding-left:36px !important;
+    font-size:.88rem !important;
+  }
+  body .dashboard .search-bar .hr-search-icon,
+  body .dashboard .search-bar .search-icon{
+    left:18px !important;
+    top:27px !important;
+    font-size:.9rem !important;
+  }
+}
+
+/* ===== Onglets adaptes au container mobile ===== */
+@media (max-width: 768px){
+  body .dashboard .tabs-container{
+    width:100% !important;
+    margin:8px 0 0 0 !important;
+    padding:0 !important;
+    box-sizing:border-box !important;
+    overflow:hidden !important;
+    border:1px solid #e6e9f2 !important;
+    border-radius:12px !important;
+    background:#fff !important;
+    display:grid !important;
+    grid-template-columns:repeat(3, minmax(0,1fr)) !important;
+    align-items:stretch !important;
+  }
+
+  body .dashboard .tab-btn{
+    min-width:0 !important;
+    min-height:44px !important;
+    margin:0 !important;
+    padding:8px 6px !important;
+    border:none !important;
+    border-right:1px solid #e6e9f2 !important;
+    border-bottom:1px solid #e6e9f2 !important;
+    border-radius:0 !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    text-align:center !important;
+    line-height:1.15 !important;
+    font-size:.84rem !important;
+    white-space:normal !important;
+    word-break:break-word !important;
+  }
+
+  body .dashboard .tab-btn:last-child{
+    border-right:none !important;
+  }
+
+  body .dashboard .tab-btn.active{
+    border-bottom-color:#e53935 !important;
+  }
+}
+
+@media (max-width: 480px){
+  body .dashboard .tab-btn{
+    min-height:42px !important;
+    font-size:.78rem !important;
+    padding:7px 5px !important;
+  }
+}
+
+/* ===== Typographie mobile des cartes historique ===== */
+@media (max-width: 768px){
+  body .dashboard .client-name strong{
+    font-size:1.02rem !important;
+    font-weight:700 !important;
+  }
+
+  body .dashboard .client-name .infos-adresse{
+    font-size:.8rem !important;
+    line-height:1.35 !important;
+  }
+
+  body .dashboard .status.validée,
+  body .dashboard .status-à-rappeler{
+    font-size:.95rem !important;
+    line-height:1.25 !important;
+  }
+
+  body .dashboard .visit-date,
+  body .dashboard .visit-date-passed{
+    font-size:1rem !important;
+    line-height:1.25 !important;
+    font-weight:600 !important;
+  }
+
+  body .dashboard .info-container .infos-adresse,
+  body .dashboard .last-visit{
+    font-size:.86rem !important;
+    line-height:1.35 !important;
+  }
+}
+
+@media (max-width: 480px){
+  body .dashboard .client-name strong{
+    font-size:.98rem !important;
+  }
+
+  body .dashboard .client-name .infos-adresse{
+    font-size:.76rem !important;
+  }
+
+  body .dashboard .status.validée,
+  body .dashboard .status-à-rappeler{
+    font-size:.88rem !important;
+  }
+
+  body .dashboard .visit-date,
+  body .dashboard .visit-date-passed{
+    font-size:.92rem !important;
+  }
+
+  body .dashboard .info-container .infos-adresse,
+  body .dashboard .last-visit{
+    font-size:.8rem !important;
+  }
+}
+
+/* ===== Scroll mobile force enable ===== */
+@media (max-width: 768px){
+  html,
+  body{
+    height:auto !important;
+    min-height:100% !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    -webkit-overflow-scrolling:touch !important;
+  }
+
+  body .dashboard.content-wrapper,
+  body .dashboard,
+  body .cards,
+  body .card,
+  body .tabs-content-scroll{
+    height:auto !important;
+    max-height:none !important;
+    overflow:visible !important;
+    overflow-y:visible !important;
+  }
+
+  body .dashboard.content-wrapper{
+    padding-bottom:16px !important;
+  }
+}
+
+/* ===== Modal client historique: mobile ===== */
+@media (max-width: 768px){
+  body .modal-content-client-rdv{
+    width:94vw !important;
+    max-width:94vw !important;
+    max-height:84vh !important;
+    padding:0 !important;
+    overflow:hidden !important;
+    border-radius:16px !important;
+  }
+
+  body .modal-content-client-rdv h2{
+    margin:0 !important;
+    width:100% !important;
+    box-sizing:border-box !important;
+    padding:14px 44px 14px 16px !important;
+    border-radius:16px 16px 0 0 !important;
+    font-size:1.05rem !important;
+  }
+
+  body .modal-content-client-rdv .close-btn{
+    top:8px !important;
+    right:8px !important;
+    z-index:4 !important;
+  }
+
+  body #modalClientRDVContent{
+    padding:12px !important;
+    box-sizing:border-box !important;
+    max-height:calc(84vh - 66px) !important;
+    overflow-x:auto !important;
+    overflow-y:auto !important;
+    -webkit-overflow-scrolling:touch !important;
+  }
+
+body #modalClientRDVContent .table-modal-rdv{
+  width:max-content !important;
+  min-width:700px !important;
+}
+
+  body #modalClientRDVContent .table-modal-rdv th,
+  body #modalClientRDVContent .table-modal-rdv td{
+    white-space:nowrap !important;
+  }
+}
+
+@media (max-width: 480px){
+  body #modalClientRDVContent .table-modal-rdv{
+    min-width:620px !important;
+  }
+}
+
+/* Wrapper de scroll horizontal pour la table modal */
+.modal-table-scroll{
+  width:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+}
+
+@media (max-width: 768px){
+  body .modal-table-scroll{
+    width:100% !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    -webkit-overflow-scrolling:touch !important;
+  }
+  body .modal-table-scroll .table-modal-rdv{
+    width:max-content !important;
+    min-width:700px !important;
+  }
+}
+
+@media (max-width: 480px){
+  body .modal-table-scroll .table-modal-rdv{
+    min-width:620px !important;
+  }
+}
+
+/* ===== Anti-coupure container mobile (override final) ===== */
+@media (max-width: 768px){
+  body .dashboard.content-wrapper{
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    min-width: 0 !important;
+    margin: 8px auto !important;
+    padding: 10px !important;
+    box-sizing: border-box !important;
+    overflow-x: clip !important;
+  }
+
+  body .dashboard.content-wrapper *,
+  body .dashboard .hr-page-header,
+  body .dashboard .search-bar,
+  body .dashboard .cards,
+  body .dashboard .card{
+    box-sizing: border-box !important;
+    max-width: 100% !important;
+  }
+}
+
+@media (max-width: 480px){
+  body .dashboard.content-wrapper{
+    width: calc(100vw - 12px) !important;
+    max-width: calc(100vw - 12px) !important;
+    margin: 6px auto !important;
+    padding: 8px !important;
+  }
+}
+
+/* ===== Typo mobile identique dans les 3 onglets ===== */
+@media (max-width: 768px){
+  #tab-recent .client-name strong,
+  #tab-rappeler .client-name strong{
+    font-size:1.02rem !important;
+    font-weight:700 !important;
+  }
+
+  #tab-recent .client-name .infos-adresse,
+  #tab-rappeler .client-name .infos-adresse{
+    font-size:.8rem !important;
+    line-height:1.35 !important;
+  }
+
+  #tab-recent .status.validée,
+  #tab-rappeler .status-à-rappeler{
+    font-size:.95rem !important;
+    line-height:1.25 !important;
+  }
+
+  #tab-recent .visit-date,
+  #tab-rappeler .visit-date{
+    font-size:1rem !important;
+    line-height:1.25 !important;
+    font-weight:600 !important;
+  }
+
+  #tab-recent .info-container .infos-adresse,
+  #tab-rappeler .info-container .infos-adresse,
+  #tab-recent .last-visit,
+  #tab-rappeler .last-visit{
+    font-size:.86rem !important;
+    line-height:1.35 !important;
+  }
+}
+
+@media (max-width: 480px){
+  #tab-recent .client-name strong,
+  #tab-rappeler .client-name strong{
+    font-size:.98rem !important;
+  }
+
+  #tab-recent .client-name .infos-adresse,
+  #tab-rappeler .client-name .infos-adresse{
+    font-size:.76rem !important;
+  }
+
+  #tab-recent .status.validée,
+  #tab-rappeler .status-à-rappeler{
+    font-size:.88rem !important;
+  }
+
+  #tab-recent .visit-date,
+  #tab-rappeler .visit-date{
+    font-size:.92rem !important;
+  }
+
+  #tab-recent .info-container .infos-adresse,
+  #tab-rappeler .info-container .infos-adresse,
+  #tab-recent .last-visit,
+  #tab-rappeler .last-visit{
+    font-size:.8rem !important;
+  }
+}
+
+/* ===== Final override typo mobile (3 onglets) ===== */
+@media (max-width: 768px){
+  #tab-general .client-name strong,
+  #tab-recent .client-name strong,
+  #tab-rappeler .client-name strong{
+    font-size:1rem !important;
+    line-height:1.25 !important;
+  }
+
+  #tab-general .client-name .infos-adresse,
+  #tab-recent .client-name .infos-adresse,
+  #tab-rappeler .client-name .infos-adresse{
+    font-size:.8rem !important;
+    line-height:1.35 !important;
+  }
+
+  #tab-general .status-container .status.validée,
+  #tab-recent .status-container .status.validée,
+  #tab-rappeler .status-container .status-à-rappeler{
+    font-size:.9rem !important;
+    line-height:1.2 !important;
+  }
+
+  #tab-general .status-container .status i,
+  #tab-recent .status-container .status i,
+  #tab-rappeler .status-container .status-à-rappeler i{
+    font-size:.95rem !important;
+    margin-right:6px !important;
+  }
+
+  #tab-general .info-container .infos-adresse,
+  #tab-recent .info-container .infos-adresse,
+  #tab-rappeler .info-container .infos-adresse{
+    font-size:.85rem !important;
+    line-height:1.35 !important;
+    margin:0 !important;
+    white-space:normal !important;
+  }
+
+  #tab-general .visit-date,
+  #tab-recent .visit-date,
+  #tab-rappeler .visit-date,
+  #tab-general .visit-date-passed{
+    font-size:.95rem !important;
+    line-height:1.2 !important;
+    font-weight:600 !important;
+  }
+
+  #tab-general .last-visit,
+  #tab-recent .last-visit,
+  #tab-rappeler .last-visit{
+    font-size:.82rem !important;
+    line-height:1.35 !important;
+  }
+}
+
+@media (max-width: 480px){
+  #tab-general .client-name strong,
+  #tab-recent .client-name strong,
+  #tab-rappeler .client-name strong{
+    font-size:.95rem !important;
+  }
+
+  #tab-general .client-name .infos-adresse,
+  #tab-recent .client-name .infos-adresse,
+  #tab-rappeler .client-name .infos-adresse{
+    font-size:.75rem !important;
+  }
+
+  #tab-general .status-container .status.validée,
+  #tab-recent .status-container .status.validée,
+  #tab-rappeler .status-container .status-à-rappeler{
+    font-size:.85rem !important;
+  }
+
+  #tab-general .info-container .infos-adresse,
+  #tab-recent .info-container .infos-adresse,
+  #tab-rappeler .info-container .infos-adresse{
+    font-size:.8rem !important;
+  }
+
+  #tab-general .visit-date,
+  #tab-recent .visit-date,
+  #tab-rappeler .visit-date,
+  #tab-general .visit-date-passed{
+    font-size:.9rem !important;
+  }
+
+  #tab-general .last-visit,
+  #tab-recent .last-visit,
+  #tab-rappeler .last-visit{
+    font-size:.78rem !important;
+  }
+}
+
+/* ===== Fix overflow mobile onglets recent/rappeler ===== */
+@media (max-width: 768px){
+  #tab-recent .visit-entry,
+  #tab-rappeler .reminder-entry{
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:stretch !important;
+    gap:8px !important;
+    overflow:hidden !important;
+  }
+
+  #tab-recent .client-name,
+  #tab-recent .status-container,
+  #tab-recent .info-container,
+  #tab-rappeler .client-name,
+  #tab-rappeler .status-container,
+  #tab-rappeler .info-container{
+    min-width:0 !important;
+    width:100% !important;
+    max-width:100% !important;
+    align-self:stretch !important;
+    margin:0 !important;
+    padding:0 !important;
+  }
+
+  #tab-recent .info-container,
+  #tab-rappeler .info-container{
+    flex:1 1 auto !important;
+  }
+
+  #tab-recent .info-container .infos-adresse,
+  #tab-rappeler .info-container .infos-adresse{
+    display:block !important;
+    width:100% !important;
+    white-space:normal !important;
+    overflow:visible !important;
+    text-overflow:clip !important;
+    word-break:break-word !important;
+  }
+
+  #tab-recent .visit-entry p,
+  #tab-rappeler .reminder-entry p{
+    width:100% !important;
+    white-space:normal !important;
+    overflow:visible !important;
+    text-overflow:clip !important;
+    word-break:break-word !important;
+  }
+
+  #tab-recent .separator,
+  #tab-rappeler .separator{
+    display:none !important;
+  }
 }

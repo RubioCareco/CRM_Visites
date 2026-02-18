@@ -3,6 +3,7 @@ body {
   font-family: 'Segoe UI', Arial, sans-serif;
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
 }
 .satisfaction-container {
   max-width: 950px;
@@ -104,4 +105,29 @@ body {
   .satisfaction-container {
     padding: 18px 4vw 18px 4vw;
   }
-} 
+}
+
+/* Footer identique dashboard_test */
+.dbt-link{
+  color:#ef4444;
+  text-decoration:none;
+  font-size:14px;
+  font-weight:500;
+}
+
+.dbt-link:hover{
+  text-decoration:underline;
+}
+
+.dbt-footer-links{
+  display:flex;
+  gap:16px;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  margin:14px 2px;
+  box-sizing:border-box;
+  color:#8a96a3;
+  position:relative;
+  z-index:10;
+}

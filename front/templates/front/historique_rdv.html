@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Historique des rendez-vous</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'front/css/dashboard.css' %}">
@@ -425,7 +426,7 @@
                 if (rdvsFiltres.length === 0) {
                   html = '<p class="no-rdv-message">Aucun rendez-vous validé ou annulé pour ce client.</p>';
                 } else {
-                  html = `<table class="table-modal-rdv">
+                  html = `<div class="modal-table-scroll"><table class="table-modal-rdv">
                     <thead>
                       <tr>
                         <th>Date</th>
@@ -459,7 +460,7 @@
                       <td>${rdv.commercial}</td>
                     </tr>`;
                   });
-                  html += '</tbody></table>';
+                  html += '</tbody></table></div>';
                 }
               }
               document.getElementById('modalClientRDVContent').innerHTML = html;
@@ -500,7 +501,7 @@
                 if (rdvsFiltres.length === 0) {
                   html = '<p class="no-rdv-message">Aucun rendez-vous validé ou annulé pour ce client.</p>';
                 } else {
-                  html = `<table class="table-modal-rdv">
+                  html = `<div class="modal-table-scroll"><table class="table-modal-rdv">
                     <thead>
                       <tr>
                         <th>Date</th>
@@ -534,7 +535,7 @@
                       <td>${rdv.commercial}</td>
                     </tr>`;
                   });
-                  html += '</tbody></table>';
+                  html += '</tbody></table></div>';
                 }
               }
               document.getElementById('modalClientRDVContent').innerHTML = html;
@@ -575,7 +576,7 @@
               if (rdvsFiltres.length === 0) {
                 html = '<p class="no-rdv-message">Aucun rendez-vous validé ou annulé pour ce client.</p>';
               } else {
-                html = `<table class="table-modal-rdv">
+                html = `<div class="modal-table-scroll"><table class="table-modal-rdv">
                   <thead>
                     <tr>
                       <th>Date</th>
@@ -606,7 +607,7 @@
                     <td>${rdv.commercial}</td>
                   </tr>`;
                 });
-                html += '</tbody></table>';
+                html += '</tbody></table></div>';
               }
             }
             document.getElementById('modalClientRDVContent').innerHTML = html;

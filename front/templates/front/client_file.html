@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fichier Clients</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'front/css/dashboard.css' %}">
@@ -398,6 +399,61 @@
 </body>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+  const backBtn = document.getElementById('backDashboardBtn');
+  const backBtnOriginalParent = backBtn ? backBtn.parentNode : null;
+  const backBtnOriginalNext = backBtn ? backBtn.nextSibling : null;
+
+  function restoreBackBtnParent() {
+    if (!backBtn || !backBtnOriginalParent) return;
+    if (backBtnOriginalNext && backBtnOriginalNext.parentNode === backBtnOriginalParent) {
+      backBtnOriginalParent.insertBefore(backBtn, backBtnOriginalNext);
+    } else {
+      backBtnOriginalParent.appendChild(backBtn);
+    }
+  }
+
+  function moveBackBtnIntoCard() {
+    if (!backBtn) return;
+    const card = document.querySelector('.cards .card');
+    if (!card) return;
+    if (backBtn.parentNode !== card) card.appendChild(backBtn);
+  }
+
+  function applyMobileBackBtnLayout() {
+    if (!backBtn) return;
+    const isMobile = window.matchMedia('(max-width: 640px)').matches;
+    if (isMobile) {
+      moveBackBtnIntoCard();
+      backBtn.style.position = 'relative';
+      backBtn.style.left = '0';
+      backBtn.style.right = '0';
+      backBtn.style.bottom = '0';
+      backBtn.style.width = '100%';
+      backBtn.style.marginTop = '12px';
+      backBtn.style.marginBottom = '12px';
+      backBtn.style.display = 'flex';
+      backBtn.style.justifyContent = 'center';
+      backBtn.style.zIndex = 'auto';
+      backBtn.style.minHeight = '44px';
+    } else {
+      restoreBackBtnParent();
+      backBtn.style.position = 'fixed';
+      backBtn.style.left = '24px';
+      backBtn.style.right = '';
+      backBtn.style.bottom = '20px';
+      backBtn.style.width = '';
+      backBtn.style.marginTop = '';
+      backBtn.style.marginBottom = '';
+      backBtn.style.display = 'flex';
+      backBtn.style.justifyContent = '';
+      backBtn.style.zIndex = '9999';
+      backBtn.style.minHeight = '';
+    }
+  }
+
+  applyMobileBackBtnLayout();
+  window.addEventListener('resize', applyMobileBackBtnLayout);
+
   // --- Références générales ---
   const searchInput = document.getElementById('clientSearchBar');
   const suggestionBox = document.getElementById('clientSearchSuggestions');

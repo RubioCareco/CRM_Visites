@@ -121,8 +121,8 @@
       min-height:32px;
       white-space:nowrap;
       border-radius:10px;
-      border:1px solid #ef4444;
-      background:#ef4444;
+      border:1px solid transparent;
+      background:linear-gradient(135deg, #fb7185, #f43f5e);
       color:#fff;
       cursor:pointer;
       box-shadow:0 2px 8px rgba(0, 0, 0, 18%);
@@ -133,17 +133,17 @@
     }
     .dbt-map-action-btn:hover{
       background:#fff;
-      color:#ef4444;
-      border-color:#ef4444;
+      color:#f43f5e;
+      border-color:#f43f5e;
     }
     .dbt-map-secondary-btn{
       width:120px;
       min-height:32px;
       white-space:nowrap;
       border-radius:10px;
-      border:1px solid #ef4444;
+      border:1px solid #f43f5e;
       background:#fff;
-      color:#ef4444;
+      color:#f43f5e;
       cursor:pointer;
       display:inline-flex;
       align-items:center;
@@ -152,8 +152,9 @@
       transition:background .2s ease,color .2s ease,border-color .2s ease;
     }
     .dbt-map-secondary-btn:hover{
-      background:#fff5f5;
-      border-color:#ef4444;
+      background:#f43f5e;
+      color:#fff;
+      border-color:#f43f5e;
     }
   </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -208,6 +209,32 @@
   background:#ef4444 !important;
   color:#fff !important;
   border-color:#ef4444;
+}
+.dbt-popup-add-btn{
+  margin-top:10px;
+  display:block;
+  margin-left:auto;
+  margin-right:auto;
+  border:1px solid #ef4444;
+  background:#fff;
+  color:#ef4444;
+  border-radius:8px;
+  min-height:30px;
+  padding:5px 12px;
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+  transition:background .2s ease,color .2s ease,border-color .2s ease;
+}
+.dbt-popup-add-btn:hover{
+  background:#ef4444;
+  color:#fff;
+}
+.dbt-popup-add-btn:disabled{
+  border-color:#fca5a5;
+  color:#fca5a5;
+  cursor:default;
+  background:#fff;
 }
 </style>
 </head>
@@ -1530,20 +1557,57 @@ map.on("click", function(e){ dbtDlog("MAP CLICK", e.latlng); });
     spiderLegPolylineOptions: { weight: 2, color: "#be123c", opacity: 0.75 },
   });
   map.addLayer(gTourPoints);
+    var clientMarkersById = {};
     // ✅ Sélection clients (Set)
     window.dbtSelectedClientIds = window.dbtSelectedClientIds || new Set();
 
     function dbtIsSelected(id){ return window.dbtSelectedClientIds.has(Number(id)); }
+    function dbtRefreshMapSelectionStyles(){
+      Object.keys(clientMarkersById).forEach(function(id){
+        var mk = clientMarkersById[id];
+        if (mk && typeof mk._refreshDbtStyle === "function") mk._refreshDbtStyle();
+      });
+    }
+    function dbtRefreshPopupButtons(){
+      Object.keys(clientMarkersById).forEach(function(id){
+        var mk = clientMarkersById[id];
+        if (!mk || typeof mk.getPopup !== "function") return;
+        var popup = mk.getPopup();
+        if (!popup) return;
+        var c = window.dbtClientsById && window.dbtClientsById[Number(id)];
+        if (!c) return;
+        mk.setPopupContent(clientPopupHtml(c));
+      });
+    }
+    function dbtSyncSelectionUI(){
+      dbtRefreshMapSelectionStyles();
+      dbtRefreshPopupButtons();
+      if (window.dbtRenderSelectedSidebar) window.dbtRenderSelectedSidebar();
+    }
     function dbtToggleSelected(id){
       id = Number(id);
       if (window.dbtSelectedClientIds.has(id)) window.dbtSelectedClientIds.delete(id);
       else window.dbtSelectedClientIds.add(id);
       dbtDlog("SELECTED CLIENT IDS =", Array.from(window.dbtSelectedClientIds));
-    if (window.dbtRenderSelectedSidebar) window.dbtRenderSelectedSidebar();
+      dbtSyncSelectionUI();
     }
+    function dbtSelectClient(id){
+      id = Number(id);
+      if (!window.dbtSelectedClientIds.has(id)) window.dbtSelectedClientIds.add(id);
+      dbtDlog("SELECTED CLIENT IDS =", Array.from(window.dbtSelectedClientIds));
+      dbtSyncSelectionUI();
+    }
+    window.dbtToggleSelected = dbtToggleSelected;
+    window.dbtSelectClient = dbtSelectClient;
+    window.dbtRefreshMapSelectionStyles = dbtRefreshMapSelectionStyles;
 
 
-  function clear(){ gClients.clearLayers(); gTourLine.clearLayers(); gTourPoints.clearLayers(); }
+  function clear(){
+    gClients.clearLayers();
+    gTourLine.clearLayers();
+    gTourPoints.clearLayers();
+    clientMarkersById = {};
+  }
   function fitDefault(){ map.setView([44.84,-0.58],9); }
   function esc(v){
     return String(v ?? "")
@@ -1564,6 +1628,7 @@ map.on("click", function(e){ dbtDlog("MAP CLICK", e.latlng); });
     return "<a href='mailto:"+encodeURIComponent(e)+"' style='color:#2563eb;text-decoration:underline'>"+safe+"</a>";
   }
   function clientPopupHtml(c){
+    var isSelected = dbtIsSelected(c.id);
     return [
       "<div style='min-width:220px'>",
       "<div style='font-weight:800;font-size:13px;margin-bottom:6px'>"+esc(c.nom || "Client")+"</div>",
@@ -1572,6 +1637,7 @@ map.on("click", function(e){ dbtDlog("MAP CLICK", e.latlng); });
       "<div style='font-size:12px;line-height:1.35;color:#334155'><b>Email :</b> "+emailHtml(c.email)+"</div>",
       "<div style='font-size:12px;line-height:1.35;color:#334155'><b>Type :</b> "+esc(c.classement_client || "N/A")+"</div>",
       "<div style='font-size:12px;line-height:1.35;color:#334155'><b>Code comptable :</b> "+esc(c.code_comptable || "N/A")+"</div>",
+      "<button type='button' class='dbt-popup-add-btn' data-client-id='"+Number(c.id)+"' "+(isSelected?"disabled":"")+">"+(isSelected?"Ajouté":"Ajouter")+"</button>",
       "</div>"
     ].join("");
   }
@@ -1634,13 +1700,13 @@ function refreshStyle(){
       : {color:"#64748b", fillColor:"#93c5fd", weight:2, fillOpacity:0.9}
   );
 }
+mk._refreshDbtStyle = refreshStyle;
+clientMarkersById[mk._clientId] = mk;
 refreshStyle();
 
 mk.on("click", function(ev){
   dbtDlog("CLIENT MARKER CLICK", mk._clientId, ll);
   if (ev && ev.originalEvent) ev.originalEvent.stopPropagation();
-  dbtToggleSelected(mk._clientId);
-  refreshStyle();
 });
 
 mk.addTo(gClients).bindPopup(clientPopupHtml(c));
@@ -1664,6 +1730,17 @@ mk.addTo(gClients).bindPopup(clientPopupHtml(c));
   btn.addEventListener("click", loadMap);
   sel.addEventListener("change", loadMap);
   dt.addEventListener("change", loadMap);
+  document.addEventListener("click", function(ev){
+    var addBtn = ev.target && ev.target.closest ? ev.target.closest(".dbt-popup-add-btn") : null;
+    if(!addBtn) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    var id = Number(addBtn.getAttribute("data-client-id") || "0");
+    if(!id) return;
+    dbtSelectClient(id);
+    addBtn.disabled = true;
+    addBtn.textContent = "Ajouté";
+  });
 
   loadCom().then(loadMap).catch(()=>{});
 })();

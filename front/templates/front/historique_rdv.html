@@ -406,8 +406,11 @@
           // Récupérer les informations du client pour le titre
           const clientName = card.querySelector('.client-name strong').textContent.trim();
           
-          fetch(`/get_client_rdv/${clientId}/`)
-            .then(resp => resp.json())
+          fetch(`/api/client-rdv/${clientId}/`)
+            .then(resp => {
+              if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+              return resp.json();
+            })
             .then(data => {
               // Mettre à jour le titre de la modal
               document.getElementById('modalClientTitle').textContent = clientName;
@@ -461,6 +464,9 @@
               }
               document.getElementById('modalClientRDVContent').innerHTML = html;
               document.getElementById('modalClientRDV').style.display = 'flex';
+            })
+            .catch(err => {
+              console.error('Erreur chargement historique client:', err);
             });
         });
 
@@ -475,8 +481,11 @@
           // Récupérer les informations du client pour le titre
           const clientName = card.querySelector('.client-name strong').textContent.trim();
           
-          fetch(`/get_client_rdv/${clientId}/?statut=valide`)
-            .then(resp => resp.json())
+          fetch(`/api/client-rdv/${clientId}/?statut=valide`)
+            .then(resp => {
+              if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+              return resp.json();
+            })
             .then(data => {
               // Mettre à jour le titre de la modal
               document.getElementById('modalClientTitle').textContent = clientName;
@@ -519,7 +528,7 @@
                     html += `<tr>
                       <td>${rdv.date_rdv}</td>
                       <td>${rdv.heure_rdv}</td>
-                      <td><span class="${statutClass}">${statutLabel}</td>
+                      <td><span class="${statutClass}">${statutLabel}</span></td>
                       <td>${rdv.objet}</td>
                       <td>${rdv.commentaire}</td>
                       <td>${rdv.commercial}</td>
@@ -530,6 +539,9 @@
               }
               document.getElementById('modalClientRDVContent').innerHTML = html;
               document.getElementById('modalClientRDV').style.display = 'flex';
+            })
+            .catch(err => {
+              console.error('Erreur chargement historique client:', err);
             });
         });
 
@@ -544,8 +556,11 @@
         // Récupérer les informations du client pour le titre
         const clientName = card.querySelector('.client-name strong').textContent.trim();
         
-        fetch(`/get_client_rdv/${clientId}/?statut=annule`)
-          .then(resp => resp.json())
+        fetch(`/api/client-rdv/${clientId}/?statut=annule`)
+          .then(resp => {
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            return resp.json();
+          })
           .then(data => {
             // Mettre à jour le titre de la modal
             document.getElementById('modalClientTitle').textContent = clientName;
@@ -596,6 +611,9 @@
             }
             document.getElementById('modalClientRDVContent').innerHTML = html;
             document.getElementById('modalClientRDV').style.display = 'flex';
+          })
+          .catch(err => {
+            console.error('Erreur chargement historique client:', err);
           });
       });
 

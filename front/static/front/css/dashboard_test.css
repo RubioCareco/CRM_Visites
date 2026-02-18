@@ -286,14 +286,16 @@
 
   .dbt-btn-filter{
     color:#ffffff;
-    border-color:#ef444440;
-    background:#ef4444;
+    border-color:transparent;
+    background: linear-gradient(135deg, #fb7185, #f43f5e);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 18%);
 }
 
   .dbt-btn-plus{
     width:38px;
     height:38px;
+    border-color:transparent;
+    background: linear-gradient(135deg, #fb7185, #f43f5e);
     border-radius:50%;
     display:inline-flex;
     align-items:center;

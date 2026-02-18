@@ -247,7 +247,7 @@ body{
   display: flex;
   align-items: center;
   gap: 7px;
-  background: #e53935;
+  background: #f43f5e;
   color: #fff;
     border: none;
   border-radius: 8px;
@@ -1504,13 +1504,13 @@ body .dashboard .hr-page-header{
 }
 
 body .dashboard .historique-title i{
-  color: #ff3b3b;
+  color: #f43f5e;
   font-size: .9em;
 }
 
 body .dashboard .hr-page-subtitle{
   margin: 8px 0 0 var(--hr-title-text-offset);
-  color: #ff3b3b;
+  color: #f43f5e;
   font-size: 1rem;
   font-weight: 600;
 }
@@ -1520,7 +1520,7 @@ body .dashboard .hr-page-underline{
   height: 4px;
   border-radius: 999px;
   margin: 12px 0 0 var(--hr-title-text-offset);
-  background: linear-gradient(90deg, #ff3b3b 0%, #ef4444 55%, rgba(239,68,68,0.12) 100%);
+  background: linear-gradient(90deg, #f43f5e 0%, #fb7185 58%, rgba(244,63,94,0.14) 100%);
 }
 
 @media (max-width: 640px){
@@ -1554,12 +1554,12 @@ body .dashboard .tab-btn.active{
   background: #ff3b3b !important;
 }
 body .dashboard #filterBtnHistorique{
-  background: #ff3b3b !important;
-  border-color: #ff3b3b !important;
+  background: #f43f5e !important;
+  border-color: #f43f5e !important;
 }
 body .dashboard #filterBtnHistorique:hover{
-  background: #ff3b3b !important;
-  box-shadow: 0 4px 16px rgba(255,59,59,0.15) !important;
+  background: #f43f5e !important;
+  box-shadow: 0 4px 16px rgba(244,63,94,0.2) !important;
 }
 
 /* === Onglets "Rendez-vous validés" / "À rappeler": éviter la coupe du texte === */
@@ -1599,13 +1599,16 @@ body .dashboard .tabs-container{
   border-radius: 12px !important;
   overflow: hidden !important;
   border: 1px solid #e6e9f2 !important;
+  border-bottom: none !important;
   background: #fff !important;
+  margin-bottom: 0 !important;
 }
 
 body .dashboard .tab-btn{
   border-radius: 0 !important;
   border: none !important;
   border-right: 1px solid #e6e9f2 !important;
+  border-bottom: 0 !important;
   background: #fff !important;
   color: #111827 !important;
   transition: background .2s ease, color .2s ease !important;
@@ -1616,7 +1619,7 @@ body .dashboard .tab-btn:last-child{
 }
 
 body .dashboard .tab-btn.active{
-  background: #ff3b3b !important;
+  background: #f43f5e !important;
   color: #fff !important;
 }
 
@@ -1644,6 +1647,8 @@ body .dashboard .cards{
 }
 
 body .dashboard .card{
+  width: 100% !important;
+  max-width: 1400px !important;
   height: 100% !important;
   min-height: 0 !important;
   display: flex !important;
@@ -1661,6 +1666,8 @@ body .dashboard .tabs-content-scroll{
   max-height: none !important;
   overflow-y: auto !important;  /* scroll ici */
   overflow-x: hidden !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
   padding-bottom: 16px !important;
   margin-right: 0 !important;
 }
@@ -1971,6 +1978,106 @@ body .dashboard .info-container .last-visit{
   white-space: normal !important;
   overflow: visible !important;
   text-overflow: clip !important;
+}
+
+/* === Modal client historique: style aligne sur client_file === */
+body .modal-client-rdv{
+  background: rgba(17,24,39,.55) !important;
+  backdrop-filter: blur(8px);
+  z-index: 9999 !important;
+}
+
+body .modal-content-client-rdv{
+  background: #fff !important;
+  color: #2b2b2b !important;
+  border: 1px solid #e6e9f2 !important;
+  border-radius: 18px !important;
+  box-shadow: 0 10px 26px rgba(17,24,39,.10) !important;
+  width: min(920px, 94vw) !important;
+  max-width: 94vw !important;
+  max-height: 82vh !important;
+  padding: 18px !important;
+  overflow-y: auto !important;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif !important;
+}
+
+body .modal-content-client-rdv h2{
+  background: #181212b8 !important;
+  color: #fff !important;
+  padding: 16px 20px !important;
+  border-radius: 18px 18px 0 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin: -18px -18px 16px -18px !important;
+  font-size: 1.15rem !important;
+  font-weight: 900 !important;
+  text-transform: uppercase;
+  letter-spacing: .2px;
+}
+
+body .modal-content-client-rdv .close-btn{
+  position: absolute !important;
+  top: 8px !important;
+  right: 14px !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 999px !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  color: #ef4444 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 28px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  transition: background .2s ease, color .2s ease, border-color .2s ease !important;
+  padding: 0 !important;
+}
+body .modal-content-client-rdv .close-btn i{
+  font-size: 16px;
+  line-height: 1;
+}
+body .modal-content-client-rdv .close-btn:hover{
+  background: #ef4444 !important;
+  color: #fff !important;
+  border-color: #ef4444 !important;
+}
+
+body .table-modal-rdv{
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-top: 8px;
+  border: 1px solid #e6e9f2;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+body .table-modal-rdv th,
+body .table-modal-rdv td{
+  padding: 10px 12px !important;
+  border-bottom: 1px solid #e6e9f2 !important;
+  text-align: left;
+  color: #374151;
+  font-size: .95rem;
+}
+body .table-modal-rdv th{
+  background: #f6f7fb !important;
+  color: #374151 !important;
+  font-weight: 700 !important;
+}
+body .table-modal-rdv tr:last-child td{
+  border-bottom: none !important;
+}
+
+body .no-rdv-message{
+  color: #6b7280 !important;
+  text-align: center;
+  font-style: italic;
+  padding: 8px 0 2px;
 }
 
 body .dashboard .info-container .infos-adresse{

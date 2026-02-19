@@ -36,8 +36,8 @@ body{
   box-shadow: none;
 }
 
-  .tab-btn.active {
-  background: #e53935;
+.tab-btn.active {
+  background: #ff3b3b;
   color: #fff;
   z-index: 2;
 }
@@ -251,7 +251,7 @@ body{
   display: flex;
   align-items: center;
   gap: 7px;
-  background: #f43f5e;
+  background: #ff3b3b;
   color: #fff;
     border: none;
   border-radius: 8px;
@@ -1558,12 +1558,12 @@ body .dashboard .tab-btn.active{
   background: #ff3b3b !important;
 }
 body .dashboard #filterBtnHistorique{
-  background: #f43f5e !important;
-  border-color: #f43f5e !important;
+  background: #ff3b3b !important;
+  border-color: #ff3b3b !important;
 }
 body .dashboard #filterBtnHistorique:hover{
-  background: #f43f5e !important;
-  box-shadow: 0 4px 16px rgba(244,63,94,0.2) !important;
+  background: #ff3b3b !important;
+  box-shadow: 0 4px 16px rgba(255,59,59,0.2) !important;
 }
 
 /* === Onglets "Rendez-vous validés" / "À rappeler": éviter la coupe du texte === */
@@ -1623,7 +1623,7 @@ body .dashboard .tab-btn:last-child{
 }
 
 body .dashboard .tab-btn.active{
-  background: #f43f5e !important;
+  background: #ff3b3b !important;
   color: #fff !important;
 }
 
@@ -2439,7 +2439,7 @@ body .dashboard .info-container .infos-adresse{
   }
 
   body .dashboard .tab-btn.active{
-    border-bottom-color:#e53935 !important;
+    border-bottom-color:#ff3b3b !important;
   }
 }
 

@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Historique des rendez-vous (Responsable)</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'front/css/dashboard.css' %}">
@@ -26,7 +27,14 @@
   </style>
 </head>
 <body>
-  <div><H1 class="Title">Historique rendez-vous</H1></div>
+  <div class="hr-page-header">
+    <h1 class="dashboard-title historique-title Title">
+      <i class="fa fa-clock-rotate-left" aria-hidden="true"></i>
+      <span>Historique des rendez-vous</span>
+    </h1>
+    <p class="hr-page-subtitle">Historique détaillé des actions commerciales</p>
+    <div class="hr-page-underline" aria-hidden="true"></div>
+  </div>
   <div class="actions-row">
     <div class="filters-container">
       <button id="openFilterPanelBtn" class="filter-button">
@@ -35,7 +43,7 @@
     </div>
   
     <div class="search-client" role="search">
-      <i class="fa fa-search search-icon" aria-hidden="true"></i>
+      <i class="fa fa-search search-icon hr-search-icon" aria-hidden="true"></i>
       <input
         type="search"
         class="search-client"
@@ -66,7 +74,7 @@
         <div class="tabs-container">
           <button class="tab-btn active" onclick="showTab('general')">Historique général</button>
           <button class="tab-btn" onclick="showTab('recent')">Rendez-vous validés</button>
-          <button class="tab-btn" onclick="showTab('rappeler')">À rappeler</button>
+          <button class="tab-btn" onclick="showTab('rappeler')">Rendez-vous annulés</button>
         </div>
         <div class="tabs-content-scroll">
           <div id="tab-general" class="tab-content active">

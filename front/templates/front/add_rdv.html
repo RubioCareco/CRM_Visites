@@ -11,11 +11,6 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
 </head>
 <body>
-  {% if error_message %}
-    <div style="background:#e53935;color:#fff;padding:12px 18px;border-radius:8px;margin-bottom:18px;text-align:center;font-weight:bold;">
-      Erreur lors de la création du rendez-vous : {{ error_message }}
-    </div>
-  {% endif %}
   <div class="rdv-modal">
     <div class="rdv-box">
       <div class="rdv-box-header">
@@ -67,7 +62,7 @@
 
         <div class="rdv-field">
           <i class="fa fa-tag"></i>
-          <input type="text" name="objet" placeholder="Objet du rendez-vous" required>
+          <input type="text" name="objet" placeholder="Objet du rendez-vous">
         </div>
 
         <div class="rdv-field rdv-field-textarea">
@@ -89,20 +84,50 @@
   </div>
 
   <div class="import-toast" id="rdvImportToast">
-    <i class="fa-solid fa-circle-check"></i>
-    Rendez-vous ajouté avec succès
+    <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+    <span>Rendez-vous ajouté avec succès</span>
+    <button type="button" class="rdv-toast-close" data-close-toast="rdvImportToast" aria-label="Fermer">×</button>
+  </div>
+  <div class="import-toast error" id="rdvErrorToast">
+    <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+    <span id="rdvErrorToastText">Un rendez-vous existe déjà pour ce client à cette date et heure.</span>
+    <button type="button" class="rdv-toast-close" data-close-toast="rdvErrorToast" aria-label="Fermer">×</button>
   </div>
   {% if success %}
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const toast = document.getElementById('rdvImportToast');
+      const redirectUrl = '{{ success_redirect_url|default:"/dashboard-test/"|escapejs }}';
       if (toast) {
         toast.classList.add('show');
         setTimeout(function() {
           toast.classList.remove('show');
-          window.location.href = '/dashboard_test/';
-        }, 2000);
+          window.location.href = redirectUrl;
+        }, 5000);
       }
+    });
+  </script>
+  {% endif %}
+  {% if show_error_toast %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const errorToast = document.getElementById('rdvErrorToast');
+      const errorToastText = document.getElementById('rdvErrorToastText');
+      if (!errorToast) return;
+      if (errorToastText) {
+        errorToastText.textContent = '{{ error_message|escapejs }}';
+      }
+      errorToast.classList.add('show');
+      setTimeout(function() {
+        errorToast.classList.remove('show');
+      }, 5000);
+    });
+  </script>
+  {% else %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const errorToast = document.getElementById('rdvErrorToast');
+      if (errorToast) errorToast.classList.remove('show');
     });
   </script>
   {% endif %}
@@ -110,6 +135,15 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/fr.js"></script>
   <script>
+    document.addEventListener('click', function(e) {
+      const btn = e.target.closest('.rdv-toast-close');
+      if (!btn) return;
+      const toastId = btn.getAttribute('data-close-toast');
+      if (!toastId) return;
+      const toast = document.getElementById(toastId);
+      if (toast) toast.classList.remove('show');
+    });
+
     document.addEventListener('DOMContentLoaded', function() {
       const input = document.getElementById('date_rdv');
       if (!input) return;

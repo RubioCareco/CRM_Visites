@@ -11,7 +11,7 @@ from django.core.mail import send_mail, EmailMultiAlternatives
 from django.utils.crypto import get_random_string
 from django.urls import reverse
 from django.contrib.auth.models import User
-from django.db import models
+from django.db import models, IntegrityError
 from django.core.paginator import Paginator
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 import base64
@@ -92,6 +92,8 @@ from django.db.models.functions import Coalesce, TruncDay, TruncWeek, TruncMonth
 from .models import Adresse
 from front.utils import generer_rendezvous_automatiques, generer_rendezvous_simples
 from django.db import connection
+from urllib.parse import urlencode
+from django.utils.http import url_has_allowed_host_and_scheme
 
 def get_current_commercial(request):
     """
@@ -357,43 +359,62 @@ reset_tokens = {}
 
 def reset_password(request):
     print("RESET PASSWORD VIEW CALLED")
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if request.method == 'POST':
-        email = request.POST.get('email')
-        users = User.objects.filter(email=email)
-        commercials = Commercial.objects.filter(email=email)
+        email = (request.POST.get('email') or '').strip()
+        if not email:
+            msg = "Veuillez renseigner une adresse email."
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': msg}, status=400)
+            return render(request, 'front/reset_password.html', {'error': msg})
+
+        users = User.objects.filter(email__iexact=email)
+        commercials = Commercial.objects.filter(email__iexact=email)
         if not users.exists() and not commercials.exists():
+            msg = "Cette adresse email n'existe pas dans la base."
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': msg}, status=404)
             return render(request, 'front/reset_password.html', {'error': "Aucun compte avec cet email."})
         reset_links = []
-        for user in users:
-            token = get_random_string(48)
-            reset_tokens[token] = ('user', user.id)
-            reset_link = request.build_absolute_uri(reverse('new_password')) + f'?token={token}'
-            subject = render_to_string('front/reset_password_subject.txt').strip()
-            html_content = render_to_string('front/reset_password_email.html', {
-                'reset_link': reset_link,
-                'user': user,
-            })
-            text_content = f"Pour réinitialiser votre mot de passe, cliquez sur ce lien : {reset_link}"
-            print("HTML CONTENT:", html_content)
-            msg = EmailMultiAlternatives(subject, text_content, 'bznjamin.gillens@gmail.com', [email])
-            msg.attach_alternative(html_content, "text/html")
-            msg.send()
-            reset_links.append(reset_link)
-        for commercial in commercials:
-            token = get_random_string(48)
-            reset_tokens[token] = ('commercial', commercial.id)
-            reset_link = request.build_absolute_uri(reverse('new_password')) + f'?token={token}'
-            subject = render_to_string('front/reset_password_subject.txt').strip()
-            html_content = render_to_string('front/reset_password_email.html', {
-                'reset_link': reset_link,
-                'user': commercial,
-            })
-            text_content = f"Pour réinitialiser votre mot de passe, cliquez sur ce lien : {reset_link}"
-            print("HTML CONTENT:", html_content)
-            msg = EmailMultiAlternatives(subject, text_content, 'bznjamin.gillens@gmail.com', [email])
-            msg.attach_alternative(html_content, "text/html")
-            msg.send()
-            reset_links.append(reset_link)
+        try:
+            for user in users:
+                token = get_random_string(48)
+                reset_tokens[token] = ('user', user.id)
+                reset_link = request.build_absolute_uri(reverse('new_password')) + f'?token={token}'
+                subject = render_to_string('front/reset_password_subject.txt').strip()
+                html_content = render_to_string('front/reset_password_email.html', {
+                    'reset_link': reset_link,
+                    'user': user,
+                })
+                text_content = f"Pour réinitialiser votre mot de passe, cliquez sur ce lien : {reset_link}"
+                print("HTML CONTENT:", html_content)
+                msg = EmailMultiAlternatives(subject, text_content, 'bznjamin.gillens@gmail.com', [email])
+                msg.attach_alternative(html_content, "text/html")
+                msg.send()
+                reset_links.append(reset_link)
+
+            for commercial in commercials:
+                token = get_random_string(48)
+                reset_tokens[token] = ('commercial', commercial.id)
+                reset_link = request.build_absolute_uri(reverse('new_password')) + f'?token={token}'
+                subject = render_to_string('front/reset_password_subject.txt').strip()
+                html_content = render_to_string('front/reset_password_email.html', {
+                    'reset_link': reset_link,
+                    'user': commercial,
+                })
+                text_content = f"Pour réinitialiser votre mot de passe, cliquez sur ce lien : {reset_link}"
+                print("HTML CONTENT:", html_content)
+                msg = EmailMultiAlternatives(subject, text_content, 'bznjamin.gillens@gmail.com', [email])
+                msg.attach_alternative(html_content, "text/html")
+                msg.send()
+                reset_links.append(reset_link)
+        except Exception:
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': "Erreur lors de l'envoi de l'email."}, status=500)
+            return render(request, 'front/reset_password.html', {'error': "Erreur lors de l'envoi de l'email."})
+
+        if is_ajax:
+            return JsonResponse({'success': True, 'message': "Le lien de réinitialisation a bien été envoyé."})
         return render(request, 'front/reset_password_done.html', {'email': email, 'reset_link': reset_links[-1]})
     return render(request, 'front/reset_password.html')
 
@@ -1046,6 +1067,21 @@ def add_rdv(request):
         commerciaux_list = Commercial.objects.filter(role='commercial')
 
     error_message = None
+
+    def resolve_next_url(raw_next):
+        default_next = '/dashboard-responsable/' if role in ['responsable', 'admin'] else '/dashboard-test/'
+        if not raw_next:
+            return default_next
+        if url_has_allowed_host_and_scheme(
+            url=raw_next,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure()
+        ):
+            # Evite de reboucler vers add_rdv
+            if raw_next.startswith('/add-rdv'):
+                return default_next
+            return raw_next
+        return default_next
     if request.method == 'POST':
         try:
             # Cas "RDV temporaire" depuis new_client
@@ -1071,22 +1107,30 @@ def add_rdv(request):
                 error_message = "❄️ Ce commercial est absent : création de rendez-vous bloquée."
             else:
                 client_id = request.POST.get('client_id')
+                date_rdv = (request.POST.get('date_rdv') or '').strip()
+                heure_rdv = (request.POST.get('heure_rdv') or '').strip()
+                if not client_id or not date_rdv or not heure_rdv:
+                    error_message = "Veuillez renseigner date, heure et client."
+                    raise ValueError("MISSING_REQUIRED_FIELDS")
+
                 client, adresse, client_type = get_client_and_adresse(client_id)
+                objet = (request.POST.get('objet') or '').strip() or None
+                notes = (request.POST.get('notes') or '').strip() or None
 
                 rdv = Rendezvous.objects.create(
                     client=client,
                     commercial=commercial,
-                    date_rdv=request.POST.get('date_rdv'),
-                    heure_rdv=request.POST.get('heure_rdv'),
-                    objet=request.POST.get('objet'),
-                    notes=request.POST.get('notes'),
+                    date_rdv=date_rdv,
+                    heure_rdv=heure_rdv,
+                    objet=objet,
+                    notes=notes,
                     statut_rdv='a_venir',
                     rs_nom=client.rs_nom
                 )
 
 
                 # ✅ Si une note/commentaire est saisi lors de la création -> créer un CommentaireRdv
-                notes_txt = (request.POST.get('notes') or '').strip()
+                notes_txt = notes or ''
                 if notes_txt:
                     CommentaireRdv.objects.create(
                         rdv=rdv,
@@ -1104,19 +1148,23 @@ def add_rdv(request):
 
                 if request.session.get('show_success'):
                     request.session.pop('show_success')
-                    return redirect('/new-client?success=1')
+                    next_url = '/new-client?success=1'
+                else:
+                    next_url = resolve_next_url(request.POST.get('next') or request.GET.get('next'))
 
-                if role in ['responsable', 'admin']:
-                    return redirect('dashboard_responsable')
+                params = urlencode({
+                    'success': '1',
+                    'next': next_url,
+                })
+                return redirect(f"{reverse('add_rdv')}?{params}")
 
-                next_url = request.POST.get('next') or request.GET.get('next')
-                if next_url:
-                    return redirect(next_url)
-
-                return redirect('dashboard_test')
-
+        except ValueError as e:
+            if str(e) != "MISSING_REQUIRED_FIELDS":
+                error_message = "Veuillez renseigner date, heure et client."
         except FrontClient.DoesNotExist:
             error_message = "Le client sélectionné est introuvable."
+        except IntegrityError:
+            error_message = "Un rendez-vous existe déjà pour ce client à cette date et heure."
         except Exception as e:
             error_message = f"Une erreur est survenue : {e}"
 
@@ -1133,9 +1181,10 @@ def add_rdv(request):
                     where=["REPLACE(UPPER(commercial), ' ', '') = %s"], params=[nom_normalise]
                 )
     client_temp = request.session.get('client_temp') if from_new_client else None
-    # Valeur par défaut du next_url selon le rôle
-    default_next = '/dashboard-responsable/' if role in ['responsable', 'admin'] else '/dashboard-test/'
-    next_url = request.GET.get('next', default_next)
+    # Valeur de retour validée (page d'origine)
+    next_url = resolve_next_url(request.GET.get('next'))
+    success = request.GET.get('success') == '1'
+    show_error_toast = request.method == 'POST' and bool(error_message)
 
     return render(request, 'front/add_rdv.html', {
         'clients': clients,
@@ -1146,6 +1195,9 @@ def add_rdv(request):
         'role': role,
         'commerciaux_list': commerciaux_list,
         'error_message': error_message,
+        'show_error_toast': show_error_toast,
+        'success': success,
+        'success_redirect_url': next_url,
         'today_date': date.today().isoformat(),
     })
 

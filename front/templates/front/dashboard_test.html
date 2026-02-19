@@ -88,32 +88,55 @@
       border-top:1px solid rgba(0,0,0,0.1);
     }
 
-    /* Bouton gris (ghost) */
-    .dbt-btn.dbt-btn-ghost{
-      background:#f1f5f9;
-      border:1px solid #cbd5e1;
-      color:#334155;
-      box-shadow:none;
-      margin:0; /* important : annule les margins de .dbt-btn */
-    }
-    .dbt-btn.dbt-btn-ghost:hover{
-      background:#e2e8f0;
-      color:#0f172a;
-      border-color:#94a3b8;
-    }
-
-    /* Bouton appliquer rouge */
+    /* Boutons modale filtres (meme style que client_file) */
+    .dbt-btn.dbt-btn-ghost,
     .dbt-btn.dbt-btn-apply{
-      background:#ef4444;
-      border:1px solid #ef4444;
-      color:#fff;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 18%);
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      min-width:168px;
+      height:44px;
+      padding:0 18px;
+      border-radius:10px;
+      font-size:1.02rem;
+      font-weight:700;
+      line-height:1;
+      background:#fff;
+      border:1px solid #f43f5e;
+      color:#f43f5e;
+      box-shadow:0 2px 8px rgba(0, 0, 0, 18%);
       margin:0; /* important : annule les margins de .dbt-btn */
+      transition:color .25s ease, box-shadow .25s ease;
     }
+    .dbt-btn.dbt-btn-ghost::before,
+    .dbt-btn.dbt-btn-apply::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:#f43f5e;
+      transform:scaleX(0);
+      transform-origin:left center;
+      transition:transform .3s ease;
+      z-index:0;
+    }
+    .dbt-btn.dbt-btn-ghost > *,
+    .dbt-btn.dbt-btn-apply > *{
+      position:relative;
+      z-index:1;
+    }
+    .dbt-btn.dbt-btn-ghost:hover,
     .dbt-btn.dbt-btn-apply:hover{
-      background:#ffffff;
-      color:#ef4444;
-      border-color:#ef4444;
+      color:#fff;
+      border-color:#f43f5e;
+      box-shadow:0 4px 16px rgba(244,63,94,.16);
+    }
+    .dbt-btn.dbt-btn-ghost:hover::before,
+    .dbt-btn.dbt-btn-apply:hover::before{
+      transform:scaleX(1);
     }
     .dbt-map-action-btn{
       padding:9px 12px;
@@ -460,11 +483,11 @@
 
       <div class="dbt-filter-footer-split">
         <button id="dbtFilterResetBtn" class="dbt-btn dbt-btn-ghost" type="button">
-          <i class="fa fa-rotate-left"></i> Réinitialiser
+          <i class="fa fa-rotate-left"></i><span>Réinitialiser</span>
         </button>
 
         <button id="dbtFilterApplyBtn" class="dbt-btn dbt-btn-apply" type="button">
-          <i class="fa fa-check"></i> Appliquer
+          <i class="fa fa-check"></i><span>Appliquer</span>
         </button>
       </div>
     </div>

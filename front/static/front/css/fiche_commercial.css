@@ -1270,3 +1270,171 @@ header .page-title{
   color: #0f172a !important;
   text-decoration: underline !important;
 }
+
+/* =========================================================
+   FIX FINAL RESPONSIVE MOBILE (prioritaire, en fin de fichier)
+   ========================================================= */
+@media (max-width: 767px){
+  html, body{
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden !important;
+  }
+
+  *, *::before, *::after{
+    box-sizing: border-box;
+  }
+
+  .main-container{
+    width: calc(100% - 20px) !important;
+    max-width: calc(100% - 20px) !important;
+    margin: 10px auto !important;
+    padding: 16px !important;
+    border-radius: 16px !important;
+  }
+
+  header .page-title{
+    font-size: 1.35rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .commercial-header{
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+  }
+
+  .commercial-id{
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 12px !important;
+    text-align: left !important;
+  }
+
+  .title-container h1,
+  .commercial-id h1{
+    font-size: 1.28rem !important;
+    line-height: 1.2 !important;
+    word-break: break-word;
+  }
+
+  .stats-container{
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .stat-card{
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 14px 14px 12px 14px !important;
+  }
+
+  .filters-container{
+    margin: 8px 0 14px 0 !important;
+  }
+
+  .filter-main-btn{
+    width: 100% !important;
+    justify-content: center;
+    margin-bottom: 0 !important;
+  }
+
+  .satisfaction-section{
+    justify-content: stretch !important;
+  }
+
+  .satisfaction-card{
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 14px !important;
+  }
+
+  .satisfaction-content{
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    row-gap: 8px !important;
+  }
+
+  .content-grid{
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .column{
+    min-width: 0 !important;
+    padding: 12px !important;
+  }
+
+  .column h2{
+    font-size: 1.06rem !important;
+    margin-bottom: 12px !important;
+  }
+
+  .card-list{
+    max-height: none !important;
+    overflow-y: visible !important;
+    padding-right: 0 !important;
+  }
+
+  .rdv-card{
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 12px !important;
+  }
+
+  .rdv-title,
+  .rdv-details,
+  .rdv-status-recent,
+  .rdv-status-upcoming,
+  .rdv-status-cancelled,
+  .rdv-objectif-annuel{
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .filter-panel{
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    margin: 0 !important;
+    padding: 16px !important;
+  }
+
+  .date-filter-buttons{
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  .filter-btn{
+    flex: 1 1 calc(50% - 8px) !important;
+    min-width: 0 !important;
+  }
+
+  .date-range-picker{
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  .filter-panel-footer{
+    flex-direction: column !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+  }
+
+  .apply-btn,
+  .reset-link{
+    width: 100% !important;
+    text-align: center !important;
+  }
+
+  /* Evite les débordements du footer négatif en mobile */
+  .site-footer{
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+    margin-bottom: 0 !important;
+    border-radius: 0 0 16px 16px !important;
+  }
+}

@@ -155,8 +155,10 @@
       <p>Chargement des rendez-vous…</p>
     </div>
 	
-      <span class="close-modal" onclick="closeUpcomingModal()"><i class="fa-solid fa-xmark"></i></span>
-      <h2>Rendez-vous à venir</h2>
+      <div class="modal-header">
+        <h2>Rendez-vous à venir</h2>
+        <button type="button" class="close-modal" onclick="closeUpcomingModal()" aria-label="Fermer">&times;</button>
+      </div>
       <div id="accordionCommerciaux"></div>
     </div>
   </div>
@@ -306,6 +308,8 @@
           satisfactionChart.destroy();
         }
 
+        const isMobile = window.matchMedia('(max-width: 640px)').matches;
+
         let labels;
         let datasets;
 
@@ -352,7 +356,7 @@
                 ticks: {
                   color: '#4b5563',
                   font: {
-                    size: 14
+                    size: isMobile ? 11 : 14
                   }
                 },
                 grid: {
@@ -363,8 +367,10 @@
                 ticks: {
                   color: '#4b5563',
                   font: {
-                    size: 14
-                  }
+                    size: isMobile ? 10 : 14
+                  },
+                  maxRotation: isMobile ? 25 : 0,
+                  minRotation: isMobile ? 25 : 0
                 },
                 grid: {
                   display: false

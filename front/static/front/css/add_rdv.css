@@ -114,6 +114,17 @@ h2 {
   font-size: 1em;
 }
 
+/* Harmonise la taille du champ heure avec les autres inputs */
+.rdv-field input[type="time"] {
+  font-size: 1.08em;
+}
+
+.rdv-field input[type="time"]::-webkit-datetime-edit,
+.rdv-field input[type="time"]::-webkit-datetime-edit-hour-field,
+.rdv-field input[type="time"]::-webkit-datetime-edit-minute-field {
+  font-size: 1.08em;
+}
+
 .rdv-actions {
   width: 100%;
   display: flex;
@@ -264,6 +275,53 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   font-size: 1.2em;
 }
 
+/* Toast succès add_rdv (caché par défaut, affiché via .show en JS) */
+.import-toast {
+  position: fixed;
+  top: 22px;
+  right: 22px;
+  display: none;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #34d399, #10b981);
+  border: 1px solid #10b981;
+  color: #fff;
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.22);
+  font-weight: 600;
+  z-index: 9999;
+}
+
+.import-toast.show {
+  display: inline-flex;
+}
+
+.import-toast.error {
+  background: linear-gradient(135deg, #fb7185, #f43f5e);
+  border-color: #f43f5e;
+}
+
+.rdv-toast-close {
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+}
+
+.rdv-toast-close:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
 /* 🔍 Barre de recherche intelligente */
 .autocomplete-container {
   position: relative;
@@ -297,7 +355,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .autocomplete-container input[type="text"]:hover {
-  background: rgba(255,0,0,0.08);
+  background: rgba(0, 0, 0, 0.18);
+  border: 1.5px solid rgba(255,255,255,0.13);
   box-shadow: none;
   transform: none;
 }
@@ -360,7 +419,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .rdv-field input:hover,
 .rdv-field textarea:hover,
 .rdv-select:hover {
-  background: rgba(255,0,0,0.08);
+  background: rgba(0, 0, 0, 0.18);
+  border: 1.5px solid rgba(255,255,255,0.13);
   box-shadow: none;
   transform: none;
 }

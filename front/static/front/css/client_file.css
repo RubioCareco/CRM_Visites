@@ -311,20 +311,20 @@ body.dashboard::after,
   display: inline-flex !important;
   align-items: center !important;
   gap: 8px !important;
-  background: var(--primary) !important;
+  background: #ff3b3b !important;
   color: #fff !important;
-  border: none !important;
+  border: 1px solid #ff3b3b !important;
   border-radius: 10px !important;
   padding: 8px 14px !important;
   cursor: pointer !important;
   font-size: 1rem !important;
-  box-shadow: 0 6px 14px rgba(244,63,94,.22) !important;
+  box-shadow: 0 4px 16px rgba(255,59,59,.15) !important;
   transition: transform .12s ease, background .18s ease, box-shadow .18s ease;
 }
 #filterBtnClient:hover{
-  background: var(--primary-dark) !important;
+  background: #ff3b3b !important;
   transform: translateY(-1px);
-  box-shadow: 0 12px 22px rgba(244,63,94,.24) !important;
+  box-shadow: 0 4px 16px rgba(255,59,59,.15) !important;
 }
 
 /* Pills filtres actifs (on remplace le style “foncé/blanc”) */
@@ -720,8 +720,8 @@ table.client-table tr.client-card:hover td:last-child{
   isolation: isolate;
   overflow: hidden;
   background: #fff !important;
-  color: var(--primary) !important;
-  border: 1px solid var(--primary) !important;
+  color: #ff3b3b !important;
+  border: 1px solid #ff3b3b !important;
   border-radius: 8px !important;
   padding: 13px 0 !important;
   font-size: 1.08em !important;
@@ -746,8 +746,8 @@ table.client-table tr.client-card:hover td:last-child{
   isolation: isolate;
   overflow: hidden;
   background: #fff !important;
-  color: var(--primary) !important;
-  border: 1px solid var(--primary) !important;
+  color: #ff3b3b !important;
+  border: 1px solid #ff3b3b !important;
   border-radius: 8px !important;
   padding: 13px 0 !important;
   font-size: 1.08em !important;
@@ -772,7 +772,7 @@ table.client-table tr.client-card:hover td:last-child{
   content: "";
   position: absolute;
   inset: 0;
-  background: var(--primary);
+  background: #ff3b3b;
   transform: scaleX(0);
   transform-origin: left center;
   transition: transform 0.3s ease;

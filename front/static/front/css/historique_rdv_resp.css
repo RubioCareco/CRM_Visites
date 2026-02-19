@@ -355,7 +355,7 @@ body{
 
 .client-name strong{
   font-size: 1.08rem;
-  font-weight: 800;
+  font-weight: 500;
   display: block;
   white-space: nowrap;
   overflow: hidden;
@@ -394,11 +394,11 @@ body{
 }
 
 .status.validée{
-  color: var(--success);
+  color: #00b84f;
   font-weight: 800;
 }
 .status-à-rappeler{
-  color: var(--primary);
+  color: #ff3b3b;
   font-weight: 800;
 }
 
@@ -815,14 +815,48 @@ html, body{
   color: var(--text);
 }
 
-/* Titre (dans ta version actuelle il est décalé avec margin-left:390px) */
-.Title{
-  margin: 26px auto 18px auto !important;
+/* Header page type historique_rdv */
+.hr-page-header{
+  width: 100%;
   max-width: 1400px;
+  margin: 0 auto 20px auto;
   padding: 0 22px;
-  font-size: 1.65rem;
-  font-weight: 700;
-  color: #3b3b3b !important;
+  box-sizing: border-box;
+  --hr-title-text-offset: 52px;
+}
+
+.historique-title,
+.Title{
+  margin: 26px 0 0 0 !important;
+  padding: 0 !important;
+  color: #6b7280 !important;
+  font-size: clamp(2.1rem, 3.1vw, 3rem) !important;
+  line-height: 1.1 !important;
+  text-align: left !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  font-weight: 800 !important;
+}
+
+.historique-title i{
+  color: #f43f5e !important;
+  font-size: .9em !important;
+}
+
+.hr-page-subtitle{
+  margin: 8px 0 0 var(--hr-title-text-offset);
+  color: #f43f5e;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.hr-page-underline{
+  width: min(340px, 78%);
+  height: 4px;
+  border-radius: 999px;
+  margin: 12px 0 0 var(--hr-title-text-offset);
+  background: linear-gradient(90deg, #f43f5e 0%, #fb7185 58%, rgba(244,63,94,0.14) 100%);
 }
 
 /* Ligne actions (bouton filtres + search) */
@@ -866,22 +900,45 @@ html, body{
 /* Barre de recherche style “light” (la classe .search-client est utilisée pour le wrapper ET l’input) */
 .search-client{
   flex: 1 1 420px !important;
-  max-width: 520px !important;
-  border-radius: 999px !important;
+  max-width: 600px !important;
+  border-radius: 12px !important;
   background: #fff !important;
   border: 1px solid var(--border) !important;
   color: var(--text) !important;
   box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+  overflow: hidden !important;
 }
 
 .search-client .search-icon{
   color: #9aa3b2 !important;
+  left: 14px !important;
+  font-size: .95rem !important;
+  position: absolute !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 3 !important;
+  pointer-events: none !important;
+  display: block !important;
+}
+
+.search-client .hr-search-icon{
+  color: #9aa3b2 !important;
+  position: absolute !important;
+  left: 14px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  font-size: .95rem !important;
+  z-index: 3 !important;
+  pointer-events: none !important;
+  display: block !important;
 }
 
 .search-client > input.search-client{
-  height: 40px !important;
+  height: 44px !important;
+  font-size: 1rem !important;
   color: var(--text) !important;
-  padding-left: 40px !important;
+  padding: 8px 14px 8px 40px !important;
+  border-radius: 12px !important;
 }
 .search-client > input.search-client::placeholder{
   color: #9aa3b2 !important;
@@ -946,6 +1003,7 @@ html, body{
 .tab-btn{
   background: #fff !important;
   color: #606778 !important;
+  font-family: 'Segoe UI', sans-serif !important;
   font-size: 1.02rem !important;
   font-weight: 600 !important;
   padding: 10px 16px !important;
@@ -980,6 +1038,7 @@ html, body{
   box-shadow: 0 8px 16px rgba(15,23,42,.05) !important;
   border-radius: 12px !important;
   color: var(--text) !important;
+  font-family: 'Segoe UI', sans-serif !important;
   width: 100% !important;
   margin: 10px 0 !important;
   padding: 14px 16px !important;
@@ -991,24 +1050,30 @@ html, body{
 }
 
 .client-name strong{
+  font-family: 'Segoe UI', sans-serif !important;
+  font-weight: 500 !important;
   color: #2f2f2f !important;
 }
 .client-name .infos-adresse{
+  font-family: 'Segoe UI', sans-serif !important;
   color: #7a8293 !important;
 }
 
 /* Statuts */
 .status.validée{
-  color: #1f9d55 !important;
+  font-family: 'Segoe UI', sans-serif !important;
+  color: #00b84f !important;
   font-weight: 700;
 }
 .status-à-rappeler{
-  color: #d64545 !important;
+  font-family: 'Segoe UI', sans-serif !important;
+  color: #ff3b3b !important;
   font-weight: 700;
 }
 
 /* Ligne “infos-adresse” dans la 3e colonne : en light, pas gris clair */
 .info-container .infos-adresse{
+  font-family: 'Segoe UI', sans-serif !important;
   color: #5f6676 !important;
 }
 
@@ -1073,18 +1138,49 @@ html, body{
   color: var(--text) !important;
 }
 
+.filter-panel-header{
+  background:#181212b8 !important;
+  color:#fff !important;
+  padding:16px 18px !important;
+  border-radius:16px 16px 0 0 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  position:relative !important;
+  margin:-18px -18px 10px -18px !important;
+}
+
 .filter-panel-header h3{
-  color: #2f2f2f !important;
+  margin:0 !important;
+  font-size:1.2rem !important;
+  font-weight:900 !important;
+  color:#fff !important;
+  text-align:center !important;
 }
 
 .filter-panel-header .close-btn{
-  background: #fff !important;
-  border: 1px solid var(--border) !important;
-  color: var(--red) !important;
+  position:absolute !important;
+  top:50% !important;
+  right:14px !important;
+  transform:translateY(-50%) !important;
+  width:32px !important;
+  height:32px !important;
+  border-radius:999px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  background:transparent !important;
+  border:1px solid transparent !important;
+  color:#ef4444 !important;
+  font-size:28px !important;
+  line-height:1 !important;
+  padding:0 !important;
+  transition:background .2s ease,color .2s ease,border-color .2s ease !important;
 }
 .filter-panel-header .close-btn:hover{
-  background: #fff3f3 !important;
-  border-color: rgba(229,57,53,.25) !important;
+  background:#ef4444 !important;
+  color:#fff !important;
+  border-color:#ef4444 !important;
 }
 
 /* Inputs/select */
@@ -1173,7 +1269,353 @@ html, body{
 /* Responsive */
 @media (max-width: 720px){
   .cards .card{ padding: 14px 12px 0 12px !important; }
-  .Title{ font-size: 1.4rem; }
+  .historique-title,
+  .Title{ font-size: clamp(1.7rem, 8vw, 2.15rem) !important; }
   .buttons-container{ flex-direction: column; align-items: stretch; }
   .export-excel-btn, .retour-dashboard-btn{ min-width: 0 !important; width: 100% !important; }
+}
+
+/* =========================================================
+   MOBILE HARD OVERRIDES (historique_rdv_resp)
+   ========================================================= */
+@media (max-width: 768px){
+  html, body{
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .hr-page-header,
+  .Title,
+  .actions-row,
+  .cards,
+  .buttons-container{
+    width: calc(100% - 20px) !important;
+    max-width: calc(100% - 20px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  .hr-page-header{
+    margin-top: 14px !important;
+    margin-bottom: 12px !important;
+    padding: 0 4px !important;
+    --hr-title-text-offset: 44px;
+  }
+
+  .historique-title,
+  .Title{
+    margin-top: 0 !important;
+    margin-bottom: 10px !important;
+    font-size: clamp(1.7rem, 8vw, 2.15rem) !important;
+    text-align: left !important;
+  }
+
+  .hr-page-subtitle{
+    font-size: .92rem;
+  }
+
+  .hr-page-underline{
+    width: min(300px, 72vw);
+  }
+
+  .actions-row{
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    padding: 0 4px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .search-client{
+    order: 1;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .filters-container{
+    order: 2;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .filter-button{
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 42px !important;
+    padding: 10px 14px !important;
+    border-radius: 12px !important;
+  }
+
+  .cards{
+    padding: 0 4px !important;
+  }
+
+  .cards .card{
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: auto !important;
+    padding: 10px 8px 8px !important;
+    border-radius: 12px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .tabs-container{
+    width: 100% !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+  }
+
+  .tab-btn{
+    padding: 10px 6px !important;
+    font-size: 0.95rem !important;
+    line-height: 1.15 !important;
+    white-space: normal !important;
+    word-break: keep-all !important;
+  }
+
+  .tabs-content-scroll{
+    max-height: none !important;
+    overflow-y: visible !important;
+    padding: 10px 6px 8px !important;
+  }
+
+  .visit-entry,
+  .reminder-entry{
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    padding: 12px 10px !important;
+    margin: 8px 0 !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .client-name,
+  .status-container,
+  .info-container{
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .client-name strong{
+    font-size: 1.02rem !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+  }
+
+  .client-name .infos-adresse{
+    font-size: 0.9rem !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+  }
+
+  .visit-entry p,
+  .reminder-entry p{
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    line-height: 1.4 !important;
+  }
+
+  .info-container .infos-adresse{
+    display: block !important;
+    font-size: 0.9rem !important;
+  }
+
+  .info-container .infos-adresse span{
+    display: inline !important;
+    margin-left: 0 !important;
+    white-space: normal !important;
+  }
+
+  .buttons-container{
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    padding: 0 4px !important;
+    margin-top: 12px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .retour-dashboard-container,
+  .export-btn-container{
+    width: 100% !important;
+    justify-content: stretch !important;
+    height: auto !important;
+  }
+
+  .export-excel-btn,
+  .retour-dashboard-btn{
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 42px !important;
+    padding: 10px 12px !important;
+    font-size: 0.95rem !important;
+  }
+
+  .filter-panel{
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    max-height: calc(100vh - 18px) !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    padding: 0 !important;
+    border-radius: 14px !important;
+  }
+
+  .filter-panel-header{
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 2 !important;
+    background:#181212b8 !important;
+    padding: 14px 12px !important;
+    border-bottom: none !important;
+    margin: 0 !important;
+    border-radius: 14px 14px 0 0 !important;
+  }
+
+  .filter-panel-header .close-btn{
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 999px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .filter-group{
+    margin: 0 !important;
+    padding: 12px !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+
+  .date-filter-buttons{
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .date-filter-buttons .filter-btn{
+    flex: 1 1 calc(50% - 6px) !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+  }
+
+  .date-range-picker{
+    flex-direction: column !important;
+    gap: 10px !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .date-input-group{
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .date-input,
+  .filter-panel input[type="date"],
+  .filter-panel input[type="week"],
+  .filter-panel input[type="month"],
+  .filter-panel input[type="number"]{
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .filter-panel-footer{
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 2 !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    padding: 12px !important;
+    background: #fff !important;
+    border-top: 1px solid var(--border) !important;
+  }
+
+  .apply-btn,
+  .reset-link{
+    width: 48% !important;
+    text-align: center !important;
+    padding: 10px 12px !important;
+    min-height: 42px !important;
+    font-size: 0.98rem !important;
+    border-radius: 10px !important;
+    text-decoration: none !important;
+  }
+
+  .reset-link{
+    background: #fff !important;
+    color: var(--red) !important;
+    border: 1px solid var(--red) !important;
+    font-weight: 700 !important;
+  }
+
+  .reset-link:hover{
+    background: #fff3f3 !important;
+    text-decoration: none !important;
+  }
+
+  .modal-content-client-rdv{
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    min-width: 0 !important;
+    max-height: 82vh !important;
+    padding: 12px !important;
+    border-radius: 14px !important;
+  }
+}
+
+@media (max-width: 420px){
+  .tab-btn{
+    font-size: 0.88rem !important;
+    padding: 9px 4px !important;
+  }
+
+  .client-name strong{
+    font-size: 0.98rem !important;
+  }
+
+  .client-name .infos-adresse,
+  .info-container .infos-adresse{
+    font-size: 0.85rem !important;
+  }
+
+  .apply-btn,
+  .reset-link{
+    width: 100% !important;
+  }
+
+  .filter-panel-footer{
+    flex-direction: column !important;
+  }
+}
+
+/* Empêche le footer de masquer les actions en bas de page */
+.buttons-container{
+  padding-bottom: 12px !important;
+  margin-bottom: 28px !important;
+}
+
+.site-footer{
+  position: relative !important;
+  z-index: 1 !important;
+  margin-top: 12px !important;
+}
+
+@media (max-width: 768px){
+  .buttons-container{
+    padding-bottom: 0 !important;
+    margin-bottom: calc(86px + env(safe-area-inset-bottom)) !important;
+  }
 }

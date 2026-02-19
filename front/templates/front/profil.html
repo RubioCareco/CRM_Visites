@@ -44,15 +44,15 @@
           </div>
 
           {% if can_edit %}
-          <div class="switch-absent">
+          <div class="switch-absent is-disabled">
             <label for="is_absent">Commercial absent</label>
                          <label class="switch-toggle">
-               <input type="checkbox" id="is_absent" name="is_absent" value="1" {% if commercial.is_absent %}checked{% endif %} />
+               <input type="checkbox" id="is_absent" name="is_absent" value="1" {% if commercial.is_absent %}checked{% endif %} disabled />
                <span class="switch-slider"></span>
              </label>
           </div>
           <button type="submit" class="edit-button" id="editProfileBtn">
-            <i class="fa fa-pen"></i> Modifier le profil
+            <i class="fa fa-pen"></i><span class="edit-button-label">Modifier le profil</span>
           </button>
           {% endif %}
         </div>
@@ -77,6 +77,8 @@
     document.addEventListener('DOMContentLoaded', function () {
       const editBtn = document.getElementById('editProfileBtn');
       const inputs = document.querySelectorAll('.profile-field input');
+      const absentToggle = document.getElementById('is_absent');
+      const absentSwitch = document.querySelector('.switch-absent');
       const form = document.querySelector('form');
       let isEditing = false;
   
@@ -87,7 +89,9 @@
               inputs.forEach(input => {
                   input.disabled = false
               });
-              editBtn.innerHTML = '<i class="fa fa-check"></i> Enregistrer';
+              if (absentToggle) absentToggle.disabled = false;
+              if (absentSwitch) absentSwitch.classList.remove('is-disabled');
+              editBtn.innerHTML = '<i class="fa fa-check"></i><span class="edit-button-label">Enregistrer</span>';
               isEditing = true;
             } else {
               // L'utilisateur veut enregistrer → on laisse le formulaire se soumettre

@@ -1563,7 +1563,10 @@ document.addEventListener("click", async (e) => {
 
     var res = await fetch("/api/tournee/replace/", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": (typeof getCSRF === "function") ? getCSRF() : (typeof getCookie === "function" ? getCookie("csrftoken") : "")
+      },
       body: JSON.stringify({ commercial_id: commercial_id, date: date, client_ids: ids })
     });
 

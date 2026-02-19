@@ -94,6 +94,9 @@ from front.utils import generer_rendezvous_automatiques, generer_rendezvous_simp
 from django.db import connection
 from urllib.parse import urlencode
 from django.utils.http import url_has_allowed_host_and_scheme
+import logging
+
+logger = logging.getLogger(__name__)
 
 def get_current_commercial(request):
     """
@@ -358,7 +361,7 @@ def dashboard_test(request):
 reset_tokens = {}
 
 def reset_password(request):
-    print("RESET PASSWORD VIEW CALLED")
+    logger.debug("reset_password view called")
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if request.method == 'POST':
         email = (request.POST.get('email') or '').strip()
@@ -387,7 +390,6 @@ def reset_password(request):
                     'user': user,
                 })
                 text_content = f"Pour réinitialiser votre mot de passe, cliquez sur ce lien : {reset_link}"
-                print("HTML CONTENT:", html_content)
                 msg = EmailMultiAlternatives(subject, text_content, 'bznjamin.gillens@gmail.com', [email])
                 msg.attach_alternative(html_content, "text/html")
                 msg.send()
@@ -403,7 +405,6 @@ def reset_password(request):
                     'user': commercial,
                 })
                 text_content = f"Pour réinitialiser votre mot de passe, cliquez sur ce lien : {reset_link}"
-                print("HTML CONTENT:", html_content)
                 msg = EmailMultiAlternatives(subject, text_content, 'bznjamin.gillens@gmail.com', [email])
                 msg.attach_alternative(html_content, "text/html")
                 msg.send()
@@ -1698,6 +1699,7 @@ def get_rdv_info(request, uuid):
     except Rendezvous.DoesNotExist:
         return JsonResponse({'error': 'Rendez-vous introuvable'}, status=404)
     
+@login_required
 def client_file(request):
     per_page = int(request.GET.get('per_page', 50))
     page_number = request.GET.get('page', 1)
@@ -3849,25 +3851,24 @@ def api_search_rdv_historique(request):
                 break
     return JsonResponse({'results': results})
 
-@csrf_exempt
+@login_required
+@require_POST
+@csrf_protect
 def extend_session(request):
     """Vue pour prolonger la session utilisateur"""
-    if request.method == 'POST':
-        if 'commercial_id' in request.session:
-            # Mettre à jour le timestamp de dernière activité
-            request.session['last_activity'] = timezone.now().isoformat()
-            
-            # Supprimer les flags d'alerte
-            if 'show_timeout_warning' in request.session:
-                del request.session['show_timeout_warning']
-            if 'timeout_warning_minutes' in request.session:
-                del request.session['timeout_warning_minutes']
-            
-            return JsonResponse({'success': True, 'message': 'Session prolongée'})
-        else:
-            return JsonResponse({'success': False, 'message': 'Utilisateur non connecté'}, status=401)
-    
-    return JsonResponse({'success': False, 'message': 'Méthode non autorisée'}, status=405)
+    if 'commercial_id' not in request.session:
+        return JsonResponse({'success': False, 'message': 'Utilisateur non connecté'}, status=401)
+
+    # Mettre à jour le timestamp de dernière activité
+    request.session['last_activity'] = timezone.now().isoformat()
+
+    # Supprimer les flags d'alerte
+    if 'show_timeout_warning' in request.session:
+        del request.session['show_timeout_warning']
+    if 'timeout_warning_minutes' in request.session:
+        del request.session['timeout_warning_minutes']
+
+    return JsonResponse({'success': True, 'message': 'Session prolongée'})
 
 def get_client_comments(request, client_id):
     try:
@@ -3993,18 +3994,13 @@ def objectif_annuel(request):
     
     return render(request, 'front/objectif_annuel.html', context)
 
-@csrf_exempt
+@login_required
+@require_GET
 def api_client_details(request, client_id):
     """API pour récupérer les détails d'un client avec ses questionnaires"""
-    # Pour les tests, utiliser le premier commercial
     commercial_id = request.session.get('commercial_id')
     if not commercial_id:
-        commercial = Commercial.objects.first()
-        commercial_id = commercial.id if commercial else None
-        print(f"DEBUG: Utilisation du commercial par défaut: {commercial_id}")
-    
-    print(f"DEBUG: API appelée pour client_id={client_id}, commercial_id={commercial_id}")
-    print(f"DEBUG: Session commercial_id: {request.session.get('commercial_id')}")
+        return JsonResponse({'error': 'Non authentifié'}, status=401)
     
     try:
         # Récupérer les informations du client
@@ -4012,15 +4008,12 @@ def api_client_details(request, client_id):
         
         # Vérifier que le client appartient bien à ce commercial
         commercial = Commercial.objects.get(id=commercial_id)
-        print(f"DEBUG: client.commercial='{client.commercial}', commercial.commercial='{commercial.commercial}'")
         
         # Vérification plus flexible - ignorer les espaces et la casse
         client_commercial_clean = (client.commercial or '').strip().lower()
         commercial_name_clean = (commercial.commercial or '').strip().lower()
         
         if client_commercial_clean != commercial_name_clean:
-            print(f"DEBUG: Accès refusé - commercial ne correspond pas")
-            print(f"DEBUG: client_commercial_clean='{client_commercial_clean}', commercial_name_clean='{commercial_name_clean}'")
             return JsonResponse({'error': 'Accès non autorisé à ce client'}, status=403)
         
         # Récupérer les RDV réalisés du client pour ce commercial
@@ -4094,14 +4087,14 @@ def api_client_details(request, client_id):
             'restants': restants
         }
         
-        print(f"DEBUG: Données envoyées pour client {client_id}")
+        logger.debug("api_client_details success for client_id=%s", client_id)
         return JsonResponse(response_data)
         
     except FrontClient.DoesNotExist:
-        print(f"DEBUG: Client {client_id} non trouvé")
+        logger.info("api_client_details client not found client_id=%s", client_id)
         return JsonResponse({'error': 'Client non trouvé'}, status=404)
     except Exception as e:
-        print(f"DEBUG: Erreur pour client {client_id}: {str(e)}")
+        logger.exception("api_client_details failed for client_id=%s", client_id)
         return JsonResponse({'error': str(e)}, status=500)
 
 def get_client_comments(request, client_id):
@@ -4287,7 +4280,8 @@ def api_map_tournee(request):
     })
 
 # API_REPLACE_TOURNEE_V2
-@csrf_exempt
+@login_required
+@csrf_protect
 @require_POST
 def api_replace_tournee(request):
     # API_REPLACE_TOURNEE_SAFEJSON_V1
@@ -4309,6 +4303,12 @@ def api_replace_tournee(request):
         d = parse_date(date_str)
         if not d:
             return JsonResponse({"ok": False, "error": "invalid_date"}, status=400)
+
+        # Permissions: un commercial ne peut modifier que sa propre tournée.
+        session_commercial_id = int(request.session.get("commercial_id") or 0)
+        role = request.session.get("role")
+        if role not in ["responsable", "admin"] and commercial_id != session_commercial_id:
+            return JsonResponse({"ok": False, "error": "forbidden"}, status=403)
 
         from .models import Rendezvous
         qs = Rendezvous.objects.filter(commercial_id=commercial_id, date_rdv=d).order_by("heure_rdv", "id")

@@ -183,7 +183,7 @@ def get_current_commercial(request):
 @require_GET
 
 def api_rdvs_by_date(request):
-    """Retourne jusqu'à 6 RDV pour un jour donné et un statut donné.
+    """Retourne les RDV pour un jour donné et un statut donné.
     Paramètres:
       - date (YYYY-MM-DD) obligatoire
       - statut in {a_venir, valide, annule} obligatoire
@@ -205,7 +205,7 @@ def api_rdvs_by_date(request):
         qs = (Rendezvous.objects
               .filter(commercial_id=commercial_id, date_rdv=target_date, statut_rdv=statut)
               .select_related('client')
-              .order_by('heure_rdv')[:6])
+              .order_by('heure_rdv'))
 
         results = []
         for rdv in qs:
@@ -251,6 +251,8 @@ def api_rdvs_by_date(request):
                 } if client else None,
                 'adresse': adresse,
                 'statut': rdv.statut_rdv,
+                'objet': rdv.objet or '',
+                'commentaire': rdv.notes or '',
                 'pdf': pdf_info,
             })
         return JsonResponse({'date': target_date.isoformat(), 'statut': statut, 'rdvs': results})
@@ -1195,6 +1197,18 @@ def add_rdv(request):
                     error_message = "Veuillez renseigner date, heure et client."
                     raise ValueError("MISSING_REQUIRED_FIELDS")
 
+                # Parse explicite pour éviter les erreurs de type dans les signaux/statistiques.
+                try:
+                    date_rdv_obj = datetime.strptime(date_rdv, "%Y-%m-%d").date()
+                except ValueError:
+                    error_message = "Date invalide. Format attendu : YYYY-MM-DD."
+                    raise ValueError("INVALID_DATE")
+                try:
+                    heure_rdv_obj = datetime.strptime(heure_rdv, "%H:%M").time()
+                except ValueError:
+                    error_message = "Heure invalide. Format attendu : HH:MM."
+                    raise ValueError("INVALID_TIME")
+
                 client, adresse, client_type = get_client_and_adresse(client_id)
                 objet = (request.POST.get('objet') or '').strip() or None
                 notes = (request.POST.get('notes') or '').strip() or None
@@ -1202,8 +1216,8 @@ def add_rdv(request):
                 rdv = Rendezvous.objects.create(
                     client=client,
                     commercial=commercial,
-                    date_rdv=date_rdv,
-                    heure_rdv=heure_rdv,
+                    date_rdv=date_rdv_obj,
+                    heure_rdv=heure_rdv_obj,
                     objet=objet,
                     notes=notes,
                     statut_rdv='a_venir',
@@ -1241,14 +1255,17 @@ def add_rdv(request):
                 return redirect(f"{reverse('add_rdv')}?{params}")
 
         except ValueError as e:
-            if str(e) != "MISSING_REQUIRED_FIELDS":
+            if str(e) == "MISSING_REQUIRED_FIELDS":
                 error_message = "Veuillez renseigner date, heure et client."
+            elif str(e) not in {"INVALID_DATE", "INVALID_TIME"}:
+                error_message = "Veuillez vérifier les champs saisis."
         except FrontClient.DoesNotExist:
             error_message = "Le client sélectionné est introuvable."
         except IntegrityError:
             error_message = "Un rendez-vous existe déjà pour ce client à cette date et heure."
-        except Exception as e:
-            error_message = f"Une erreur est survenue : {e}"
+        except Exception:
+            logger.exception("add_rdv failed")
+            error_message = "Une erreur est survenue. Merci de réessayer."
 
 
     # Si responsable/admin, on affiche tous les clients, sinon seulement ceux du commercial
@@ -1598,6 +1615,7 @@ def update_statut(request, uuid, statut):
     except Exception:
         return JsonResponse({'status': 'error', 'message': "JSON invalide"}, status=400)
     commentaire = data.get('commentaire', '')
+    is_pinned = bool(data.get('is_pinned', False))
 
     if statut == "valider":
         rdv.statut_rdv = 'valide'
@@ -1605,7 +1623,7 @@ def update_statut(request, uuid, statut):
         if commentaire.strip():
             rdv.notes = commentaire  # (optionnel)
             client, adresse, client_type = get_client_and_adresse(rdv.client.id)
-            rs_nom = adresse["adresse"] if adresse else getattr(rdv.client, 'rs_nom', None) or getattr(rdv.client, 'nom', None) or ''
+            rs_nom = getattr(rdv.client, 'rs_nom', None) or getattr(rdv.client, 'nom', None) or ''
             commercial_id = request.session.get('commercial_id')
             commercial = Commercial.objects.get(id=commercial_id) if commercial_id else None
             CommentaireRdv.objects.create(
@@ -1613,7 +1631,8 @@ def update_statut(request, uuid, statut):
                 auteur=request.user if request.user.is_authenticated else None,
                 commercial=commercial,
                 texte=commentaire,
-                rs_nom=rs_nom
+                rs_nom=rs_nom,
+                is_pinned=is_pinned
             )
     elif statut == "annuler":
         rdv.statut_rdv = 'annule'
@@ -1621,7 +1640,7 @@ def update_statut(request, uuid, statut):
         if commentaire.strip():
             rdv.notes = commentaire  # (optionnel)
             client, adresse, client_type = get_client_and_adresse(rdv.client.id)
-            rs_nom = adresse["adresse"] if adresse else getattr(rdv.client, 'rs_nom', None) or getattr(rdv.client, 'nom', None) or ''
+            rs_nom = getattr(rdv.client, 'rs_nom', None) or getattr(rdv.client, 'nom', None) or ''
             commercial_id = request.session.get('commercial_id')
             commercial = Commercial.objects.get(id=commercial_id) if commercial_id else None
             CommentaireRdv.objects.create(
@@ -1629,13 +1648,14 @@ def update_statut(request, uuid, statut):
                 auteur=request.user if request.user.is_authenticated else None,
                 commercial=commercial,
                 texte=commentaire,
-                rs_nom=rs_nom
+                rs_nom=rs_nom,
+                is_pinned=is_pinned
             )
     elif statut == "commentaire":
         # On ajoute juste un commentaire sans changer le statut
         if commentaire.strip():
             client, adresse, client_type = get_client_and_adresse(rdv.client.id)
-            rs_nom = adresse["adresse"] if adresse else getattr(rdv.client, 'rs_nom', None) or getattr(rdv.client, 'nom', None) or ''
+            rs_nom = getattr(rdv.client, 'rs_nom', None) or getattr(rdv.client, 'nom', None) or ''
             commercial_id = request.session.get('commercial_id')
             commercial = Commercial.objects.get(id=commercial_id) if commercial_id else None
             CommentaireRdv.objects.create(
@@ -1643,7 +1663,8 @@ def update_statut(request, uuid, statut):
                 auteur=request.user if request.user.is_authenticated else None,
                 commercial=commercial,
                 texte=commentaire,
-                rs_nom=rs_nom
+                rs_nom=rs_nom,
+                is_pinned=is_pinned
             )
         return JsonResponse({'status': 'ok'})
     else:
@@ -4469,7 +4490,15 @@ def api_replace_tournee(request):
                 base_dt = datetime.combine(d, time(9, 0))
             for j in range(len(rdvs), len(client_ids)):
                 cid = int(client_ids[j])
-                rv = Rendezvous(commercial_id=commercial_id, client_id=cid, date_rdv=d, heure_rdv=base_dt.time())
+                client = FrontClient.objects.filter(id=cid).first()
+                rv = Rendezvous(
+                    commercial_id=commercial_id,
+                    client_id=cid,
+                    date_rdv=d,
+                    heure_rdv=base_dt.time(),
+                    statut_rdv="a_venir",
+                    rs_nom=(client.rs_nom if client else None),
+                )
                 rv.save()
                 created += 1
                 base_dt = base_dt + timedelta(minutes=30)

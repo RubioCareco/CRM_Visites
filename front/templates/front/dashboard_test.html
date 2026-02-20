@@ -71,6 +71,44 @@
       justify-content:center;
     }
     .dbt-toast button:hover{ background:rgba(255,255,255,.3); }
+    .dbt-confirm-overlay{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:rgba(15,23,42,.45);
+      z-index:2147483646;
+      padding:16px;
+    }
+    .dbt-confirm-box{
+      width:min(92vw, 460px);
+      background:#fff;
+      border:1px solid #e2e8f0;
+      border-radius:14px;
+      box-shadow:0 20px 40px rgba(15,23,42,.25);
+      padding:18px;
+    }
+    .dbt-confirm-text{
+      color:#1f2937;
+      font-weight:600;
+      line-height:1.4;
+      margin-bottom:14px;
+    }
+    .dbt-confirm-actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+    }
+    .dbt-confirm-btn{
+      border:none;
+      border-radius:10px;
+      padding:10px 14px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .dbt-confirm-btn.cancel{ background:#e5e7eb; color:#1f2937; }
+    .dbt-confirm-btn.ok{ background:#f43f5e; color:#fff; }
 
     /* ====== ULTRA CLEAN : centrer le contenu de la modale filtres ====== */
     .dbt-filter-body{ display:flex; flex-direction:column; align-items:center; }
@@ -403,6 +441,15 @@
 
 <div id="dbtTooltip" class="dbt-tooltip"></div>
 <div id="dbtToastStack" class="dbt-toast-stack" aria-live="polite" aria-atomic="false"></div>
+<div id="dbtConfirmOverlay" class="dbt-confirm-overlay">
+  <div class="dbt-confirm-box">
+    <div id="dbtConfirmText" class="dbt-confirm-text"></div>
+    <div class="dbt-confirm-actions">
+      <button type="button" id="dbtConfirmCancel" class="dbt-confirm-btn cancel">Annuler</button>
+      <button type="button" id="dbtConfirmOk" class="dbt-confirm-btn ok">Confirmer</button>
+    </div>
+  </div>
+</div>
     </div>
 
     <div class="dbt-footer-links">
@@ -436,9 +483,11 @@
 
       <label for="dbtComment" style="display:block;margin:12px 0 6px">Commentaire :</label>
       <textarea id="dbtComment" rows="4" style="width:100%;border:1px solid #e7ecf5;border-radius:8px;padding:8px"></textarea>
-      <label id="pinWrap" style="display:none;align-items:center;gap:8px;margin-top:8px;font-size:13px;color:#334155">
-        <input id="pinNewComment" type="checkbox"> Épingler ce commentaire
-      </label>
+      <div style="margin-top:8px;display:flex;justify-content:flex-end">
+        <button type="button" id="dbtBtnPinDraft" class="dbt-action-button" style="min-width:unset;padding:8px 10px;" title="Épingler ce commentaire">
+          <i class="fa-solid fa-thumbtack"></i>
+        </button>
+      </div>
 
       <div id="dbtPDFContainer" style="text-align:center;margin:10px 0"></div>
 
@@ -536,6 +585,7 @@
     const btnForm      = document.getElementById('dbtBtnForm');
     const btnSaveCom   = document.getElementById('dbtBtnSaveComment');
     const btnNewRDV    = document.getElementById('dbtBtnNewRDV');
+    const btnPinDraft  = document.getElementById('dbtBtnPinDraft');
     const validateTourneeBtn = document.getElementById('dbtValidateTournee');
     const toastStack   = document.getElementById('dbtToastStack');
     const isCommercialAbsent = document.body.dataset.commercialAbsent === '1';
@@ -588,9 +638,73 @@
     }
     window.dbtShowToast = showToast;
     window.dbtIsCommercialAbsent = isCommercialAbsent;
+    const confirmOverlay = document.getElementById('dbtConfirmOverlay');
+    const confirmText = document.getElementById('dbtConfirmText');
+    const confirmOk = document.getElementById('dbtConfirmOk');
+    const confirmCancel = document.getElementById('dbtConfirmCancel');
+
+    function dbtAskConfirm(message){
+      if(!confirmOverlay || !confirmText || !confirmOk || !confirmCancel){
+        return Promise.resolve(window.confirm(message));
+      }
+      confirmText.textContent = message;
+      confirmOverlay.style.display = 'flex';
+      return new Promise((resolve)=>{
+        let done = false;
+        const finish = (result)=>{
+          if(done) return;
+          done = true;
+          confirmOverlay.style.display = 'none';
+          confirmOk.removeEventListener('click', onOk);
+          confirmCancel.removeEventListener('click', onCancel);
+          confirmOverlay.removeEventListener('click', onOverlay);
+          resolve(result);
+        };
+        const onOk = ()=> finish(true);
+        const onCancel = ()=> finish(false);
+        const onOverlay = (e)=>{ if(e.target === confirmOverlay) finish(false); };
+        confirmOk.addEventListener('click', onOk);
+        confirmCancel.addEventListener('click', onCancel);
+        confirmOverlay.addEventListener('click', onOverlay);
+      });
+    }
+    window.dbtAskConfirm = dbtAskConfirm;
 
     function showAbsentBlockedToast(){
       showToast("Vous êtes absent : action indisponible sur les rendez-vous.", "error");
+    }
+
+    function refreshDraftPinButton(){
+      if(!btnPinDraft) return;
+      const hasText = !!((commentEl && commentEl.value || '').trim());
+      btnPinDraft.style.opacity = hasText ? '1' : '.6';
+      btnPinDraft.disabled = !hasText;
+      btnPinDraft.title = "Épingler ce commentaire";
+      btnPinDraft.innerHTML = '<i class="fa-solid fa-thumbtack"></i>';
+    }
+
+    function pinCommentNow(uuid){
+      const text = (commentEl && commentEl.value || '').trim();
+      if(!text){
+        showToast('Saisis d’abord un commentaire pour pouvoir l’épingler.', 'error');
+        return;
+      }
+      fetch(`/update-statut/${uuid}/commentaire/`, {
+        method:'POST',
+        headers:{'X-CSRFToken':getCSRF(),'Content-Type':'application/json'},
+        body: JSON.stringify({ commentaire: text, is_pinned: true })
+      }).then(r=>r.json()).then(data=>{
+        if(data.status==='ok'){
+          commentEl.value = '';
+          refreshDraftPinButton();
+          if(currentRDV && currentRDV.client_id){
+            loadClientComments(currentRDV.client_id);
+          }
+          showToast('Commentaire épinglé.', 'success');
+        }else{
+          showToast('Erreur lors de l’épinglage du commentaire.', 'error');
+        }
+      }).catch(()=>showToast('Erreur réseau.', 'error'));
     }
 
     if(isCommercialAbsent && validateTourneeBtn){
@@ -707,19 +821,7 @@
     }
 
     function filterDaysByUnvalidated(){
-      const only = rdvAValiderEl && rdvAValiderEl.checked;
-      const dayCells = document.querySelectorAll('.dbt-cell.day');
-      dayCells.forEach(cell => {
-        if (!only) {
-          cell.classList.remove('dbt-muted');
-          return;
-        }
-        const has = cell.classList.contains('has-unvalidated');
-        if (has) cell.classList.remove('dbt-muted'); else cell.classList.add('dbt-muted');
-      });
-
-      const q = (searchInput.value||'').trim();
-      if (q) applyCalendarFilterByClient(q);
+      applyCalendarFilterByClient((searchInput.value||'').trim());
     }
 
     function decorateBadgesForMonth(){
@@ -762,11 +864,36 @@
       const q = (rsNom||'').trim().toLowerCase();
       const dayCells = document.querySelectorAll('.dbt-cell.day');
       const mySeq = ++__filterSeq;
+      const from = (dateFromEl && dateFromEl.value) ? dateFromEl.value : '';
+      const to = (dateToEl && dateToEl.value) ? dateToEl.value : '';
+      const onlyUnvalidated = !!(rdvAValiderEl && rdvAValiderEl.checked);
+
+      function passStaticFilters(cell){
+        const iso = (cell && cell.dataset && cell.dataset.date) ? cell.dataset.date : '';
+        if(!iso) return false;
+        if(from && iso < from) return false;
+        if(to && iso > to) return false;
+        if(onlyUnvalidated){
+          const has = cell.classList.contains('has-unvalidated');
+          if(!has) return false;
+        }
+        return true;
+      }
+
       if(!q){
-        dayCells.forEach(c=> { c.style.display=''; });
+        dayCells.forEach(c=> {
+          const visible = passStaticFilters(c);
+          c.style.display = visible ? '' : 'none';
+          c.classList.toggle('dbt-muted', onlyUnvalidated && !c.classList.contains('has-unvalidated'));
+        });
         return;
       }
       dayCells.forEach(cell=>{
+        if(!passStaticFilters(cell)){
+          cell.style.display = 'none';
+          cell.classList.toggle('dbt-muted', onlyUnvalidated && !cell.classList.contains('has-unvalidated'));
+          return;
+        }
         const iso = cell.dataset.date;
         fetch(`/api/rdvs-by-date/?date=${iso}&statut=${encodeURIComponent(statut)}`)
           .then(r=>r.json())
@@ -781,7 +908,8 @@
                      civ.toLowerCase().includes(q) ||
                      withCiv.toLowerCase().includes(q);
             });
-            cell.style.display = has ? '' : 'none';
+            cell.style.display = has && passStaticFilters(cell) ? '' : 'none';
+            cell.classList.toggle('dbt-muted', onlyUnvalidated && !cell.classList.contains('has-unvalidated'));
           })
           .catch(()=>{ if(mySeq === __filterSeq) cell.style.display='none'; });
       });
@@ -859,6 +987,8 @@
                 code_comptable: r.client?.code_comptable || '',
                 classement: r.client?.classement_client || '',
                 statut  : r.statut || statut,
+                objet   : r.objet || '',
+                commentaire: r.commentaire || '',
                 date    : isoDate,
                 heure   : r.heure || ''
               });
@@ -876,10 +1006,12 @@
       btnForm.style.display='none';
       btnSaveCom.style.display='none';
       btnNewRDV.style.display='none';
+      if(btnPinDraft) btnPinDraft.style.display='none';
 
       if(statut==='a_venir'){
         btnValider.style.display='inline-flex';
         btnAnnuler.style.display='inline-flex';
+        if(btnPinDraft) btnPinDraft.style.display='inline-flex';
         fetch(`/check-satisfaction/${currentRDV.uuid}/`).then(r=>r.json()).then(d=>{
           btnForm.style.display = d.exists ? 'none' : 'inline-flex';
         });
@@ -908,18 +1040,15 @@
     }
 
     function openClientModal(rdv){
-      
-  // PIN_PREVIEW_BIND_IN_OPENCLIENTMODAL
-  setTimeout(bindPinCheckbox, 0);
-  setTimeout(bindPinCheckbox, 200);
-
-bindPinCheckbox();
       const emailRaw = (rdv.email || '').trim();
       const emailHtml = (emailRaw && emailRaw.includes('@'))
         ? `<a href="mailto:${encodeURIComponent(emailRaw)}" style="color:#2563eb;text-decoration:underline">${emailRaw}</a>`
         : 'N/A';
 
       currentRDV = rdv;
+      refreshDraftPinButton();
+      const rdvObjet = (rdv.objet || '').trim();
+      const rdvComment = (rdv.commentaire || '').trim();
       clientTitle.textContent = (rdv.civilite ? rdv.civilite+' ' : '') + (rdv.rs_nom || '(Sans raison sociale)');
       clientInfo.innerHTML = `
         <div><b>Adresse :</b> ${rdv.adresse||''} ${rdv.cp||''} ${rdv.ville||''}</div>
@@ -928,7 +1057,9 @@ bindPinCheckbox();
         <div><b>Statut :</b> ${rdv.statut||'N/A'}</div>
         <div><b>Code comptable :</b> ${rdv.code_comptable||'N/A'}</div>
         <div><b>Type de client :</b> ${rdv.classement||'N/A'}</div>
-        <div style="margin-top:8px;color:#64748b"><b>Rendez-vous :</b> ${rdv.date||''} ${rdv.heure? 'à '+rdv.heure : ''}</div>
+        ${rdvObjet ? `<div style="margin-top:8px;color:#334155"><b>Objet :</b> ${rdvObjet}</div>` : ''}
+        <div style="margin-top:6px;color:#64748b"><b>Rendez-vous :</b> ${rdv.date||''} ${rdv.heure? 'à '+rdv.heure : ''}</div>
+        ${rdvComment ? `<div style="margin-top:4px;color:#334155"><b>Commentaire :</b> ${rdvComment}</div>` : ''}
         <div style="margin-top:10px"><b id="dbtCommentsTitle" style="display:none">Commentaires :</b><div id="dbtComments" class="dbt-modal-commentaires"><em>Chargement…</em></div></div>
       `;
       pdfBox.innerHTML=''; commentEl.value='';
@@ -954,9 +1085,12 @@ bindPinCheckbox();
         const rs = clientTitle.textContent.trim();
         const url = `/satisfaction-b2b/?rs_nom=${encodeURIComponent(rs)}&rdv_id=${rdv.uuid}`;
         const win = window.open(url,'_blank','noopener,noreferrer');
-        if(!win) alert("La fenêtre a été bloquée. Autorisez les popups.");
+        if(!win) showToast("La fenêtre a été bloquée. Autorisez les popups.", "error");
       };
       btnSaveCom.onclick = ()=> saveComment(rdv.uuid);
+      if(btnPinDraft){
+        btnPinDraft.onclick = ()=> pinCommentNow(rdv.uuid);
+      }
       btnNewRDV.onclick  = ()=>{
         if(isCommercialAbsent){ showAbsentBlockedToast(); return; }
         const next = '/dashboard_test/';
@@ -984,15 +1118,15 @@ bindPinCheckbox();
         showAbsentBlockedToast();
         return;
       }
-      const isPinned = (document.getElementById('pinNewComment') && document.getElementById('pinNewComment').checked);
-        const body = JSON.stringify({ commentaire: commentEl.value, is_pinned: !!isPinned });
+      const body = JSON.stringify({ commentaire: commentEl.value, is_pinned: false });
       fetch(`/update-statut/${uuid}/${action}/`, {
         method:'POST',
         headers:{'X-CSRFToken':getCSRF(),'Content-Type':'application/json'},
         body
       }).then(r=>r.json()).then(data=>{
-        if(data.status==='ok'){
+          if(data.status==='ok'){
           clientModal.style.display='none';
+          refreshDraftPinButton();
           if(dayModal.style.display==='flex' && currentDayISO){ openDay(currentDayISO); }
           invalidateMonthCaches();
           decorateBadgesForMonth();
@@ -1010,8 +1144,7 @@ bindPinCheckbox();
     }
 
     function saveComment(uuid){
-      const isPinned = (document.getElementById('pinNewComment') && document.getElementById('pinNewComment').checked);
-        const body = JSON.stringify({ commentaire: commentEl.value, is_pinned: !!isPinned });
+      const body = JSON.stringify({ commentaire: commentEl.value, is_pinned: false });
       fetch(`/update-statut/${uuid}/commentaire/`, {
         method:'POST',
         headers:{'X-CSRFToken':getCSRF(),'Content-Type':'application/json'},
@@ -1021,11 +1154,10 @@ bindPinCheckbox();
           clientModal.style.display='none';
           if(dayModal.style.display==='flex' && currentDayISO){ openDay(currentDayISO); }
             commentEl.value = "";
-              let pinCb = document.getElementById("pinNewComment"); if (pinCb) pinCb.checked = false;
-            const wrap = document.getElementById("pinWrap"); if (wrap) wrap.style.display = "none";
-          alert('Commentaire enregistré.');
+            refreshDraftPinButton();
+          showToast('Commentaire enregistré.', 'success');
         }else{
-          alert('Erreur lors de l’enregistrement du commentaire.');
+          showToast('Erreur lors de l’enregistrement du commentaire.', 'error');
         }
       }).catch(()=>showToast('Erreur réseau.', 'error'));
     }
@@ -1263,6 +1395,11 @@ bindPinCheckbox();
       applyCalendarFilterByClient(e.target.value);
       if(dayModal.style.display==='flex' && currentDayISO){ openDay(currentDayISO); }
     });
+    if(commentEl){
+      commentEl.addEventListener('input', ()=>{
+        refreshDraftPinButton();
+      });
+    }
     searchInput.addEventListener('focus', e=> showSuggestions(e.target.value));
     searchInput.addEventListener('blur', ()=> setTimeout(()=>{searchBox.style.display='none';},120) );
 
@@ -1306,12 +1443,11 @@ function loadClientComments(clientId){
       const badgePinned = pinned.length ? `
         <div style="margin-bottom:10px">
           <b>Commentaires épinglés :</b>
-<div id="dbtPinPreview" style="display:none;margin-top:6px"></div>
           <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">
             ${pinned.map(c => `
-              <span style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:999px;padding:6px 10px;font-size:12px"
+              <span style="position:relative;display:inline-flex;align-items:center;gap:6px;background:linear-gradient(180deg,#fff7b8,#ffe58f);border:1px solid #f3d067;color:#8a5a00;border-radius:8px;padding:7px 10px 7px 9px;font-size:12px;box-shadow:0 2px 6px rgba(138,90,0,.18);font-weight:600"
                     title="${String(c.texte||'').replace(/"/g,'&quot;')}">
-                📌 ${c.texte}
+                <span style="position:absolute;top:-6px;left:30px;width:11px;height:11px;border-radius:50%;background:#f43f5e;box-shadow:0 0 0 2px #fff, 0 2px 4px rgba(0,0,0,.22)"></span>${c.texte}
               <button type="button" class="dbt-unpin" data-unpin-id="${c.id}" title="Désépingler" style="margin-left:8px;border:none;background:transparent;cursor:pointer;font-weight:800;opacity:.75">✕</button></span>
             `).join('')}
           </div>
@@ -1372,7 +1508,9 @@ window.togglePinComment = function(commentId, clientId, ev){
   })
   .then(r => r.json())
   .then(() => loadClientComments(clientId))
-  .catch(() => alert("Erreur lors de l'épinglage"));
+  .catch(() => {
+    if (typeof window.dbtShowToast === "function") window.dbtShowToast("Erreur lors de l'épinglage", "error");
+  });
 };
 
   
@@ -1390,76 +1528,6 @@ function getCookie(name) {
   }
   return cookieValue;
 }
-
-
-  function bindPinCheckbox(){
-    
-  // --- PIN PREVIEW INSTANT ---
-
-  const preview = document.getElementById("dbtPinPreview");
-  const ppTa = document.getElementById("dbtComment");
-  const ppCb = document.getElementById("pinNewComment");
-if (preview) {
-
-    preview.style.border = "1px solid #fdba74";
-
-    preview.style.background = "#fff7ed";
-
-    preview.style.color = "#9a3412";
-
-    preview.style.borderRadius = "10px";
-
-    preview.style.padding = "6px 10px";
-
-    preview.style.fontSize = "12px";
-
-    preview.style.fontWeight = "600";
-
-  }
-
-  function renderPinPreview() {
-
-    if (!preview) return;
-
-    const txt = (ppTa && ppTa.value ? ppTa.value : "").trim();
-
-    if (ppCb && ppCb.checked && txt) {
-
-      preview.style.display = "block";
-
-      const shortTxt = (txt.length > 60) ? (txt.slice(0,60) + "...") : txt;
-
-      preview.textContent = "EN ATTENTE: " + shortTxt + " (a enregistrer)";
-
-    } else {
-
-      preview.style.display = "none";
-
-      preview.textContent = "";
-
-    }
-
-  }
-
-  if (ppTa) ppTa.addEventListener("input", renderPinPreview);
-
-  if (ppCb) ppCb.addEventListener("change", renderPinPreview);
-
-  renderPinPreview();
-
-            const wrap = document.getElementById("pinWrap"); if (wrap) wrap.style.display = "none";
-              let pinCb = document.getElementById("pinNewComment"); if (pinCb) pinCb.checked = false;
-    if(!ppTa || !wrap || !pinCb) return;
-    const refresh = () => {
-      const hasText = (ppTa.value || "").trim().length > 0;
-      wrap.style.display = hasText ? "flex" : "none";
-      if(!hasText) pinCb.checked = false;
-    };
-    ppTa.addEventListener("input", refresh);
-    refresh();
-  }
-
-
 // UNPIN_HANDLER_V1
 document.addEventListener("click", async (e) => {
   const btn = e.target.closest && e.target.closest("button[data-unpin-id]");
@@ -1498,6 +1566,11 @@ document.addEventListener("click", async (e) => {
   window.DBT_DEBUG = window.DBT_DEBUG || false;
   function dbtDlog(){
     if (window.DBT_DEBUG && console && console.log) console.log.apply(console, arguments);
+  }
+  function dbtToast(message, tone){
+    if (typeof window.dbtShowToast === "function"){
+      window.dbtShowToast(message, tone || "success");
+    }
   }
 
   // DBT_VALIDATE_TOURNEE_HANDLER_ONLY_V2
@@ -1545,19 +1618,23 @@ document.addEventListener("click", async (e) => {
     var ids = dbtGetSelectedIds().map(function(x){ return Number(x); }).filter(Boolean);
 
     if (!commercial_id){
-      alert("Commercial introuvable (id).");
+      dbtToast("Commercial introuvable (id).", "error");
       return;
     }
     if (!date){
-      alert("Date introuvable.");
+      dbtToast("Date introuvable.", "error");
       return;
     }
     if (!ids.length){
-      alert("Aucun client sélectionné.");
+      dbtToast("Aucun client sélectionné.", "error");
       return;
     }
 
-    if (!confirm("Remplacer la tournée du " + date + " par " + ids.length + " client(s) sélectionné(s) ?")){
+    const askConfirm = (typeof window.dbtAskConfirm === "function")
+      ? window.dbtAskConfirm
+      : (msg)=>Promise.resolve(window.confirm(msg));
+    const ok = await askConfirm("Remplacer la tournée du " + date + " par " + ids.length + " client(s) sélectionné(s) ?");
+    if (!ok){
       return;
     }
 
@@ -1573,12 +1650,11 @@ document.addEventListener("click", async (e) => {
     var txt = await res.text();
     if (!res.ok){
       console.error("api/tournee/replace failed:", res.status, txt);
-      alert("Erreur API (" + res.status + "). Voir console.");
+      dbtToast("Erreur API (" + res.status + ").", "error");
       return;
     }
 
-    console.log("✅ replace tournee OK:", txt);
-    alert("Tournée mise à jour ✅");
+    dbtToast("Tournée mise à jour.", "success");
 
     // optionnel: recharge la tournée si tu as une fonction existante
     if (typeof window.dbtLoadTournee === "function"){
@@ -1612,7 +1688,7 @@ map.on("click", function(e){ dbtDlog("MAP CLICK", e.latlng); });
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19, attribution:"&copy; OpenStreetMap"}).addTo(map);
   var gClients=L.layerGroup().addTo(map);
   var gTourLine=L.layerGroup().addTo(map);
-  var gTourPoints=L.markerClusterGroup({
+    var gTourPoints=L.markerClusterGroup({
     spiderfyOnMaxZoom: true,
     showCoverageOnHover: false,
     zoomToBoundsOnClick: true,
@@ -1641,6 +1717,12 @@ map.on("click", function(e){ dbtDlog("MAP CLICK", e.latlng); });
         if (!c) return;
         mk.setPopupContent(clientPopupHtml(c));
       });
+      if (gTourPoints && typeof gTourPoints.eachLayer === "function"){
+        gTourPoints.eachLayer(function(mk){
+          if (!mk || !mk._dbtTourData || typeof mk.setPopupContent !== "function") return;
+          mk.setPopupContent(tourPopupHtml(mk._dbtTourData, mk._dbtTourIndex || 0));
+        });
+      }
     }
     function dbtSyncSelectionUI(){
       dbtRefreshMapSelectionStyles();
@@ -1785,7 +1867,9 @@ mk.addTo(gClients).bindPopup(clientPopupHtml(c));
       var tourIcon = L.divIcon({ className: "dbt-tour-marker", iconSize: [14,14], iconAnchor: [7,7] });
       tour.forEach((t,i)=>{
         var ll=[t.lat,t.lng]; pts.push(ll);
-        L.marker(ll, { icon: tourIcon }).addTo(gTourPoints).bindPopup(tourPopupHtml(t, i));
+        var tMk = L.marker(ll, { icon: tourIcon }).addTo(gTourPoints).bindPopup(tourPopupHtml(t, i));
+        tMk._dbtTourData = t;
+        tMk._dbtTourIndex = i;
       });
 
       if(pts.length) map.fitBounds(pts,{padding:[20,20]}); else fitDefault();

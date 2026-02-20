@@ -7,13 +7,16 @@ from django.http import JsonResponse, HttpResponse, Http404
 from datetime import datetime, timedelta, date
 from django.utils import timezone
 import json
-from django.core.mail import send_mail, EmailMultiAlternatives
-from django.utils.crypto import get_random_string
+from django.core.mail import EmailMultiAlternatives
 from django.urls import reverse
+from django.conf import settings
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
 from django.db import models, IntegrityError
 from django.core.paginator import Paginator
+from django.core.cache import cache
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.core import signing
 import base64
 from django.template.loader import render_to_string
 from xhtml2pdf import pisa
@@ -97,6 +100,47 @@ from django.utils.http import url_has_allowed_host_and_scheme
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _client_ip(request):
+    # XFF first for reverse-proxy setups, fallback to REMOTE_ADDR.
+    xff = request.META.get("HTTP_X_FORWARDED_FOR")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR", "unknown")
+
+
+def _is_rate_limited(key: str, limit: int, window_seconds: int) -> bool:
+    """Simple cache-based fixed-window limiter."""
+    current = cache.get(key)
+    if current is None:
+        cache.set(key, 1, timeout=window_seconds)
+        return False
+    if int(current) >= limit:
+        return True
+    try:
+        cache.incr(key)
+    except ValueError:
+        cache.set(key, int(current) + 1, timeout=window_seconds)
+    return False
+
+
+def _clear_rate_limit(key: str):
+    cache.delete(key)
+
+
+def _make_reset_token(account_type: str, account_id: int, email: str) -> str:
+    payload = {
+        "type": account_type,
+        "id": int(account_id),
+        "email": (email or "").strip().lower(),
+    }
+    return signing.dumps(payload, salt="front.reset-password")
+
+
+def _read_reset_token(token: str):
+    max_age = int(getattr(settings, "PASSWORD_RESET_TIMEOUT", 60 * 60 * 24))
+    return signing.loads(token, salt="front.reset-password", max_age=max_age)
 
 def get_current_commercial(request):
     """
@@ -284,14 +328,23 @@ def login_required(view_func):
 # 🔐 Vue de connexion
 def login_view(request):
     erreur = False
+    throttle_message = None
 
     if request.method == 'POST':
-        email = request.POST.get('email')
-        password = request.POST.get('password')
+        email = (request.POST.get('email') or "").strip()
+        password = request.POST.get('password') or ""
+
+        # Rate-limit: 10 tentatives / 10 min par IP+email.
+        login_rate_key = f"rl:login:{_client_ip(request)}:{email.lower()}"
+        if _is_rate_limited(login_rate_key, limit=10, window_seconds=600):
+            erreur = True
+            throttle_message = "Trop de tentatives. Réessayez dans quelques minutes."
+            return render(request, 'front/login.html', {'erreur': erreur, 'throttle_message': throttle_message})
 
         commercial = Commercial.objects.filter(email=email).first()
 
         if commercial and check_password(password, commercial.password):
+            _clear_rate_limit(login_rate_key)
             # Stockage en session
             request.session['commercial_id'] = commercial.id
             request.session['commercial_nom'] = commercial.commercial
@@ -313,12 +366,16 @@ def login_view(request):
         else:
             erreur = True
 
-    return render(request, 'front/login.html', {'erreur': erreur})
+    return render(request, 'front/login.html', {'erreur': erreur, 'throttle_message': throttle_message})
 
 # 🔐 Déconnexion
 def logout_view(request):
     request.session.flush()
     return redirect('login')
+@login_required
+@require_GET
+@login_required
+@require_GET
 def get_client_comments(request, client_id):
     try:
         commentaires = (
@@ -346,8 +403,8 @@ def get_client_comments(request, client_id):
 
         return JsonResponse({"commentaires": data})
 
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+    except Exception:
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -357,8 +414,6 @@ def dashboard_test(request):
     if commercial_id:
         commercial = Commercial.objects.filter(id=commercial_id).first()
     return render(request, 'front/dashboard_test.html', {'commercial': commercial})
-
-reset_tokens = {}
 
 def reset_password(request):
     logger.debug("reset_password view called")
@@ -371,18 +426,21 @@ def reset_password(request):
                 return JsonResponse({'success': False, 'message': msg}, status=400)
             return render(request, 'front/reset_password.html', {'error': msg})
 
+        # Rate-limit reset password: 5 tentatives / 10 min par IP.
+        reset_rate_key = f"rl:reset:{_client_ip(request)}"
+        if _is_rate_limited(reset_rate_key, limit=5, window_seconds=600):
+            msg = "Trop de demandes. Réessayez dans quelques minutes."
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': msg}, status=429)
+            return render(request, 'front/reset_password.html', {'error': msg})
+
         users = User.objects.filter(email__iexact=email)
         commercials = Commercial.objects.filter(email__iexact=email)
-        if not users.exists() and not commercials.exists():
-            msg = "Cette adresse email n'existe pas dans la base."
-            if is_ajax:
-                return JsonResponse({'success': False, 'message': msg}, status=404)
-            return render(request, 'front/reset_password.html', {'error': "Aucun compte avec cet email."})
-        reset_links = []
+        generic_success = "Si l'adresse existe, un lien de réinitialisation a été envoyé."
+
         try:
             for user in users:
-                token = get_random_string(48)
-                reset_tokens[token] = ('user', user.id)
+                token = _make_reset_token('user', user.id, email)
                 reset_link = request.build_absolute_uri(reverse('new_password')) + f'?token={token}'
                 subject = render_to_string('front/reset_password_subject.txt').strip()
                 html_content = render_to_string('front/reset_password_email.html', {
@@ -393,11 +451,9 @@ def reset_password(request):
                 msg = EmailMultiAlternatives(subject, text_content, 'bznjamin.gillens@gmail.com', [email])
                 msg.attach_alternative(html_content, "text/html")
                 msg.send()
-                reset_links.append(reset_link)
 
             for commercial in commercials:
-                token = get_random_string(48)
-                reset_tokens[token] = ('commercial', commercial.id)
+                token = _make_reset_token('commercial', commercial.id, email)
                 reset_link = request.build_absolute_uri(reverse('new_password')) + f'?token={token}'
                 subject = render_to_string('front/reset_password_subject.txt').strip()
                 html_content = render_to_string('front/reset_password_email.html', {
@@ -408,34 +464,59 @@ def reset_password(request):
                 msg = EmailMultiAlternatives(subject, text_content, 'bznjamin.gillens@gmail.com', [email])
                 msg.attach_alternative(html_content, "text/html")
                 msg.send()
-                reset_links.append(reset_link)
         except Exception:
-            if is_ajax:
-                return JsonResponse({'success': False, 'message': "Erreur lors de l'envoi de l'email."}, status=500)
-            return render(request, 'front/reset_password.html', {'error': "Erreur lors de l'envoi de l'email."})
+            # Réponse neutre pour éviter l'énumération d'emails.
+            logger.exception("reset_password email send failed")
 
         if is_ajax:
-            return JsonResponse({'success': True, 'message': "Le lien de réinitialisation a bien été envoyé."})
-        return render(request, 'front/reset_password_done.html', {'email': email, 'reset_link': reset_links[-1]})
+            return JsonResponse({'success': True, 'message': generic_success})
+        return render(request, 'front/reset_password_done.html', {'email': email})
     return render(request, 'front/reset_password.html')
 
 def new_password(request):
-    token = request.GET.get('token')
-    token_info = reset_tokens.get(token)
-    if not token_info:
+    token = (request.POST.get('token') or request.GET.get('token') or "").strip()
+    if not token:
         return render(request, 'front/new_password.html', {'error': "Lien invalide ou expiré."})
-    user_type, obj_id = token_info
+
+    try:
+        token_info = _read_reset_token(token)
+        user_type = token_info.get("type")
+        obj_id = token_info.get("id")
+        token_email = token_info.get("email")
+    except signing.BadSignature:
+        return render(request, 'front/new_password.html', {'error': "Lien invalide ou expiré."})
+    except signing.SignatureExpired:
+        return render(request, 'front/new_password.html', {'error': "Lien invalide ou expiré."})
+
     if request.method == 'POST':
-        pwd = request.POST.get('password')
+        pwd = request.POST.get('password') or ""
+        confirm = request.POST.get('confirm_password') or ""
+        if pwd != confirm:
+            return render(request, 'front/new_password.html', {'token': token, 'error': "Les mots de passe ne correspondent pas."})
+
         if user_type == 'user':
-            user = User.objects.get(id=obj_id)
+            user = User.objects.filter(id=obj_id).first()
+            if not user or (user.email or "").strip().lower() != (token_email or "").strip().lower():
+                return render(request, 'front/new_password.html', {'error': "Lien invalide ou expiré."})
+            try:
+                validate_password(pwd, user=user)
+            except ValidationError as e:
+                return render(request, 'front/new_password.html', {'token': token, 'error': " ".join(e.messages)})
             user.set_password(pwd)
             user.save()
         elif user_type == 'commercial':
-            commercial = Commercial.objects.get(id=obj_id)
+            commercial = Commercial.objects.filter(id=obj_id).first()
+            if not commercial or (commercial.email or "").strip().lower() != (token_email or "").strip().lower():
+                return render(request, 'front/new_password.html', {'error': "Lien invalide ou expiré."})
+            try:
+                validate_password(pwd)
+            except ValidationError as e:
+                return render(request, 'front/new_password.html', {'token': token, 'error': " ".join(e.messages)})
             commercial.password = make_password(pwd)
             commercial.save()
-        del reset_tokens[token]
+        else:
+            return render(request, 'front/new_password.html', {'error': "Lien invalide ou expiré."})
+
         return redirect('login')
     return render(request, 'front/new_password.html', {'token': token})
 
@@ -468,7 +549,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -811,7 +892,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -1044,7 +1125,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -1231,7 +1312,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -1267,7 +1348,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -1308,7 +1389,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -1454,7 +1535,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -1491,18 +1572,18 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
+@require_POST
+@csrf_protect
 def update_statut(request, uuid, statut):
-    print("DEBUG méthode reçue :", request.method)
     rdv = get_object_or_404(Rendezvous, uuid=uuid)
     if not (request.user.is_superuser or (rdv.commercial and rdv.commercial.id == request.session.get('commercial_id'))):
         raise PermissionDenied("Vous n'avez pas le droit d'accéder à ce rendez-vous.")
     if (
-        request.method == 'POST'
-        and statut in {"valider", "annuler"}
+        statut in {"valider", "annuler"}
         and rdv.commercial
         and rdv.commercial.is_absent
         and not request.user.is_superuser
@@ -1512,107 +1593,108 @@ def update_statut(request, uuid, statut):
             status=403,
         )
 
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        commentaire = data.get('commentaire', '')
+    try:
+        data = json.loads(request.body.decode("utf-8") or "{}")
+    except Exception:
+        return JsonResponse({'status': 'error', 'message': "JSON invalide"}, status=400)
+    commentaire = data.get('commentaire', '')
 
-        if statut == "valider":
-            rdv.statut_rdv = 'valide'
-            rdv.date_statut = timezone.now()
-            if commentaire.strip():
-                rdv.notes = commentaire  # (optionnel)
-                client, adresse, client_type = get_client_and_adresse(rdv.client.id)
-                rs_nom = adresse["adresse"] if adresse else getattr(rdv.client, 'rs_nom', None) or getattr(rdv.client, 'nom', None) or ''
-                commercial_id = request.session.get('commercial_id')
-                commercial = Commercial.objects.get(id=commercial_id) if commercial_id else None
-                CommentaireRdv.objects.create(
-                    rdv=rdv,
-                    auteur=request.user if request.user.is_authenticated else None,
-                    commercial=commercial,
-                    texte=commentaire,
-                    rs_nom=rs_nom
-                )
-        elif statut == "annuler":
-            rdv.statut_rdv = 'annule'
-            rdv.date_statut = timezone.now()
-            if commentaire.strip():
-                rdv.notes = commentaire  # (optionnel)
-                client, adresse, client_type = get_client_and_adresse(rdv.client.id)
-                rs_nom = adresse["adresse"] if adresse else getattr(rdv.client, 'rs_nom', None) or getattr(rdv.client, 'nom', None) or ''
-                commercial_id = request.session.get('commercial_id')
-                commercial = Commercial.objects.get(id=commercial_id) if commercial_id else None
-                CommentaireRdv.objects.create(
-                    rdv=rdv,
-                    auteur=request.user if request.user.is_authenticated else None,
-                    commercial=commercial,
-                    texte=commentaire,
-                    rs_nom=rs_nom
-                )
-        elif statut == "commentaire":
-            # On ajoute juste un commentaire sans changer le statut
-            if commentaire.strip():
-                client, adresse, client_type = get_client_and_adresse(rdv.client.id)
-                rs_nom = adresse["adresse"] if adresse else getattr(rdv.client, 'rs_nom', None) or getattr(rdv.client, 'nom', None) or ''
-                commercial_id = request.session.get('commercial_id')
-                commercial = Commercial.objects.get(id=commercial_id) if commercial_id else None
-                CommentaireRdv.objects.create(
-                    rdv=rdv,
-                    auteur=request.user if request.user.is_authenticated else None,
-                    commercial=commercial,
-                    texte=commentaire,
-                    rs_nom=rs_nom
-                )
-            return JsonResponse({'status': 'ok'})
-
-        rdv.save()
-
-        # Enregistrer l'activité dans le journal
-        action_type = ''
-        if statut in ['valide', 'valider']:
-            action_type = 'RDV_VALIDE'
-            description = f"RDV avec {rdv.client.rs_nom} validé"
-        elif statut in ['annule', 'annuler']:
-            action_type = 'RDV_ANNULE'
-            description = f"RDV avec {rdv.client.rs_nom} annulé"
-        
-        if action_type:
-            ActivityLog.objects.create(
-                commercial=rdv.commercial,
-                action_type=action_type,
-                description=description
+    if statut == "valider":
+        rdv.statut_rdv = 'valide'
+        rdv.date_statut = timezone.now()
+        if commentaire.strip():
+            rdv.notes = commentaire  # (optionnel)
+            client, adresse, client_type = get_client_and_adresse(rdv.client.id)
+            rs_nom = adresse["adresse"] if adresse else getattr(rdv.client, 'rs_nom', None) or getattr(rdv.client, 'nom', None) or ''
+            commercial_id = request.session.get('commercial_id')
+            commercial = Commercial.objects.get(id=commercial_id) if commercial_id else None
+            CommentaireRdv.objects.create(
+                rdv=rdv,
+                auteur=request.user if request.user.is_authenticated else None,
+                commercial=commercial,
+                texte=commentaire,
+                rs_nom=rs_nom
             )
-
-        client = rdv.client
-        
-        # Calculer le nombre de RDV validés pour ce client
-        nb_rdv_valides = Rendezvous.objects.filter(
-            client__rs_nom=client.rs_nom,
-            statut_rdv='valide'
-        ).count()
-        
-        # On récupère tous les champs utiles pour la carte
-        return JsonResponse({
-            'status': 'ok',
-            'id': rdv.id,
-            'nom': getattr(client, 'prénom', ''),
-            'prenom': getattr(client, 'prénom', ''),
-            'rs_nom': getattr(client, 'rs_nom', ''),
-            'civilite': getattr(client, 'civilite', ''),
-            'adresse': getattr(client, 'adresse', ''),
-            'code_postal': getattr(client, 'code_postal', ''),
-            'ville': getattr(client, 'ville', ''),
-            'telephone': getattr(client, 'telephone', ''),
-            'e_mail': getattr(client, 'e_mail', ''),
-            'code_comptable': getattr(client, 'code_comptable', ''),
-            'statut': rdv.statut_rdv,
-            'date': rdv.date_rdv.strftime('%d/%m/%Y'),
-            'heure': rdv.heure_rdv.strftime('%H:%M'),
-            'date_statut': rdv.date_statut.strftime('%d/%m/%Y %H:%M') if rdv.date_statut else '',
-            'nb_rdv_valides': nb_rdv_valides,
-        })
+    elif statut == "annuler":
+        rdv.statut_rdv = 'annule'
+        rdv.date_statut = timezone.now()
+        if commentaire.strip():
+            rdv.notes = commentaire  # (optionnel)
+            client, adresse, client_type = get_client_and_adresse(rdv.client.id)
+            rs_nom = adresse["adresse"] if adresse else getattr(rdv.client, 'rs_nom', None) or getattr(rdv.client, 'nom', None) or ''
+            commercial_id = request.session.get('commercial_id')
+            commercial = Commercial.objects.get(id=commercial_id) if commercial_id else None
+            CommentaireRdv.objects.create(
+                rdv=rdv,
+                auteur=request.user if request.user.is_authenticated else None,
+                commercial=commercial,
+                texte=commentaire,
+                rs_nom=rs_nom
+            )
+    elif statut == "commentaire":
+        # On ajoute juste un commentaire sans changer le statut
+        if commentaire.strip():
+            client, adresse, client_type = get_client_and_adresse(rdv.client.id)
+            rs_nom = adresse["adresse"] if adresse else getattr(rdv.client, 'rs_nom', None) or getattr(rdv.client, 'nom', None) or ''
+            commercial_id = request.session.get('commercial_id')
+            commercial = Commercial.objects.get(id=commercial_id) if commercial_id else None
+            CommentaireRdv.objects.create(
+                rdv=rdv,
+                auteur=request.user if request.user.is_authenticated else None,
+                commercial=commercial,
+                texte=commentaire,
+                rs_nom=rs_nom
+            )
+        return JsonResponse({'status': 'ok'})
     else:
-        print("DEBUG : Méthode non autorisée pour update_statut")
-        return JsonResponse({'status': 'error', 'message': f"Méthode {request.method} non autorisée"}, status=405)
+        return JsonResponse({'status': 'error', 'message': "Statut non supporté"}, status=400)
+
+    rdv.save()
+
+    # Enregistrer l'activité dans le journal
+    action_type = ''
+    if statut in ['valide', 'valider']:
+        action_type = 'RDV_VALIDE'
+        description = f"RDV avec {rdv.client.rs_nom} validé"
+    elif statut in ['annule', 'annuler']:
+        action_type = 'RDV_ANNULE'
+        description = f"RDV avec {rdv.client.rs_nom} annulé"
+    
+    if action_type:
+        ActivityLog.objects.create(
+            commercial=rdv.commercial,
+            action_type=action_type,
+            description=description
+        )
+
+    client = rdv.client
+    
+    # Calculer le nombre de RDV validés pour ce client
+    nb_rdv_valides = Rendezvous.objects.filter(
+        client__rs_nom=client.rs_nom,
+        statut_rdv='valide'
+    ).count()
+    
+    # On récupère tous les champs utiles pour la carte
+    return JsonResponse({
+        'status': 'ok',
+        'id': rdv.id,
+        'nom': getattr(client, 'prénom', ''),
+        'prenom': getattr(client, 'prénom', ''),
+        'rs_nom': getattr(client, 'rs_nom', ''),
+        'civilite': getattr(client, 'civilite', ''),
+        'adresse': getattr(client, 'adresse', ''),
+        'code_postal': getattr(client, 'code_postal', ''),
+        'ville': getattr(client, 'ville', ''),
+        'telephone': getattr(client, 'telephone', ''),
+        'e_mail': getattr(client, 'e_mail', ''),
+        'code_comptable': getattr(client, 'code_comptable', ''),
+        'statut': rdv.statut_rdv,
+        'date': rdv.date_rdv.strftime('%d/%m/%Y'),
+        'heure': rdv.heure_rdv.strftime('%H:%M'),
+        'date_statut': rdv.date_statut.strftime('%d/%m/%Y %H:%M') if rdv.date_statut else '',
+        'nb_rdv_valides': nb_rdv_valides,
+    })
 
 from django.http import JsonResponse
 
@@ -1644,7 +1726,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -1795,7 +1877,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -1928,7 +2010,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -2018,10 +2100,11 @@ def historique_rdv_resp(request):
             # En cas d'erreur de conversion de date, on ignore le filtrage
             pass
     
-    # DEBUG : Afficher toutes les dates de RDV annulés avant filtrage
-    print('--- RDV annulés AVANT filtrage ---')
-    for rdv in Rendezvous.objects.filter(statut_rdv='annule').order_by('date_rdv'):
-        print(f"Annulé : {rdv.date_rdv} (date_statut={rdv.date_statut})")
+    # DEBUG (logs)
+    logger.debug(
+        "RDV annulés avant filtrage: %s",
+        Rendezvous.objects.filter(statut_rdv='annule').count()
+    )
 
     # Correction : si aucun filtre, on transmet tout
     if not statut and not date_debut and not date_fin:
@@ -2048,9 +2131,7 @@ def historique_rdv_resp(request):
                 rdv.adresse_principale = None
     
     # DEBUG : Afficher toutes les dates de RDV annulés après filtrage
-    print('--- RDV annulés APRES filtrage ---')
-    for rdv in rdvs_archives.filter(statut_rdv='annule').order_by('date_rdv'):
-        print(f"Annulé filtré : {rdv.date_rdv} (date_statut={rdv.date_statut})")
+    logger.debug("RDV annulés après filtrage: %s", len(a_rappeler))
 
     # Ajout systématique de l'adresse principale pour chaque rdv (sécurisé)
     for rdv in set(visites_recentes + a_rappeler + historique_general):
@@ -2123,34 +2204,68 @@ def historique_rdv_resp(request):
         'statut_label': statut_label,
     })
 
-@csrf_exempt  # À remplacer par @login_required + gestion CSRF si besoin
+@login_required
+@require_POST
+@csrf_protect
 def update_client(request, client_id):
-    if request.method == "POST":
-        try:
-            data = json.loads(request.body)
-            client, adresse, client_type = get_client_and_adresse(client_id)
-            
-            # Mettre à jour les champs du client
-            client.telephone = data.get("telephone", client.telephone)
-            client.email = data.get("email", client.email)
-            client.classement_client = data.get("classement_client", client.classement_client)
-            client.save()
-            
-            # Mettre à jour l'adresse si elle existe
-            if adresse and client_type == "front":
-                # Chercher l'adresse principale du client
-                from .models import Adresse
-                adresse_obj = Adresse.objects.filter(client=client).first()
-                if adresse_obj:
-                    adresse_obj.adresse = data.get("adresse", adresse_obj.adresse)
-                    adresse_obj.code_postal = data.get("code_postal", adresse_obj.code_postal)
-                    adresse_obj.ville = data.get("ville", adresse_obj.ville)
-                    adresse_obj.save()
-            
-            return JsonResponse({"success": True})
-        except Exception as e:
-            return JsonResponse({"success": False, "error": str(e)})
-    return JsonResponse({"success": False, "error": "Méthode non autorisée"})    
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except Exception:
+        return JsonResponse({"success": False, "error": "JSON invalide"}, status=400)
+
+    try:
+        client, adresse, client_type = get_client_and_adresse(client_id)
+    except FrontClient.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Client introuvable"}, status=404)
+
+    role = (request.session.get("role") or "").lower()
+    session_commercial_id = request.session.get("commercial_id")
+
+    # Autorisation:
+    # - responsable/admin: autorisé
+    # - commercial: uniquement ses propres clients
+    if role not in ["responsable", "admin"]:
+        if not session_commercial_id:
+            return JsonResponse({"success": False, "error": "Non autorisé"}, status=403)
+
+        allowed = False
+        client_commercial_id = getattr(client, "commercial_id", None)
+        if client_commercial_id is not None:
+            try:
+                allowed = int(client_commercial_id) == int(session_commercial_id)
+            except Exception:
+                allowed = False
+
+        # Fallback legacy: comparaison par nom commercial normalisé
+        if not allowed:
+            session_commercial_nom = (request.session.get("commercial_nom") or "").replace(" ", "").upper()
+            client_commercial_nom = (getattr(client, "commercial", "") or "").replace(" ", "").upper()
+            allowed = bool(session_commercial_nom and session_commercial_nom == client_commercial_nom)
+
+        if not allowed:
+            return JsonResponse({"success": False, "error": "Accès refusé à ce client"}, status=403)
+
+    try:
+        # Mettre à jour les champs du client
+        client.telephone = data.get("telephone", client.telephone)
+        client.email = data.get("email", client.email)
+        client.classement_client = data.get("classement_client", client.classement_client)
+        client.save()
+
+        # Mettre à jour l'adresse si elle existe
+        if adresse and client_type == "front":
+            from .models import Adresse
+            adresse_obj = Adresse.objects.filter(client=client).first()
+            if adresse_obj:
+                adresse_obj.adresse = data.get("adresse", adresse_obj.adresse)
+                adresse_obj.code_postal = data.get("code_postal", adresse_obj.code_postal)
+                adresse_obj.ville = data.get("ville", adresse_obj.ville)
+                adresse_obj.save()
+
+        return JsonResponse({"success": True})
+    except Exception:
+        logger.exception("update_client failed for client_id=%s", client_id)
+        return JsonResponse({"success": False, "error": "Erreur lors de la mise à jour"}, status=500)
 
 def satisfaction_b2b(request):
     note_recommandation_choices = list(range(1, 11))
@@ -2306,7 +2421,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -2338,7 +2453,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -2427,7 +2542,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -2607,7 +2722,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -2790,7 +2905,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -2840,7 +2955,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -2887,7 +3002,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -2950,7 +3065,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -2998,16 +3113,29 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
 def api_clients_by_commercial(request):
     commercial_id = request.GET.get('commercial_id')
+    role = (request.session.get('role') or '').lower()
+    session_commercial_id = request.session.get('commercial_id')
+
     if not commercial_id:
         return JsonResponse({'clients': []})
+
     try:
-        commercial = Commercial.objects.get(id=commercial_id)
+        requested_id = int(commercial_id)
+    except Exception:
+        return JsonResponse({'clients': []})
+
+    if role not in ['responsable', 'admin']:
+        if not session_commercial_id or int(session_commercial_id) != requested_id:
+            return JsonResponse({'error': 'forbidden', 'clients': []}, status=403)
+
+    try:
+        commercial = Commercial.objects.get(id=requested_id)
         # Normaliser le nom du commercial (suppression des espaces + upper)
         nom_normalise = commercial.commercial.replace(' ', '').upper()
         # Comparaison normalisée côté base: REPLACE(UPPER(commercial), ' ', '') = nom_normalise
@@ -3058,7 +3186,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -3164,7 +3292,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -3209,7 +3337,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -3427,7 +3555,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -3447,6 +3575,7 @@ def export_satisfactions_excel(request):
     df.to_excel(response, index=False)
     return response
 
+@login_required
 @require_GET
 def search_clients(request):
     q = request.GET.get('q', '').strip()
@@ -3486,6 +3615,7 @@ def search_clients(request):
     ]
     return JsonResponse({'results': results})
 
+@login_required
 @require_GET
 def search_clients_table(request):
     q = request.GET.get('q', '').strip()
@@ -3603,16 +3733,13 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
 def mentions_legales(request):
     role = request.session.get('role', '')
     return render(request, 'front/mentions_legales.html', {'role': role})
-
-def mentions_legales(request):
-    return render(request, 'front/mentions_legales.html')
 
 # Nouvelles vues pour l'optimisation de trajet
 def get_client_comments(request, client_id):
@@ -3643,7 +3770,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -3692,7 +3819,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -3769,7 +3896,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -3815,7 +3942,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -3898,7 +4025,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -4125,7 +4252,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -4139,6 +4266,8 @@ def toggle_pin_comment(request, comment_id):
 
     return JsonResponse({"ok": True, "pinned": comment.is_pinned})
 
+@login_required
+@require_GET
 def get_client_comments(request, client_id):
     try:
         commentaires = (
@@ -4167,7 +4296,7 @@ def get_client_comments(request, client_id):
         return JsonResponse({"commentaires": data})
 
     except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+        logger.exception("get_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -4186,6 +4315,7 @@ def healthz(request):
 # === API MAP TOURNEE ===
 from django.views.decorators.http import require_GET
 
+@login_required
 @require_GET
 def api_map_tournee(request):
     """Retourne clients géocodés + tournée du jour pour un commercial."""
@@ -4211,6 +4341,11 @@ def api_map_tournee(request):
         com_id = int(com_id)
     except Exception:
         return JsonResponse({"error": "commercial_id invalide"}, status=400)
+
+    role = (request.session.get("role") or "").lower()
+    session_commercial_id = int(request.session.get("commercial_id") or 0)
+    if role not in ["responsable", "admin"] and com_id != session_commercial_id:
+        return JsonResponse({"error": "forbidden"}, status=403)
 
     commercial = Commercial.objects.filter(id=com_id).first()
 

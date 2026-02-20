@@ -9,7 +9,7 @@ Solution CRM pour planifier, optimiser et suivre les rendez‑vous commerciaux, 
 - Configuration (.env)
 - Lancer en local
 - Génération auto J+28 (au login)
-- Optimisation d’itinéraires (Mapbox/Haversine)
+- Optimisation d’itinéraires (Google/Haversine)
 - Commandes utiles
 - Tests
 - Déploiement Docker (web + nginx)
@@ -32,8 +32,8 @@ Solution CRM pour planifier, optimiser et suivre les rendez‑vous commerciaux, 
 
 - Optimisation d’itinéraires
   - Ordre optimisé via Nearest Neighbor + amélioration 2‑opt
-  - Coût routier: Mapbox Matrix “one‑to‑many” prioritaire (faible consommation). Fallback Haversine
-  - Estimation du temps total: Mapbox si possible, sinon Haversine à vitesse moyenne (50 km/h)
+  - Coût routier: Google Distance Matrix/Directions prioritaire. Fallback Haversine
+  - Estimation du temps total: Google si possible, sinon Haversine à vitesse moyenne (50 km/h)
 
 - Géocodage
   - Nominatim (OpenStreetMap) avec logique de fallback simple
@@ -69,7 +69,7 @@ Solution CRM pour planifier, optimiser et suivre les rendez‑vous commerciaux, 
   - textblob, nltk, regex: analyse de texte
 
 - Réseau / HTTP
-  - requests, urllib3, chardet, charset-normalizer, idna, certifi: appels HTTP robustes (ex. Mapbox)
+  - requests, urllib3, chardet, charset-normalizer, idna, certifi: appels HTTP robustes (ex. Google APIs)
 
 - Sécurité / crypto (documents signés)
   - cryptography, cffi, pycparser, oscrypto, asn1crypto, pyHanko, pyhanko-certvalidator: primitives crypto, signatures et validation
@@ -121,7 +121,7 @@ HOLIDAYS_YEARS=2025,2026
 PUBLIC_HOLIDAYS=2025-01-01,2025-05-01,2025-12-25
 
 # Optimisation d’itinéraire
-MAPBOX_ACCESS_TOKEN=
+GOOGLE_MAPS_API_KEY=
 
 # Sélection géographique
 MAX_RADIUS_KM=80
@@ -159,7 +159,7 @@ Mode “essai à blanc” (ne crée rien en BDD): mettre `GENERATION_AUTO_DRY_RU
 - Sélection “poche” : points filtrés par rayon, cluster le plus dense/proche du départ, puis chaîne (plus proche du précédent) jusqu’à 6
 - Ordre final amélioré par 2‑opt (coût Haversine interne, gratuit)
 - Coût final (estimation minutes) :
-  - Mapbox Matrix one‑to‑many prioritaire (économe en éléments)
+  - Google Distance Matrix/Directions prioritaire
   - Sinon Haversine (50 km/h par défaut)
 
 Afficher rapidement une tournée optimisée:
@@ -231,7 +231,7 @@ python manage.py collectstatic --noinput
 - `STATIC_ROOT` configuré et `collectstatic` exécuté
 - Cache applicatif (Redis conseillé) pour le verrou quotidien
 - Clés/API et secrets uniquement via `.env`
-- Pour limiter la consommation Mapbox :
+- Pour limiter la consommation API de routing :
   - Matrices one‑to‑many uniquement
   - 2‑opt via Haversine
   - Un seul calcul final de coût par tournée
@@ -293,7 +293,7 @@ Un système de gestion de la relation client (CRM) pour les commerciaux, permett
 
 ### 🗺️ Géolocalisation
 - **Géocodage** Nominatim
-- **Planification auto J+28** avec sélection géographique (rayon, clustering) et ordre optimisé (Mapbox + 2‑opt)
+- **Planification auto J+28** avec sélection géographique (rayon, clustering) et ordre optimisé (Google/Haversine + 2‑opt)
 
 ## 🛠️ Technologies utilisées
 
@@ -378,7 +378,7 @@ HOLIDAYS_YEARS=2025,2026
 PUBLIC_HOLIDAYS=2025-01-01,2025-05-01,2025-12-25
 
 # Optimisation d'itinéraire
-MAPBOX_ACCESS_TOKEN=your_mapbox_token
+GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ROUTING_USE_ORS=False  # laisser False si vous n'utilisez plus ORS
 
 # Règles de sélection géographique
@@ -408,7 +408,7 @@ python manage.py runserver
 
 ### Génération automatique des RDV (au login)
 - À chaque connexion d’un utilisateur, un job quotidien se déclenche (verrou cache par jour) et appelle `ensure_visits_next_4_weeks`.
-- Ce job planifie jusqu’à J+28 en jours ouvrés, plafond 6 RDV/jour/commercial, en sélectionnant d’abord une zone proche (rayon + clustering), puis en optimisant l’ordre (Mapbox + 2‑opt) et en réassignant les créneaux.
+- Ce job planifie jusqu’à J+28 en jours ouvrés, plafond 6 RDV/jour/commercial, en sélectionnant d’abord une zone proche (rayon + clustering), puis en optimisant l’ordre (Google/Haversine + 2‑opt) et en réassignant les créneaux.
 - Le processus est idempotent (pas de doublon).
 
 ### Visualiser rapidement l’itinéraire d’un commercial
@@ -417,7 +417,7 @@ python manage.py show_route --commercial "Commercial 2"
 # ou
 python manage.py show_route --date 2025-09-18 --commercial "Commercial 2"
 ```
-La commande affiche l'ordre optimisé, les segments, les totaux, et le mode utilisé (MAPBOX/HAVERSINE).
+La commande affiche l'ordre optimisé, les segments, les totaux, et le mode utilisé (GOOGLE/HAVERSINE).
 
 ### Structure du projet
 

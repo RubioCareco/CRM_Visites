@@ -166,9 +166,6 @@ PUBLIC_HOLIDAYS = env.list("PUBLIC_HOLIDAYS", default=[])  # ex: ["2025-01-01", 
 HOLIDAYS_COUNTRY = env("HOLIDAYS_COUNTRY", default="FR")
 HOLIDAYS_YEARS = env("HOLIDAYS_YEARS", default="2025,2026")
 
-# Mapbox
-MAPBOX_ACCESS_TOKEN = env("MAPBOX_ACCESS_TOKEN", default="")
-
 # Contraintes géographiques / Algorithmes
 MAX_RADIUS_KM = env.int("MAX_RADIUS_KM", default=40)
 MAX_DAILY_DISTANCE_KM = env.int("MAX_DAILY_DISTANCE_KM", default=220)

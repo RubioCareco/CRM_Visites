@@ -12,7 +12,7 @@ from django.urls import reverse
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
-from django.db import models, IntegrityError
+from django.db import models, IntegrityError, transaction
 from django.core.paginator import Paginator
 from django.core.cache import cache
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
@@ -98,6 +98,7 @@ from django.db import connection
 from urllib.parse import urlencode
 from django.utils.http import url_has_allowed_host_and_scheme
 import logging
+from .activity_log import log_activity
 
 logger = logging.getLogger(__name__)
 
@@ -308,10 +309,11 @@ def nettoyer_rdv_anciens_automatiquement():
                 rdv.save()
                 
                 # Log de l'action
-                ActivityLog.objects.create(
-                    commercial=commercial,
+                log_activity(
                     action_type='RDV_AUTO_RETARD',
-                    description=f"RDV du {reference_date} {rdv.heure_rdv} - {rdv.client.rs_nom if rdv.client else 'Client supprimé'} automatiquement marqué comme en retard"
+                    description=f"RDV du {reference_date} {rdv.heure_rdv} - {rdv.client.rs_nom if rdv.client else 'Client supprimé'} automatiquement marqué comme en retard",
+                    target_commercial=commercial,
+                    actor_commercial=commercial,
                 )
                 
                 total_rdv_traites += 1
@@ -1035,10 +1037,11 @@ def new_client(request):
             #     rdv.save(update_fields=["objet", "notes"])
 
             if created:
-                ActivityLog.objects.create(
-                    commercial=commercial,
+                log_activity(
                     action_type='RDV_AJOUTE',
-                    description=f'Nouveau RDV ajouté pour {client.rs_nom}'
+                    description=f'Nouveau RDV ajouté pour {client.rs_nom}',
+                    target_commercial=commercial,
+                    request=request,
                 )
 
                 # Nettoyage des données temporaires
@@ -1213,34 +1216,35 @@ def add_rdv(request):
                 objet = (request.POST.get('objet') or '').strip() or None
                 notes = (request.POST.get('notes') or '').strip() or None
 
-                rdv = Rendezvous.objects.create(
-                    client=client,
-                    commercial=commercial,
-                    date_rdv=date_rdv_obj,
-                    heure_rdv=heure_rdv_obj,
-                    objet=objet,
-                    notes=notes,
-                    statut_rdv='a_venir',
-                    rs_nom=client.rs_nom
-                )
-
-
-                # ✅ Si une note/commentaire est saisi lors de la création -> créer un CommentaireRdv
-                notes_txt = notes or ''
-                if notes_txt:
-                    CommentaireRdv.objects.create(
-                        rdv=rdv,
-                        auteur=request.user if getattr(request, "user", None) and request.user.is_authenticated else None,
+                with transaction.atomic():
+                    rdv = Rendezvous.objects.create(
+                        client=client,
                         commercial=commercial,
-                        texte=notes_txt,
+                        date_rdv=date_rdv_obj,
+                        heure_rdv=heure_rdv_obj,
+                        objet=objet,
+                        notes=notes,
+                        statut_rdv='a_venir',
                         rs_nom=client.rs_nom
                     )
 
-                ActivityLog.objects.create(
-                    commercial=commercial,
-                    action_type='RDV_AJOUTE',
-                    description=f'Nouveau RDV ajouté pour {client.rs_nom}'
-                )
+                    # ✅ Si une note/commentaire est saisi lors de la création -> créer un CommentaireRdv
+                    notes_txt = notes or ''
+                    if notes_txt:
+                        CommentaireRdv.objects.create(
+                            rdv=rdv,
+                            auteur=request.user if getattr(request, "user", None) and request.user.is_authenticated else None,
+                            commercial=commercial,
+                            texte=notes_txt,
+                            rs_nom=client.rs_nom
+                        )
+
+                    log_activity(
+                        action_type='RDV_AJOUTE',
+                        description=f'Nouveau RDV ajouté pour {client.rs_nom}',
+                        target_commercial=commercial,
+                        request=request,
+                    )
 
                 if request.session.get('show_success'):
                     request.session.pop('show_success')
@@ -1443,7 +1447,7 @@ def profil(request, commercial_id=None):
         commercial.save()
 
         # Geler/dégeler les rendez-vous à venir si changement d'état
-        from .models import Rendezvous, ActivityLog
+        from .models import Rendezvous
         today = timezone.now().date()
         if not was_absent and is_absent_now:
             # Passage à absent : geler tous les RDV à venir
@@ -1453,10 +1457,11 @@ def profil(request, commercial_id=None):
                 date_rdv__gte=today
             ).update(statut_rdv='gele')
             # Log activité absence
-            ActivityLog.objects.create(
-                commercial=commercial,
+            log_activity(
                 action_type='ABSENCE_ON',
-                description=f"{commercial.prenom} {commercial.nom} s'est déclaré absent"
+                description=f"{commercial.prenom} {commercial.nom} s'est déclaré absent",
+                target_commercial=commercial,
+                request=request,
             )
         elif was_absent and not is_absent_now:
             # Passage à présent :
@@ -1494,10 +1499,11 @@ def profil(request, commercial_id=None):
                     rdv.save()
                     occupied_times.add(rdv.heure_rdv)
             # Log activité retour
-            ActivityLog.objects.create(
-                commercial=commercial,
+            log_activity(
                 action_type='ABSENCE_OFF',
-                description=f"{commercial.prenom} {commercial.nom} est de retour (présent)"
+                description=f"{commercial.prenom} {commercial.nom} est de retour (présent)",
+                target_commercial=commercial,
+                request=request,
             )
 
         # Redirection appropriée
@@ -1682,10 +1688,11 @@ def update_statut(request, uuid, statut):
         description = f"RDV avec {rdv.client.rs_nom} annulé"
     
     if action_type:
-        ActivityLog.objects.create(
-            commercial=rdv.commercial,
+        log_activity(
             action_type=action_type,
-            description=description
+            description=description,
+            target_commercial=rdv.commercial,
+            request=request,
         )
 
     client = rdv.client

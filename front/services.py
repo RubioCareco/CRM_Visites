@@ -1,5 +1,6 @@
 import requests
 import time
+import logging
 from typing import List, Tuple, Optional, Dict
 from decimal import Decimal
 from django.utils import timezone
@@ -9,6 +10,8 @@ from django.db import transaction
 from django.db.models import Q
 from .models import Adresse, Commercial, Rendezvous, FrontClient, ClientVisitStats
 import unicodedata  # normalisation noms clients
+
+logger = logging.getLogger(__name__)
 
 
 def _norm_name_from_client(cli: FrontClient) -> str:
@@ -94,8 +97,8 @@ class GeocodingService:
                 lat = Decimal(data[0]["lat"])
                 lon = Decimal(data[0]["lon"])
                 return lat, lon
-        except Exception as e:
-            print(f"Échec géocodage pour {address}: {e}")
+        except Exception:
+            logger.exception("Echec geocodage pour %s", address)
 
         return None
 
@@ -118,9 +121,9 @@ class GeocodingService:
                     address.latitude, address.longitude = coords
                     address.geocode_date = timezone.now()
                     address.save()
-                    print(f"Géocodé: {address}")
+                    logger.info("Adresse geocodee: %s", address)
                 else:
-                    print(f"Échec géocodage: {address}")
+                    logger.warning("Echec geocodage adresse: %s", address)
 
                 # Pause pour respecter les limites de l'API
                 time.sleep(1)
@@ -261,7 +264,7 @@ class RouteOptimizationService:
             resp.raise_for_status()
             data = resp.json()
             if data.get("status") != "OK":
-                print(f"Google Directions status != OK: {data.get('status')}")
+                logger.warning("Google Directions status != OK: %s", data.get("status"))
                 return None
 
             route0 = data.get("routes", [{}])[0]
@@ -270,8 +273,8 @@ class RouteOptimizationService:
             km = float(leg0["distance"]["value"]) / 1000.0
             return secs, km
 
-        except Exception as e:
-            print(f"Google Directions error: {e}")
+        except Exception:
+            logger.exception("Google Directions error")
             return None
 
     # ==============================
@@ -1410,8 +1413,8 @@ def ensure_visits_next_4_weeks(
                     RouteOptimizationService.reorder_day_assign_slots(
                         commercial, d
                     )
-                except Exception as e:
-                    print(f"Reorder failed for {commercial} {d}: {e}")
+                except Exception:
+                    logger.exception("Reorder failed for %s %s", commercial, d)
 
     return {
         "created": created_count,
@@ -1483,7 +1486,11 @@ def google_distance_matrix_one_to_many(
         data = r.json()
 
         if data.get("status") != "OK":
-            print(f"Google Distance Matrix status != OK: {data.get('status')} | {data.get('error_message')}")
+            logger.warning(
+                "Google Distance Matrix status != OK: %s | %s",
+                data.get("status"),
+                data.get("error_message"),
+            )
             return None
 
         rows = data.get("rows") or []

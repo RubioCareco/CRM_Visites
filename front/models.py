@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 import uuid
+from .siret_utils import validate_siret
 
 
 class Commercial(models.Model):
@@ -197,8 +199,21 @@ class ActivityLog(models.Model):
     ]
 
     commercial = models.ForeignKey(Commercial, on_delete=models.SET_NULL, null=True, blank=True)
+    actor_commercial = models.ForeignKey(
+        Commercial,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='activity_actor_logs'
+    )
+    actor_role = models.CharField(max_length=20, blank=True, default='system')
     action_type = models.CharField(max_length=20, choices=ACTION_TYPES)
     description = models.CharField(max_length=255)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=255, blank=True, default='')
+    request_path = models.CharField(max_length=255, blank=True, default='')
+    request_method = models.CharField(max_length=10, blank=True, default='')
+    request_id = models.CharField(max_length=36, blank=True, default='')
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -231,6 +246,13 @@ class FrontClient(models.Model):
         null=True,
         help_text="Type de client (A, B, C) pour déterminer l'objectif annuel de visites",
     )
+
+    def clean(self):
+        super().clean()
+        is_valid, cleaned, error = validate_siret(self.siret)
+        if not is_valid:
+            raise ValidationError({"siret": error})
+        self.siret = cleaned or None
 
     class Meta:
         db_table = 'front_client'

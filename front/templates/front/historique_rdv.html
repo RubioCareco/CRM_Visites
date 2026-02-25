@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Historique des rendez-vous</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'front/css/dashboard.css' %}">
@@ -11,8 +12,16 @@
 </head>
 <body>
   <div class="dashboard content-wrapper">
-    <h1 class="dashboard-title historique-title">Historique des rendez-vous</h1>
+    <div class="hr-page-header">
+      <h1 class="dashboard-title historique-title">
+        <i class="fa fa-clock-rotate-left" aria-hidden="true"></i>
+        <span>Historique des rendez-vous</span>
+      </h1>
+      <p class="hr-page-subtitle">Historique détaillé des actions commerciales</p>
+      <div class="hr-page-underline" aria-hidden="true"></div>
+    </div>
     <div class="search-bar">
+        <i class="fa fa-search hr-search-icon" aria-hidden="true"></i>
         <input type="text" id="historiqueSearch" placeholder="Rechercher par clients, entreprises ..." autocomplete="off">
         <ul id="historiqueSearchSuggestions" class="autocomplete-results"></ul>
         <button id="filterBtnHistorique" class="filter-button">
@@ -25,21 +34,25 @@
           </span>
         {% endif %}
         <div id="filterPopoverHistorique" class="filter-popover">
-          <div class="filter-popover-title">Filtrer par&nbsp;:</div>
-          <div class="filter-type-buttons">
-            <button type="button" class="filter-type-btn" data-type="jour">Jour</button>
-            <button type="button" class="filter-type-btn" data-type="semaine">Semaine</button>
-            <button type="button" class="filter-type-btn" data-type="mois">Mois</button>
-            <button type="button" class="filter-type-btn" data-type="annee">Année</button>
+          <div class="hr-filter-header">
+            <div class="filter-popover-title">Filtrer par :</div>
+            <button type="button" id="closeFilterPopoverHistorique" class="filter-close-btn" aria-label="Fermer">&times;</button>
           </div>
-          <div id="filterInputsHistorique">
-            <!-- Ici viendront les inputs selon le type de filtre -->
+          <div class="hr-filter-body">
+            <div class="filter-type-buttons">
+              <button type="button" class="filter-type-btn" data-type="jour">Jour</button>
+              <button type="button" class="filter-type-btn" data-type="semaine">Semaine</button>
+              <button type="button" class="filter-type-btn" data-type="mois">Mois</button>
+              <button type="button" class="filter-type-btn" data-type="annee">Année</button>
+            </div>
+            <div id="filterInputsHistorique">
+              <!-- Ici viendront les inputs selon le type de filtre -->
+            </div>
+            <div class="filter-actions">
+              <button type="button" id="applyFilterHistorique" class="filter-apply-btn">Appliquer</button>
+              <button type="button" id="resetFilterHistorique" class="filter-reset-btn">Réinitialiser</button>
+            </div>
           </div>
-          <div class="filter-actions">
-            <button type="button" id="applyFilterHistorique" class="filter-apply-btn">Appliquer</button>
-            <button type="button" id="resetFilterHistorique" class="filter-reset-btn">Réinitialiser</button>
-          </div>
-          <button type="button" id="closeFilterPopoverHistorique" class="filter-close-btn">&times;</button>
         </div>
     </div>
     <div class="cards">
@@ -185,9 +198,11 @@
         </div>
       </div>
     </div>
-    <div class="back-button-container">
-      <a href="{% if role == 'responsable' or role == 'admin' %}{% url 'dashboard_responsable' %}{% else %}{% url 'dashboard_test' %}{% endif %}" class="histo-back-btn" id="backDashboardBtn">&larr; Retour</a>
-  </div>
+    <a href="{% if role == 'responsable' or role == 'admin' %}{% url 'dashboard_responsable' %}{% else %}{% url 'dashboard_test' %}{% endif %}"
+       class="back-login" id="backDashboardBtn"
+       style="position:fixed;left:24px;bottom:20px;z-index:9999;display:flex;align-items:center;gap:8px;color:#000000;font-size:1.15rem;padding:8px 22px;border-radius:8px;box-shadow:0 2px 8px rgba(255, 255, 255, 0.1);backdrop-filter:blur(6px);border: 1px solid rgba(0,0,0, 0.1);text-decoration:none;">
+      <i class="fa-solid fa-arrow-left"></i> Retour
+    </a>
     <div id="modalClientRDV" class="modal-client-rdv">
     <div class="modal-content-client-rdv">
       <button id="closeModalClientRDV" class="close-btn"><i class="fa fa-times"></i></button>
@@ -235,8 +250,8 @@
         // Gérer les types de filtres
       filterTypeBtns.forEach(btn => {
         btn.addEventListener('click', function() {
-            filterTypeBtns.forEach(b => b.style.background = '#333');
-            this.style.background = '#e53935';
+            filterTypeBtns.forEach(b => b.classList.remove('is-active'));
+            this.classList.add('is-active');
             
             const filterType = this.dataset.type;
             let html = '';
@@ -260,9 +275,13 @@
           });
         });
 
+        if (filterTypeBtns.length) {
+          filterTypeBtns[0].click();
+        }
+
         // Appliquer le filtre
         applyFilterBtn.addEventListener('click', function() {
-          const activeFilterType = document.querySelector('.filter-type-btn[style*="background: rgb(229, 57, 53)"]');
+          const activeFilterType = document.querySelector('.filter-type-btn.is-active');
           if (!activeFilterType) return;
           
           const filterType = activeFilterType.dataset.type;
@@ -388,8 +407,11 @@
           // Récupérer les informations du client pour le titre
           const clientName = card.querySelector('.client-name strong').textContent.trim();
           
-          fetch(`/get_client_rdv/${clientId}/`)
-            .then(resp => resp.json())
+          fetch(`/api/client-rdv/${clientId}/`)
+            .then(resp => {
+              if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+              return resp.json();
+            })
             .then(data => {
               // Mettre à jour le titre de la modal
               document.getElementById('modalClientTitle').textContent = clientName;
@@ -404,7 +426,7 @@
                 if (rdvsFiltres.length === 0) {
                   html = '<p class="no-rdv-message">Aucun rendez-vous validé ou annulé pour ce client.</p>';
                 } else {
-                  html = `<table class="table-modal-rdv">
+                  html = `<div class="modal-table-scroll"><table class="table-modal-rdv">
                     <thead>
                       <tr>
                         <th>Date</th>
@@ -438,11 +460,14 @@
                       <td>${rdv.commercial}</td>
                     </tr>`;
                   });
-                  html += '</tbody></table>';
+                  html += '</tbody></table></div>';
                 }
               }
               document.getElementById('modalClientRDVContent').innerHTML = html;
               document.getElementById('modalClientRDV').style.display = 'flex';
+            })
+            .catch(err => {
+              console.error('Erreur chargement historique client:', err);
             });
         });
 
@@ -457,8 +482,11 @@
           // Récupérer les informations du client pour le titre
           const clientName = card.querySelector('.client-name strong').textContent.trim();
           
-          fetch(`/get_client_rdv/${clientId}/?statut=valide`)
-            .then(resp => resp.json())
+          fetch(`/api/client-rdv/${clientId}/?statut=valide`)
+            .then(resp => {
+              if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+              return resp.json();
+            })
             .then(data => {
               // Mettre à jour le titre de la modal
               document.getElementById('modalClientTitle').textContent = clientName;
@@ -473,7 +501,7 @@
                 if (rdvsFiltres.length === 0) {
                   html = '<p class="no-rdv-message">Aucun rendez-vous validé ou annulé pour ce client.</p>';
                 } else {
-                  html = `<table class="table-modal-rdv">
+                  html = `<div class="modal-table-scroll"><table class="table-modal-rdv">
                     <thead>
                       <tr>
                         <th>Date</th>
@@ -501,17 +529,20 @@
                     html += `<tr>
                       <td>${rdv.date_rdv}</td>
                       <td>${rdv.heure_rdv}</td>
-                      <td><span class="${statutClass}">${statutLabel}</td>
+                      <td><span class="${statutClass}">${statutLabel}</span></td>
                       <td>${rdv.objet}</td>
                       <td>${rdv.commentaire}</td>
                       <td>${rdv.commercial}</td>
                     </tr>`;
                   });
-                  html += '</tbody></table>';
+                  html += '</tbody></table></div>';
                 }
               }
               document.getElementById('modalClientRDVContent').innerHTML = html;
               document.getElementById('modalClientRDV').style.display = 'flex';
+            })
+            .catch(err => {
+              console.error('Erreur chargement historique client:', err);
             });
         });
 
@@ -526,8 +557,11 @@
         // Récupérer les informations du client pour le titre
         const clientName = card.querySelector('.client-name strong').textContent.trim();
         
-        fetch(`/get_client_rdv/${clientId}/?statut=annule`)
-          .then(resp => resp.json())
+        fetch(`/api/client-rdv/${clientId}/?statut=annule`)
+          .then(resp => {
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            return resp.json();
+          })
           .then(data => {
             // Mettre à jour le titre de la modal
             document.getElementById('modalClientTitle').textContent = clientName;
@@ -542,7 +576,7 @@
               if (rdvsFiltres.length === 0) {
                 html = '<p class="no-rdv-message">Aucun rendez-vous validé ou annulé pour ce client.</p>';
               } else {
-                html = `<table class="table-modal-rdv">
+                html = `<div class="modal-table-scroll"><table class="table-modal-rdv">
                   <thead>
                     <tr>
                       <th>Date</th>
@@ -573,11 +607,14 @@
                     <td>${rdv.commercial}</td>
                   </tr>`;
                 });
-                html += '</tbody></table>';
+                html += '</tbody></table></div>';
               }
             }
             document.getElementById('modalClientRDVContent').innerHTML = html;
             document.getElementById('modalClientRDV').style.display = 'flex';
+          })
+          .catch(err => {
+            console.error('Erreur chargement historique client:', err);
           });
       });
 

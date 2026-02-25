@@ -7,19 +7,23 @@ body, html {
 }
 
 .rdv-modal {
+  position: fixed;
+  inset: 0;
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
+  background: rgba(0, 0, 0, 0.103);
 }
 
 .rdv-box {
   background-color: rgb(255, 255, 255);
   padding: 48px 54px 44px 54px;
-  border-radius: 22px;
+  border-radius: 20px;
   width: 480px;
   min-width: 320px;
   max-width: 98vw;
+  box-sizing: border-box;
   box-shadow: 0 12px 48px rgba(0,0,0,18%);
   backdrop-filter: blur(10px);
   color: #666;
@@ -28,6 +32,29 @@ body, html {
   flex-direction: column;
   align-items: center;
   transition: all 0.2s, ease-in-out;
+}
+
+.rdv-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  width: auto;
+  box-sizing: border-box;
+  position: relative;
+  background: #181212b8;
+  color: #fff;
+  border-radius: 20px 20px 0 0;
+  margin: -48px -54px 28px -54px;
+  padding: 20px 25px;
+}
+
+.rdv-title {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.15rem;
+  text-align: center;
+  color: #fff;
 }
 
 .rdv-box form {
@@ -56,8 +83,8 @@ h2 {
   top: 50%;
   left: 16px;
   transform: translateY(-50%);
-  color: #e53935;
-  font-size: 16px;
+  color: #ff3b3b;
+  font-size: 1.1em;
   pointer-events: none;
   z-index: 2;
 }
@@ -70,18 +97,32 @@ h2 {
   max-width: 100%;
   box-sizing: border-box;
   margin-bottom: 0;
-  font-size: 1.13rem;
+  font-size: 1em;
   padding: 14px 18px 14px 44px;
-  border-radius: 12px;
-  background: #25222228 ;
-  color: #666;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.18);
+  color: #fff;
+  opacity: 1;
   border: 1.5px solid rgba(255,255,255,0.13);
   transition: box-shadow 0.18s, border 0.18s, background 0.18s, transform 0.18s;
 }
 
 .rdv-field input::placeholder,
 .rdv-field textarea::placeholder {
-  color: #25222228;
+  color: #ffffffc7;
+  opacity: 1;
+  font-size: 1em;
+}
+
+/* Harmonise la taille du champ heure avec les autres inputs */
+.rdv-field input[type="time"] {
+  font-size: 1.08em;
+}
+
+.rdv-field input[type="time"]::-webkit-datetime-edit,
+.rdv-field input[type="time"]::-webkit-datetime-edit-hour-field,
+.rdv-field input[type="time"]::-webkit-datetime-edit-minute-field {
+  font-size: 1.08em;
 }
 
 .rdv-actions {
@@ -95,25 +136,61 @@ h2 {
 
 /* Style unique pour les deux boutons, inspiré de l'image */
 .action-btn {
-  background-color: #e53935;
-  color: white;
-  border: none;
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  color: #ff3b3b;
+  border: 1px solid #ff3b3b;
   border-radius: 8px;
-  padding: 12px 20px;
-  font-size: 1rem;
+  padding: 13px 0;
+  font-size: 1.08em;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 60%;
-  transition: all 0.2s ease-in-out;
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+  box-shadow: 0 2px 8px 0 rgba(211,47,47,0.10);
+  transition: color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.action-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #ff3b3b;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.3s ease;
+  z-index: 0;
+}
+
+.action-btn > * {
+  position: relative;
+  z-index: 1;
+}
+
+.action-btn i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.action-btn .fa-xmark {
+  transform: translateY(1px);
 }
 
 .action-btn:hover {
-  background-color: #d32f2f;
-  transform: scale(1.05);
-  box-shadow: 0 4px 15px rgba(229, 57, 53, 0.4);
+  color: #fff;
+  box-shadow: 0 4px 16px 0 rgba(255,59,59,0.15);
+}
+
+.action-btn:hover::before {
+  transform: scaleX(1);
 }
 
 /* On supprime les anciens styles pour ne garder que celui-ci */
@@ -133,8 +210,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .rdv-select {
-  color: #666;
-  background-color:#25222228;
+  color: #fff;
+  background-color: rgba(0, 0, 0, 0.18);
   transition: color 0.2s;
 }
 
@@ -153,10 +230,26 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   top: 50%;
   left: 12px;
   transform: translateY(-50%);
-  color: #e53935;
-  font-size: 14px;
+  color: #ff3b3b;
+  font-size: 1.1em;
   pointer-events: none;
   z-index: 0;
+}
+
+.rdv-field-textarea i {
+  top: 18px;
+  transform: none;
+}
+.rdv-field-textarea textarea {
+  font-size: 1em;
+  line-height: 1.25;
+  font-family: inherit;
+}
+.rdv-field-textarea textarea::placeholder {
+  font-size: 1em;
+  line-height: 1.25;
+  font-family: inherit;
+  font-weight: 400;
 }
 
 .success-message {
@@ -164,11 +257,11 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   top: 32px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(211, 47, 47, 0.95);
+  background: rgba(255, 59, 59, 0.95);
   color: #fff;
   padding: 16px 32px;
   border-radius: 12px;
-  box-shadow: 0 4px 18px rgba(229, 57, 53, 0.13), 0 1.5px 8px rgba(255, 255, 255, 0.13);
+  box-shadow: 0 4px 18px rgba(255, 59, 59, 0.13), 0 1.5px 8px rgba(255, 255, 255, 0.13);
   font-size: 1.08em;
   display: none;
   align-items: center;
@@ -182,35 +275,90 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   font-size: 1.2em;
 }
 
+/* Toast succès add_rdv (caché par défaut, affiché via .show en JS) */
+.import-toast {
+  position: fixed;
+  top: 22px;
+  right: 22px;
+  display: none;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #34d399, #10b981);
+  border: 1px solid #10b981;
+  color: #fff;
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.22);
+  font-weight: 600;
+  z-index: 9999;
+}
+
+.import-toast.show {
+  display: inline-flex;
+}
+
+.import-toast.error {
+  background: linear-gradient(135deg, #fb7185, #f43f5e);
+  border-color: #f43f5e;
+}
+
+.rdv-toast-close {
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+}
+
+.rdv-toast-close:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
 /* 🔍 Barre de recherche intelligente */
 .autocomplete-container {
   position: relative;
 }
 
 .autocomplete-container input[type="text"] {
-  background: #25222228;
-  color: #666;
+  background: rgba(0, 0, 0, 0.18);
+  color: #fff;
+  opacity: 1;
   border: 1.5px solid rgba(255,255,255,0.13);
-  border-radius: 12px;
-  font-size: 1.13rem;
+  border-radius: 7px;
+  font-size: 1em;
   padding: 14px 18px 14px 44px;
   margin-bottom: 0;
   width: 100%;
   box-sizing: border-box;
   transition: box-shadow 0.18s, border 0.18s, background 0.18s, transform 0.18s;
 }
+.autocomplete-container input[type="text"]::placeholder {
+  color: #ffffffc7;
+  opacity: 1;
+  font-size: 1em;
+}
 
 .autocomplete-container input[type="text"]:focus {
-  background: rgba(223, 55, 55, 0.534);
-  border: 1.5px solid #fff;
-  box-shadow: 0 4px 18px #fff3;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1.5px solid rgba(255,255,255,0.13);
+  box-shadow: none;
   outline: none;
-  transform: scale(1.03);
+  transform: none;
 }
 
 .autocomplete-container input[type="text"]:hover {
-  box-shadow: 0 2px 8px #fff2;
-  transform: scale(1.01);
+  background: rgba(0, 0, 0, 0.18);
+  border: 1.5px solid rgba(255,255,255,0.13);
+  box-shadow: none;
+  transform: none;
 }
 
 .autocomplete-container i {
@@ -218,8 +366,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   top: 50%;
   left: 12px;
   transform: translateY(-50%);
-  color: #e53935;
-  font-size: 14px;
+  color: #ff3b3b;
+  font-size: 1.1em;
   pointer-events: none;
 }
 
@@ -261,33 +409,36 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .rdv-field input:focus,
 .rdv-field textarea:focus,
 .rdv-select:focus {
-  background: #25222228;
-  border: 1.5px solid #fff;
-  box-shadow: 0 4px 18px #fff3;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1.5px solid rgba(255,255,255,0.13);
+  box-shadow: none;
   outline: none;
-  transform: scale(1.03);
+  transform: none;
 }
 
 .rdv-field input:hover,
 .rdv-field textarea:hover,
 .rdv-select:hover {
-  box-shadow: 0 2px 8px #fff2;
-  transform: scale(1.01);
+  background: rgba(0, 0, 0, 0.18);
+  border: 1.5px solid rgba(255,255,255,0.13);
+  box-shadow: none;
+  transform: none;
 }
 
 /* Style pour la croix de fermeture */
 .close-btn {
   position: absolute;
-  top: 18px;
-  right: 18px;
-  background: none;
+  top: 50%;
+  right: 16px;
+  transform: translateY(-50%);
+  background: transparent;
   border: none;
-  font-size: 1.7rem;
-  color: #e53935;
+  font-size: 0;
+  color: #fff;
   cursor: pointer;
   transition: color 0.2s, background 0.2s;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -295,9 +446,34 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   padding: 0;
 }
 
+.close-btn i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 18px;
+  line-height: 1;
+}
+
 .close-btn:hover {
   color: white;
-  background-color: rgba(255, 82, 82, 0.8);
+  background: #ef4444;
+}
+
+@media (max-width: 700px) {
+  .rdv-box {
+    width: 99vw;
+    border-radius: 0;
+    padding: 48px 10px 28px 10px;
+  }
+
+  .rdv-box-header {
+    margin: -48px -10px 20px -10px;
+    border-radius: 0;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
 }
 
 
@@ -348,14 +524,14 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   cursor: not-allowed !important;
 }
 .flatpickr-day.today {
-  border-color: #e53935 !important;
-  box-shadow: inset 0 0 0 1px #e53935 !important;
+  border-color: #ff3b3b !important;
+  box-shadow: inset 0 0 0 1px #ff3b3b !important;
 }
 .flatpickr-day.selected,
 .flatpickr-day.startRange,
 .flatpickr-day.endRange {
-  background: #e53935 !important;
-  border-color: #e53935 !important;
+  background: #ff3b3b !important;
+  border-color: #ff3b3b !important;
   color: #fff !important;
 }
 .flatpickr-day.disabled,

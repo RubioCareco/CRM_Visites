@@ -48,18 +48,36 @@
               {% csrf_token %}
               <div class="nc-fields-grid">
                 <div class="nc-field"><i class="fa-solid fa-user"></i><input type="text" name="nom" placeholder="Nom" required value="{{ client_temp.nom|default:'' }}"></div>
-                <div class="nc-field"><i class="fa-solid fa-building"></i><input type="text" name="entreprise" placeholder="Nom de l'entreprise" value="{{ client_temp.entreprise|default:'' }}"></div>
+                <div class="nc-field"><i class="fa-solid fa-building"></i><input id="entrepriseInput" type="text" name="entreprise" placeholder="Nom de l'entreprise" value="{{ client_temp.entreprise|default:'' }}"></div>
                 <div class="nc-field"><i class="fa-solid fa-user"></i><input type="text" name="prenom" placeholder="Prénom" required value="{{ client_temp.prenom|default:'' }}"></div>
-                <div class="nc-field"><i class="fa-solid fa-id-card"></i><input type="text" name="siret" placeholder="Numéro SIRET" pattern="[0-9]{14}" value="{{ client_temp.siret|default:'' }}"></div>
-                <div class="nc-field"><i class="fa-solid fa-location-dot"></i><input type="text" name="adresse" placeholder="Adresse" value="{{ client_temp.adresse|default:'' }}"></div>
+                <div class="nc-field-group nc-field-group-siret">
+                  <div id="ncSiretField" class="nc-field nc-siret">
+                    <i class="fa-solid fa-id-card"></i>
+                    <input
+                      id="siretInput"
+                      type="text"
+                      name="siret"
+                      placeholder="Numéro SIRET"
+                      pattern="[0-9]{14}"
+                      maxlength="14"
+                      inputmode="numeric"
+                      autocomplete="off"
+                      value="{{ client_temp.siret|default:'' }}"
+                    >
+                  </div>
+                  <div id="siretHint" class="nc-siret-hint nc-siret-hint-info" aria-live="polite">
+                    Le champ SIRET accepte uniquement des chiffres
+                  </div>
+                </div>
+                <div class="nc-field"><i class="fa-solid fa-location-dot"></i><input id="adresseInput" type="text" name="adresse" placeholder="Adresse" value="{{ client_temp.adresse|default:'' }}"></div>
                 <div class="nc-field"><i class="fa fa-globe-europe"></i><input type="text" name="ville" placeholder="Ville" value="{{ client_temp.ville|default:'' }}"></div>
-                <div class="nc-field"><i class="fa-solid fa-location-dot"></i><input type="text" name="code_postal" placeholder="Code Postal" pattern="[0-9]{5}" value="{{ client_temp.code_postal|default:'' }}"></div>
+                <div class="nc-field"><i class="fa-solid fa-location-dot"></i><input id="codePostalInput" type="text" name="code_postal" placeholder="Code Postal" pattern="[0-9]{5}" value="{{ client_temp.code_postal|default:'' }}"></div>
                 <div class="nc-field"><i class="fa-solid fa-envelope"></i><input type="email" name="email" placeholder="E-mail" value="{{ client_temp.email|default:'' }}"></div>
                 <div class="nc-field"><i class="fa-solid fa-phone"></i><input type="tel" name="telephone" placeholder="Téléphone" pattern="[0-9]{10}" value="{{ client_temp.telephone|default:'' }}"></div>
               </div>
               <div class="nc-actions">
-                <button type="submit" class="nc-action-btn" name="add_rdv"><i class="fa-solid fa-calendar-plus"></i> Ajouter un rendez-vous</button>
-                <button type="submit" class="nc-action-btn">Valider</button>
+                <button type="submit" class="nc-action-btn" name="add_rdv"><i class="fa-solid fa-calendar-plus"></i><span>Ajouter un rendez-vous</span></button>
+                <button type="submit" class="nc-action-btn"><i class="fa-solid fa-circle-check"></i><span>Valider</span></button>
               </div>
             </form>
           </div>
@@ -67,8 +85,15 @@
       </div>
     </div>
   </div>
-  <div class="success-message" style="display:none;">
-    Client ajouté avec succès
+  <div id="ncToastStack" class="nc-toast-stack" aria-live="polite" aria-atomic="true">
+    <div id="ncSuccessToast" class="nc-toast success" style="display:none;">
+      <span id="ncSuccessToastText">Opération effectuée avec succès</span>
+      <button type="button" id="ncSuccessToastClose" aria-label="Fermer">×</button>
+    </div>
+    <div id="ncErrorToast" class="nc-toast error" style="display:none;">
+      <span id="ncErrorToastText">Une erreur est survenue</span>
+      <button type="button" id="ncErrorToastClose" aria-label="Fermer">×</button>
+    </div>
   </div>
   <div id="import-toast" class="import-toast">
     <i class="fa-solid fa-circle-check"></i>
@@ -77,12 +102,48 @@
   {% if success %}
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      document.querySelector('.success-message').style.display = 'block';
+      const toast = document.getElementById('ncSuccessToast');
+      const toastText = document.getElementById('ncSuccessToastText');
+      const closeBtn = document.getElementById('ncSuccessToastClose');
+      if (!toast || !toastText) return;
+
+      toastText.textContent = '{{ success_message|default:"Opération effectuée avec succès"|escapejs }}';
+      toast.style.display = 'flex';
+      requestAnimationFrame(() => toast.classList.add('show'));
+
+      const closeToast = () => {
+        toast.classList.remove('show');
+        setTimeout(() => { toast.style.display = 'none'; }, 220);
+      };
+      if (closeBtn) closeBtn.addEventListener('click', closeToast);
+
+      setTimeout(closeToast, 2200);
       setTimeout(function() {
         const role = '{{ role|default:"" }}';
         const target = (role === 'responsable' || role === 'admin') ? '/dashboard-responsable/' : '/dashboard-test/';
         window.location.href = target;
-      }, 2000);
+      }, 2500);
+    });
+  </script>
+  {% endif %}
+  {% if error %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const toast = document.getElementById('ncErrorToast');
+      const toastText = document.getElementById('ncErrorToastText');
+      const closeBtn = document.getElementById('ncErrorToastClose');
+      if (!toast || !toastText) return;
+
+      toastText.textContent = '{{ error|default:"Erreur de validation"|escapejs }}';
+      toast.style.display = 'flex';
+      requestAnimationFrame(() => toast.classList.add('show'));
+
+      const closeToast = () => {
+        toast.classList.remove('show');
+        setTimeout(() => { toast.style.display = 'none'; }, 220);
+      };
+      if (closeBtn) closeBtn.addEventListener('click', closeToast);
+      setTimeout(closeToast, 4500);
     });
   </script>
   {% endif %}
@@ -201,6 +262,124 @@
       };
       reader.readAsArrayBuffer(file);
     }
+
+    function luhnCheck(value) {
+      if (!/^\d+$/.test(value)) return false;
+      let sum = 0;
+      let shouldDouble = false;
+      for (let i = value.length - 1; i >= 0; i--) {
+        let digit = Number(value.charAt(i));
+        if (shouldDouble) {
+          digit *= 2;
+          if (digit > 9) digit -= 9;
+        }
+        sum += digit;
+        shouldDouble = !shouldDouble;
+      }
+      return sum % 10 === 0;
+    }
+
+    (function initSiretField() {
+      const siretInput = document.getElementById('siretInput');
+      const siretHint = document.getElementById('siretHint');
+      const siretField = document.getElementById('ncSiretField');
+      const entrepriseInput = document.getElementById('entrepriseInput');
+      const adresseInput = document.getElementById('adresseInput');
+      const codePostalInput = document.getElementById('codePostalInput');
+      const villeInput = document.querySelector('input[name="ville"]');
+      if (!siretInput || !siretHint || !siretField) return;
+
+      let lastFetchedSiret = '';
+      let activeController = null;
+
+      function showHint(text, type) {
+        siretHint.textContent = text;
+        siretHint.classList.remove('nc-siret-hint-info', 'nc-siret-hint-error', 'nc-siret-hint-success', 'nc-siret-hint-loading', 'nc-siret-hint-warn');
+        siretHint.classList.add(`nc-siret-hint-${type}`, 'show');
+      }
+      function hideHint() {
+        siretHint.classList.remove('show');
+      }
+
+      function setFieldState(state) {
+        siretField.classList.remove('siret-invalid', 'siret-valid');
+        if (state === 'invalid') siretField.classList.add('siret-invalid');
+        if (state === 'valid') siretField.classList.add('siret-valid');
+      }
+
+      async function fetchInseeAndHydrate(siret) {
+        if (lastFetchedSiret === siret) return;
+        lastFetchedSiret = siret;
+
+        if (activeController) activeController.abort();
+        activeController = new AbortController();
+        showHint('Chargement...', 'loading');
+
+        try {
+          const response = await fetch(`/api/insee/siret/${siret}/`, { signal: activeController.signal });
+          const payload = await response.json();
+          if (!response.ok || !payload.success || !payload.data) {
+            // Best effort: ne bloque pas l'utilisateur si INSEE ne répond pas.
+            showHint('Entreprise introuvable (vous pouvez continuer en saisie manuelle)', 'warn');
+            return;
+          }
+
+          const data = payload.data;
+          if (entrepriseInput) entrepriseInput.value = data.entreprise || entrepriseInput.value;
+          if (adresseInput) adresseInput.value = data.adresse || adresseInput.value;
+          if (codePostalInput) codePostalInput.value = data.code_postal || codePostalInput.value;
+          if (villeInput) villeInput.value = data.ville || villeInput.value;
+          showHint('Entreprise trouvée et champs complétés', 'success');
+        } catch (error) {
+          if (error.name === 'AbortError') return;
+          // Best effort: information discrète seulement.
+          showHint('Recherche INSEE indisponible (saisie manuelle possible)', 'warn');
+        }
+      }
+
+      function updateSiretState() {
+        const rawValue = siretInput.value || '';
+        const digits = rawValue.replace(/\D/g, '').slice(0, 14);
+        if (digits !== rawValue) siretInput.value = digits;
+
+        if (!digits) {
+          setFieldState('');
+          if (rawValue) {
+            showHint('Le champ SIRET accepte uniquement des chiffres', 'info');
+          } else {
+            hideHint();
+          }
+          lastFetchedSiret = '';
+          if (activeController) activeController.abort();
+          return;
+        }
+
+        if (digits.length < 14) {
+          const missing = 14 - digits.length;
+          setFieldState('invalid');
+          showHint(
+            `Numéro incorrect, il vous manque ${missing} ${missing > 1 ? 'chiffres' : 'chiffre'}`,
+            'error'
+          );
+          lastFetchedSiret = '';
+          if (activeController) activeController.abort();
+          return;
+        }
+
+        if (!luhnCheck(digits)) {
+          setFieldState('invalid');
+          showHint('Numéro incorrect (contrôle SIRET invalide)', 'error');
+          return;
+        }
+
+        setFieldState('valid');
+        showHint('Numéro SIRET valide', 'success');
+        fetchInseeAndHydrate(digits);
+      }
+
+      siretInput.addEventListener('input', updateSiretState);
+      updateSiretState();
+    })();
   </script>
 </body>
 </html>

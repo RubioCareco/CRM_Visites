@@ -17,7 +17,7 @@ body {
   
   .nc-card {
     background: rgb(255, 255, 255);
-    border-radius: 16px;
+    border-radius: 20px;
     box-shadow: 0 8px 32px 0 rgba(0,0,0,0.45);
     width: 600px;
     max-width: 96vw;
@@ -36,25 +36,35 @@ body {
   
   .nc-close-btn {
     position: absolute;
-    top: 20px;
-    right: 36px;
-    font-size: 1.3em;
-    color: #ff3b3b;
-    background: none;
+    top: 50%;
+    right: 16px;
+    transform: translateY(-50%);
+    font-size: 0;
+    color: #fff;
+    background: transparent;
     border: none;
     cursor: pointer;
     z-index: 2;
     transition: color 0.2s, background 0.2s;
     border-radius: 50%;
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
+  .nc-close-btn i {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 18px;
+    line-height: 1;
+  }
   .nc-close-btn:hover {
     color: #fff;
-    background: #ff3b3b;
+    background: #ef4444;
   }
   
   .nc-accordion {
@@ -91,6 +101,14 @@ body {
   }
   .nc-accordion-header:hover {
     background: rgba(255,0,0,0.08);
+  }
+  .nc-accordion-header > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .nc-accordion-header > span > i {
+    color: #ff3b3b;
   }
   
   .nc-chevron {
@@ -141,6 +159,7 @@ body {
   .nc-fields-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    align-items: start;
     gap: 14px 18px;
     margin: 24px 0 22px 0;
   }
@@ -154,10 +173,74 @@ body {
     color: #ffffffb7;
     font-size: 1.08em;
   }
+  .nc-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .nc-siret {
+    border: 1.5px solid rgba(255,255,255,0.13);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .nc-siret.siret-invalid {
+    border-color: #ff3b3b;
+    box-shadow: 0 0 0 1px rgba(255, 59, 59, 0.25);
+  }
+  .nc-siret.siret-valid {
+    border-color: #10b981;
+    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.25);
+  }
+  .nc-siret-hint {
+    display: none;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    backdrop-filter: blur(4px);
+    width: 100%;
+    max-width: 100%;
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .nc-siret-hint.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .nc-siret-hint-info {
+    color: #334155;
+    background: rgba(148, 163, 184, 0.22);
+    border-color: rgba(148, 163, 184, 0.48);
+  }
+  .nc-siret-hint-error {
+    color: #7f1d1d;
+    background: rgba(239, 68, 68, 0.24);
+    border-color: rgba(239, 68, 68, 0.52);
+  }
+  .nc-siret-hint-success {
+    color: #065f46;
+    background: rgba(16, 185, 129, 0.24);
+    border-color: rgba(16, 185, 129, 0.52);
+  }
+  .nc-siret-hint-loading {
+    color: #1e3a8a;
+    background: rgba(59, 130, 246, 0.24);
+    border-color: rgba(59, 130, 246, 0.52);
+  }
+  .nc-siret-hint-warn {
+    color: #7c2d12;
+    background: rgba(249, 115, 22, 0.2);
+    border-color: rgba(249, 115, 22, 0.48);
+  }
   .nc-field i {
     margin-right: 10px;
     font-size: 1.1em;
     min-width: 18px;
+    color: #ff3b3b;
   }
   .nc-field input {
     border: none;
@@ -181,16 +264,18 @@ body {
     margin-top: 10px;
   }
   .nc-action-btn {
-    background: #ff3b3b;
-    color: #fff;
-    border: none;
+    position: relative;
+    overflow: hidden;
+    background: #fff;
+    color: #ff3b3b;
+    border: 1px solid #ff3b3b;
     border-radius: 8px;
     padding: 13px 0;
     font-weight: 600;
     font-size: 1.08em;
     cursor: pointer;
     box-shadow: 0 2px 8px 0 rgba(211,47,47,0.10);
-    transition: background 0.2s, box-shadow 0.2s;
+    transition: color 0.25s ease, box-shadow 0.25s ease;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -198,9 +283,30 @@ body {
     justify-content: center;
     max-width: 320px;
   }
-  .nc-action-btn:hover {
+  .nc-action-btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
     background: #ff3b3b;
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.3s ease;
+    z-index: 0;
+  }
+  .nc-action-btn i {
+    position: relative;
+    z-index: 1;
+  }
+  .nc-action-btn span {
+    position: relative;
+    z-index: 1;
+  }
+  .nc-action-btn:hover {
+    color: #fff;
     box-shadow: 0 4px 16px 0 rgba(255,59,59,0.15);
+  }
+  .nc-action-btn:hover::before {
+    transform: scaleX(1);
   }
   
   @media (max-width: 700px) {
@@ -220,16 +326,20 @@ body {
   .nc-card-header {
     display: flex;
     flex-direction: row;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding-bottom: 32px;
-    margin-bottom: 16px;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: #181212b8;
+    color: #fff;
+    border-radius: 20px 20px 0 0;
+    margin: -64px -64px 20px -64px;
+    padding: 20px 25px;
   }
   .nc-card-title {
-    font-size: 1.45em;
-    font-weight: 600;
-    color: #666;
-    letter-spacing: 0.5px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
     text-align: center;
     flex: 1;
   }
@@ -289,6 +399,68 @@ body {
     opacity: 0;
     pointer-events: none;
     transition: bottom 0.6s cubic-bezier(.7,.2,.2,1), opacity 0.3s, background 0.2s;
+  }
+
+  .nc-toast-stack {
+    position: fixed;
+    top: 22px;
+    right: 22px;
+    z-index: 2147483647;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+  }
+
+  .nc-toast {
+    min-width: 280px;
+    max-width: min(92vw, 420px);
+    padding: 12px 14px;
+    border-radius: 12px;
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.22);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    pointer-events: auto;
+    transform: translateY(-8px);
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .nc-toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .nc-toast.success {
+    background: linear-gradient(135deg, #34d399, #10b981);
+    border: 1px solid #10b981;
+  }
+  .nc-toast.error {
+    background: linear-gradient(135deg, #ff6b6b, #ff3b3b);
+    border: 1px solid #ff3b3b;
+  }
+
+  .nc-toast button {
+    border: none;
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border-radius: 8px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nc-toast button:hover {
+    background: rgba(255, 255, 255, 0.3);
   }
   .import-toast.show {
     bottom: 32px;

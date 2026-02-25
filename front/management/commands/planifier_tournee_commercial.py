@@ -29,7 +29,7 @@ class Command(BaseCommand):
         return R * c * 1000  # en mètres
 
     def handle(self, *args, **options):
-        # ORS supprimé: on s'appuie sur Haversine/Mapbox dans les services
+        # ORS supprimé: on s'appuie sur Haversine/Google dans les services
 
         # 2. Géocoder dynamiquement le point de départ avec Nominatim
         adresse_depart = "10 avenue Normandie Niémen, 64140 Lons"

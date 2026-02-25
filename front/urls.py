@@ -60,6 +60,7 @@ urlpatterns = [
 
     path('api/clients-by-commercial/', views.api_clients_by_commercial, name='api_clients_by_commercial'),
     path('api/commerciaux/', views.api_commerciaux, name='api_commerciaux'),
+    path('api/insee/siret/<str:siret>/', views.api_insee_siret, name='api_insee_siret'),
 
     path('api/map-tournee/', views.api_map_tournee, name='api_map_tournee'),
 
@@ -72,7 +73,7 @@ urlpatterns = [
 
     path('api/client-details/<int:client_id>/', views.api_client_details, name='api_client_details'),
 
-    path('api/client-comments/<int:client_id>/', views.get_client_comments, name='get_client_comments'),
+    path('api/client-comments/<int:client_id>/', views.api_client_comments, name='get_client_comments'),
     path('api/comment-pin/<int:comment_id>/', views.set_comment_pin, name='set_comment_pin'),
     path('api/toggle-pin-comment/<int:comment_id>/', views.toggle_pin_comment, name='toggle_pin_comment'),
     path('api/client-rdv/<int:client_id>/', views.get_client_rdv, name='get_client_rdv'),

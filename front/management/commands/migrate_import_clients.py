@@ -7,7 +7,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         count = 0
         for ic in ImportClientCorrected.objects.all():
-            print(f"Client: {ic.rs_nom} - Commercial: {ic.commercial}")
+            self.stdout.write(f"Client: {ic.rs_nom} - Commercial: {ic.commercial}")
             # Création du client
             client = FrontClient.objects.create(
                 civilite=ic.civilite,

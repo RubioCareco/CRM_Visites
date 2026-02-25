@@ -166,9 +166,6 @@ PUBLIC_HOLIDAYS = env.list("PUBLIC_HOLIDAYS", default=[])  # ex: ["2025-01-01", 
 HOLIDAYS_COUNTRY = env("HOLIDAYS_COUNTRY", default="FR")
 HOLIDAYS_YEARS = env("HOLIDAYS_YEARS", default="2025,2026")
 
-# Mapbox
-MAPBOX_ACCESS_TOKEN = env("MAPBOX_ACCESS_TOKEN", default="")
-
 # Contraintes géographiques / Algorithmes
 MAX_RADIUS_KM = env.int("MAX_RADIUS_KM", default=40)
 MAX_DAILY_DISTANCE_KM = env.int("MAX_DAILY_DISTANCE_KM", default=220)
@@ -184,10 +181,28 @@ HORIZON_MAX_VISITS_PER_CLIENT = env.int("HORIZON_MAX_VISITS_PER_CLIENT", default
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True  # utile quand on est derrière un proxy
 
-# (si ce n'est pas déjà fait, on lit ces flags depuis l'env)
+# Baseline (dev/preview). En prod, un bloc dédié plus bas force des valeurs sûres.
 SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=False)
-SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=(ENV == "prod"))
-CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=(ENV == "prod"))
+SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=False)
+CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=False)
+
+# Cookies / entêtes sécurité (valeurs explicites)
+SESSION_COOKIE_HTTPONLY = env.bool("SESSION_COOKIE_HTTPONLY", default=True)
+SESSION_COOKIE_SAMESITE = env("SESSION_COOKIE_SAMESITE", default="Lax")
+CSRF_COOKIE_SAMESITE = env("CSRF_COOKIE_SAMESITE", default="Lax")
+SECURE_CONTENT_TYPE_NOSNIFF = env.bool("SECURE_CONTENT_TYPE_NOSNIFF", default=True)
+SECURE_REFERRER_POLICY = env("SECURE_REFERRER_POLICY", default="strict-origin-when-cross-origin")
+X_FRAME_OPTIONS = env("X_FRAME_OPTIONS", default="SAMEORIGIN")
+
+# Durcissement prod (garde-fous)
+if ENV == "prod":
+    DEBUG = False
+    SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=31536000)
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=True)
+    SECURE_HSTS_PRELOAD = env.bool("SECURE_HSTS_PRELOAD", default=False)
 
 
 # ALLOWED_HOSTS / CSRF_TRUSTED_ORIGINS depuis l'env si pas déjà définis

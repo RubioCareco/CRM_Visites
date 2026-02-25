@@ -12,6 +12,15 @@ from django.utils import timezone as dj_timezone
 
 logger = logging.getLogger(__name__)
 
+
+def _mask_email(email: str) -> str:
+    if not email or "@" not in email:
+        return "***"
+    local, domain = email.split("@", 1)
+    if len(local) <= 2:
+        return f"{local[0]}***@{domain}" if local else f"***@{domain}"
+    return f"{local[:2]}***@{domain}"
+
 # Dictionnaire pour stocker les anciennes valeurs avant sauvegarde
 _PRE_UPDATE_SNAPSHOT = {}
 
@@ -268,9 +277,9 @@ def notify_responsable_on_client_modification(sender, instance, created, **kwarg
                     image.add_header('Content-Disposition', 'inline', filename=logo_filename)
                     msg.attach(image)
                 msg.send(fail_silently=False)
-                logger.info("Email HTML envoye au responsable: %s", email_responsable)
+                logger.info("Email HTML envoye au responsable: %s", _mask_email(email_responsable))
             except Exception:
-                logger.exception("Erreur envoi email a %s", email_responsable)
+                logger.exception("Erreur envoi email a %s", _mask_email(email_responsable))
 
     except Exception:
         logger.exception("Erreur lors de l'envoi de l'email de notification")

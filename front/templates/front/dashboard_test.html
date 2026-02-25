@@ -711,8 +711,8 @@
         if(data.status==='ok'){
           commentEl.value = '';
           refreshDraftPinButton();
-          if(currentRDV && currentRDV.client_id){
-            loadClientComments(currentRDV.client_id);
+          if(currentRDV && (currentRDV.client_id || currentRDV.client_uuid)){
+            loadClientComments(currentRDV.client_id, currentRDV.client_uuid);
           }
           showToast('Commentaire épinglé.', 'success');
         }else{
@@ -993,6 +993,7 @@
                 civilite: r.client?.civilite || '',
                 rs_nom : r.client?.rs_nom || r.client?.nom || '',
                 client_id: r.client?.id || null,
+                client_uuid: r.client?.uuid || null,
                 adresse: r.adresse?.adresse || '',
                 cp     : r.adresse?.code_postal || '',
                 ville  : r.adresse?.ville || '',
@@ -1078,7 +1079,9 @@
       `;
       pdfBox.innerHTML=''; commentEl.value='';
       // ✅ Commentaires CLIENT (inclut épinglés) — logique métier
-      if (rdv.client_id) { loadClientComments(rdv.client_id); }
+      if (rdv.client_id || rdv.client_uuid) {
+        loadClientComments(rdv.client_id, rdv.client_uuid);
+      }
 
 
       fetch(`/check-satisfaction/${rdv.uuid}/`).then(r=>r.json()).then(d=>{
@@ -1435,13 +1438,18 @@
     renderCal();
   })();
 
-function loadClientComments(clientId){
+function getClientCommentsUrl(clientId, clientUuid){
+  if (clientUuid) return `/api/client-comments/uuid/${encodeURIComponent(clientUuid)}/`;
+  return `/api/client-comments/${encodeURIComponent(clientId)}/`;
+}
+
+function loadClientComments(clientId, clientUuid){
   const zone = document.getElementById('dbtComments');
   if(!zone) return;
 
   zone.innerHTML = '<em>Chargement…</em>';
 
-  fetch(`/api/client-comments/${clientId}/`, { headers: { 'Accept': 'application/json' } })
+  fetch(getClientCommentsUrl(clientId, clientUuid), { headers: { 'Accept': 'application/json' } })
       .then(async (r) => {
         const ct = r.headers.get('content-type') || '';
         if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -1476,7 +1484,7 @@ function loadClientComments(clientId){
                   class="dbt-pin-btn ${isPinned ? 'pinned' : ''}"
                   data-comment-id="${id}"
                   style="margin-left:auto;background:${isPinned ? '#fff7ed' : '#f1f5f9'};border:1px solid #e2e8f0;border-radius:10px;padding:6px 10px;cursor:pointer;font-size:12px"
-                  onclick="togglePinComment(${id}, ${clientId}, event)">
+                  onclick="togglePinComment(${id}, ${clientId || 'null'}, ${clientUuid ? `'${clientUuid}'` : 'null'}, event)">
             ${isPinned ? '📌 Épinglé' : '📌 Épingler'}
           </button>
         ` : '';
@@ -1507,7 +1515,7 @@ function loadClientComments(clientId){
 }
 
 // Toggle pin -> POST JSON vers /api/comment-pin/<id>/
-window.togglePinComment = function(commentId, clientId, ev){
+window.togglePinComment = function(commentId, clientId, clientUuid, ev){
   const btn = ev?.currentTarget || ev?.target;
   const isPinnedNow = btn?.classList?.contains('pinned');
 
@@ -1520,7 +1528,7 @@ window.togglePinComment = function(commentId, clientId, ev){
     body: JSON.stringify({ is_pinned: !isPinnedNow })
   })
   .then(r => r.json())
-  .then(() => loadClientComments(clientId))
+  .then(() => loadClientComments(clientId, clientUuid))
   .catch(() => {
     if (typeof window.dbtShowToast === "function") window.dbtShowToast("Erreur lors de l'épinglage", "error");
   });

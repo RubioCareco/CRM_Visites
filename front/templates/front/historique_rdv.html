@@ -66,7 +66,7 @@
           <div id="tab-general" class="tab-content active">
             {% if historique_general %}
               {% for rdv in historique_general %}
-                <div class="{% if rdv.statut_rdv == 'valide' %}visit-entry{% elif rdv.statut_rdv == 'annule' %}reminder-entry{% endif %}" data-client-id="{{ rdv.client.id }}">
+                <div class="{% if rdv.statut_rdv == 'valide' %}visit-entry{% elif rdv.statut_rdv == 'annule' %}reminder-entry{% endif %}" data-client-id="{{ rdv.client.id }}" data-client-uuid="{{ rdv.client.uuid }}">
                   <div class="client-name">
                     <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
                     <p class="infos-adresse">Adresse : {{ rdv.adresse_principale.adresse|default:"" }}, {{ rdv.adresse_principale.code_postal|default:"" }} {{ rdv.adresse_principale.ville|default:"" }}</p>
@@ -127,7 +127,7 @@
           <div id="tab-recent" class="tab-content">
             {% if visites_recentes %}
               {% for rdv in visites_recentes %}
-                <div class="visit-entry" data-client-id="{{ rdv.client.id }}">
+                <div class="visit-entry" data-client-id="{{ rdv.client.id }}" data-client-uuid="{{ rdv.client.uuid }}">
                   <div class="client-name">
                     <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
                     <p class="infos-adresse">Adresse : {{ rdv.adresse_principale.adresse|default:"" }}, {{ rdv.adresse_principale.code_postal|default:"" }} {{ rdv.adresse_principale.ville|default:"" }}</p>
@@ -167,7 +167,7 @@
           <div id="tab-rappeler" class="tab-content">
             {% if a_rappeler %}
               {% for rdv in a_rappeler %}
-                <div class="reminder-entry" data-client-id="{{ rdv.client.id }}">
+                <div class="reminder-entry" data-client-id="{{ rdv.client.id }}" data-client-uuid="{{ rdv.client.uuid }}">
                   <div class="client-name">
                     <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
                     <p class="infos-adresse">Adresse : {{ rdv.adresse_principale.adresse|default:"" }}, {{ rdv.adresse_principale.code_postal|default:"" }} {{ rdv.adresse_principale.ville|default:"" }}</p>
@@ -395,6 +395,13 @@
           }
         });
 
+        function buildClientRdvUrl(clientId, clientUuid, statutParam) {
+          const base = clientUuid
+            ? `/api/client-rdv/uuid/${encodeURIComponent(clientUuid)}/`
+            : `/api/client-rdv/${encodeURIComponent(clientId)}/`;
+          return statutParam ? `${base}?statut=${encodeURIComponent(statutParam)}` : base;
+        }
+
         // Gestion des clics sur les cartes de rendez-vous
         // Historique général : délégation d'événement pour robustesse
         document.getElementById('tab-general').addEventListener('click', function(e) {
@@ -402,12 +409,13 @@
           if (!card) return;
           if (e.target.closest('a')) return;
           const clientId = card.getAttribute('data-client-id');
+          const clientUuid = card.getAttribute('data-client-uuid');
           if (!clientId) return;
           
           // Récupérer les informations du client pour le titre
           const clientName = card.querySelector('.client-name strong').textContent.trim();
           
-          fetch(`/api/client-rdv/${clientId}/`)
+          fetch(buildClientRdvUrl(clientId, clientUuid))
             .then(resp => {
               if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
               return resp.json();
@@ -477,12 +485,13 @@
           if (!card) return;
           if (e.target.closest('a')) return;
           const clientId = card.getAttribute('data-client-id');
+          const clientUuid = card.getAttribute('data-client-uuid');
           if (!clientId) return;
           
           // Récupérer les informations du client pour le titre
           const clientName = card.querySelector('.client-name strong').textContent.trim();
           
-          fetch(`/api/client-rdv/${clientId}/?statut=valide`)
+          fetch(buildClientRdvUrl(clientId, clientUuid, 'valide'))
             .then(resp => {
               if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
               return resp.json();
@@ -552,12 +561,13 @@
         if (!card) return;
         if (e.target.closest('a')) return;
         const clientId = card.getAttribute('data-client-id');
+        const clientUuid = card.getAttribute('data-client-uuid');
         if (!clientId) return;
         
         // Récupérer les informations du client pour le titre
         const clientName = card.querySelector('.client-name strong').textContent.trim();
         
-        fetch(`/api/client-rdv/${clientId}/?statut=annule`)
+        fetch(buildClientRdvUrl(clientId, clientUuid, 'annule'))
           .then(resp => {
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             return resp.json();

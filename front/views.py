@@ -54,7 +54,7 @@ def unpin_comment(request):
         raise PermissionDenied("Non authentifié")
     rate_key = f"rl:unpin_comment:{_client_ip(request)}:{request.session.get('commercial_id') or 'anon'}"
     if _is_rate_limited(rate_key, limit=120, window_seconds=60):
-        return JsonResponse({"ok": False, "error": "rate_limited"}, status=429)
+        return _rate_limited_response()
 
     try:
         data = json.loads(request.body.decode("utf-8"))
@@ -131,6 +131,22 @@ def _is_rate_limited(key: str, limit: int, window_seconds: int) -> bool:
 
 def _clear_rate_limit(key: str):
     cache.delete(key)
+
+
+def _rate_limited_response(
+    message: str = "Trop de requêtes. Merci de réessayer dans quelques instants.",
+    extra: dict | None = None,
+):
+    payload = {
+        "ok": False,
+        "success": False,
+        "error": "rate_limited",
+        "code": "RATE_LIMITED",
+        "message": message,
+    }
+    if extra:
+        payload.update(extra)
+    return JsonResponse(payload, status=429)
 
 
 def _make_reset_token(account_type: str, account_id: int, email: str) -> str:
@@ -438,7 +454,7 @@ def reset_password(request):
         if _is_rate_limited(reset_rate_key, limit=5, window_seconds=600):
             msg = "Trop de demandes. Réessayez dans quelques minutes."
             if is_ajax:
-                return JsonResponse({'success': False, 'message': msg}, status=429)
+                return _rate_limited_response(message=msg)
             return render(request, 'front/reset_password.html', {'error': msg})
 
         users = User.objects.filter(email__iexact=email)
@@ -1607,10 +1623,7 @@ def get_client_comments(request, client_id):
 def update_statut(request, uuid, statut):
     rate_key = f"rl:update_statut:{_client_ip(request)}:{request.session.get('commercial_id') or 'anon'}"
     if _is_rate_limited(rate_key, limit=120, window_seconds=60):
-        return JsonResponse(
-            {"status": "error", "message": "Trop de requêtes. Merci de réessayer dans quelques instants."},
-            status=429,
-        )
+        return _rate_limited_response(extra={"status": "error"})
 
     rdv = get_object_or_404(Rendezvous, uuid=uuid)
     if not (request.user.is_superuser or (rdv.commercial and rdv.commercial.id == request.session.get('commercial_id'))):
@@ -2248,7 +2261,7 @@ def historique_rdv_resp(request):
 def update_client(request, client_id):
     rate_key = f"rl:update_client:{_client_ip(request)}:{request.session.get('commercial_id') or 'anon'}"
     if _is_rate_limited(rate_key, limit=90, window_seconds=60):
-        return JsonResponse({"success": False, "error": "Trop de requêtes. Merci de réessayer dans quelques instants."}, status=429)
+        return _rate_limited_response()
 
     try:
         data = json.loads(request.body.decode("utf-8"))
@@ -4310,7 +4323,7 @@ def get_client_comments(request, client_id):
 def toggle_pin_comment(request, comment_id):
     rate_key = f"rl:toggle_pin_comment:{_client_ip(request)}:{request.session.get('commercial_id') or 'anon'}"
     if _is_rate_limited(rate_key, limit=120, window_seconds=60):
-        return JsonResponse({"ok": False, "error": "rate_limited"}, status=429)
+        return _rate_limited_response()
 
     comment = get_object_or_404(CommentaireRdv, id=comment_id)
 
@@ -4350,7 +4363,7 @@ def api_client_comments(request, client_id):
         return JsonResponse({"error": "Non authentifié"}, status=401)
     rate_key = f"rl:client_comments:{_client_ip(request)}:{commercial_id}"
     if _is_rate_limited(rate_key, limit=300, window_seconds=60):
-        return JsonResponse({"error": "rate_limited"}, status=429)
+        return _rate_limited_response()
 
     role = (request.session.get("role") or "").lower()
 
@@ -4517,7 +4530,7 @@ def api_map_tournee(request):
 def api_replace_tournee(request):
     rate_key = f"rl:replace_tournee:{_client_ip(request)}:{request.session.get('commercial_id') or 'anon'}"
     if _is_rate_limited(rate_key, limit=30, window_seconds=60):
-        return JsonResponse({"ok": False, "error": "rate_limited"}, status=429)
+        return _rate_limited_response()
 
     # API_REPLACE_TOURNEE_SAFEJSON_V1
     try:

@@ -219,3 +219,17 @@ PASSWORD_RESET_TIMEOUT = env.int("PASSWORD_RESET_TIMEOUT", default=60*60*24)
 GOOGLE_MAPS_API_KEY = env("GOOGLE_MAPS_API_KEY", default="")
 GOOGLE_MAPS_TRAVEL_MODE = os.getenv("GOOGLE_MAPS_TRAVEL_MODE", "driving")
 GOOGLE_LOG_STATS = os.getenv("GOOGLE_LOG_STATS", "false").lower() == "true"
+
+# Logging
+LOG_LEVEL = env("LOG_LEVEL", default=("DEBUG" if ENV == "dev" else "INFO")).upper()
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {"format": "%(asctime)s %(levelname)s %(name)s: %(message)s"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "standard"},
+    },
+    "root": {"handlers": ["console"], "level": LOG_LEVEL},
+}

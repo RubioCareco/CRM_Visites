@@ -1602,6 +1602,13 @@ def get_client_comments(request, client_id):
 @require_POST
 @csrf_protect
 def update_statut(request, uuid, statut):
+    rate_key = f"rl:update_statut:{_client_ip(request)}:{request.session.get('commercial_id') or 'anon'}"
+    if _is_rate_limited(rate_key, limit=120, window_seconds=60):
+        return JsonResponse(
+            {"status": "error", "message": "Trop de requêtes. Merci de réessayer dans quelques instants."},
+            status=429,
+        )
+
     rdv = get_object_or_404(Rendezvous, uuid=uuid)
     if not (request.user.is_superuser or (rdv.commercial and rdv.commercial.id == request.session.get('commercial_id'))):
         raise PermissionDenied("Vous n'avez pas le droit d'accéder à ce rendez-vous.")
@@ -2236,6 +2243,10 @@ def historique_rdv_resp(request):
 @require_POST
 @csrf_protect
 def update_client(request, client_id):
+    rate_key = f"rl:update_client:{_client_ip(request)}:{request.session.get('commercial_id') or 'anon'}"
+    if _is_rate_limited(rate_key, limit=90, window_seconds=60):
+        return JsonResponse({"success": False, "error": "Trop de requêtes. Merci de réessayer dans quelques instants."}, status=429)
+
     try:
         data = json.loads(request.body.decode("utf-8"))
     except Exception:
@@ -3893,8 +3904,9 @@ def api_route_optimisee(request, date):
         
     except Commercial.DoesNotExist:
         return JsonResponse({'error': 'Commercial non trouvé'}, status=404)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+    except Exception:
+        logger.exception("api_route_optimisee failed for date=%s", date)
+        return JsonResponse({'error': 'Une erreur interne est survenue.'}, status=500)
 
 def get_client_comments(request, client_id):
     try:
@@ -3935,8 +3947,9 @@ def geocoder_adresses(request):
             from .services import GeocodingService
             GeocodingService.geocode_all_addresses()
             return JsonResponse({'success': True, 'message': 'Géocodage terminé avec succès'})
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
+        except Exception:
+            logger.exception("geocoder_adresses failed")
+            return JsonResponse({'success': False, 'error': 'Une erreur interne est survenue.'})
     
     return render(request, 'front/geocoder_adresses.html')
 
@@ -4156,20 +4169,25 @@ def api_client_details(request, client_id):
     commercial_id = request.session.get('commercial_id')
     if not commercial_id:
         return JsonResponse({'error': 'Non authentifié'}, status=401)
-    
+
+    role = (request.session.get('role') or '').lower()
+
     try:
         # Récupérer les informations du client
         client = FrontClient.objects.get(id=client_id)
-        
-        # Vérifier que le client appartient bien à ce commercial
-        commercial = Commercial.objects.get(id=commercial_id)
-        
-        # Vérification plus flexible - ignorer les espaces et la casse
-        client_commercial_clean = (client.commercial or '').strip().lower()
-        commercial_name_clean = (commercial.commercial or '').strip().lower()
-        
-        if client_commercial_clean != commercial_name_clean:
-            return JsonResponse({'error': 'Accès non autorisé à ce client'}, status=403)
+
+        # Contrôle d'accès robuste
+        if role not in ['responsable', 'admin']:
+            if client.commercial_id:
+                if int(client.commercial_id) != int(commercial_id):
+                    return JsonResponse({'error': 'Accès non autorisé à ce client'}, status=403)
+            else:
+                # Fallback legacy quand commercial_id n'est pas renseigné.
+                commercial = Commercial.objects.filter(id=commercial_id).first()
+                client_commercial_clean = (client.commercial or '').replace(' ', '').strip().lower()
+                commercial_name_clean = ((commercial.commercial if commercial else '') or '').replace(' ', '').strip().lower()
+                if not commercial_name_clean or client_commercial_clean != commercial_name_clean:
+                    return JsonResponse({'error': 'Accès non autorisé à ce client'}, status=403)
         
         # Récupérer les RDV réalisés du client pour ce commercial
         rdv_realises = Rendezvous.objects.filter(
@@ -4248,9 +4266,9 @@ def api_client_details(request, client_id):
     except FrontClient.DoesNotExist:
         logger.info("api_client_details client not found client_id=%s", client_id)
         return JsonResponse({'error': 'Client non trouvé'}, status=404)
-    except Exception as e:
+    except Exception:
         logger.exception("api_client_details failed for client_id=%s", client_id)
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'error': 'Une erreur interne est survenue.'}, status=500)
 
 def get_client_comments(request, client_id):
     try:
@@ -4285,8 +4303,25 @@ def get_client_comments(request, client_id):
 
 @login_required
 @require_POST
+@csrf_protect
 def toggle_pin_comment(request, comment_id):
     comment = get_object_or_404(CommentaireRdv, id=comment_id)
+
+    current = get_current_commercial(request)
+    role = (request.session.get("role") or "").lower()
+    is_responsable = role in {"responsable", "admin"}
+
+    allowed = False
+    if is_responsable:
+        allowed = True
+    elif current:
+        if getattr(comment, "commercial_id", None) == current.id:
+            allowed = True
+        elif getattr(comment, "rdv_id", None) and getattr(comment.rdv, "commercial_id", None) == current.id:
+            allowed = True
+
+    if not allowed:
+        raise PermissionDenied("Non autorisé")
 
     # toggle
     comment.is_pinned = not comment.is_pinned
@@ -4296,7 +4331,31 @@ def toggle_pin_comment(request, comment_id):
 
 @login_required
 @require_GET
-def get_client_comments(request, client_id):
+def api_client_comments(request, client_id):
+    """
+    Endpoint canonique pour les commentaires client.
+    Contrôle d'accès:
+    - responsable/admin: accès complet
+    - commercial: accès uniquement à ses clients
+    """
+    commercial_id = request.session.get("commercial_id")
+    if not commercial_id:
+        return JsonResponse({"error": "Non authentifié"}, status=401)
+
+    role = (request.session.get("role") or "").lower()
+
+    try:
+        client = FrontClient.objects.get(id=client_id)
+    except FrontClient.DoesNotExist:
+        return JsonResponse({"commentaires": []}, status=404)
+
+    if role not in ["responsable", "admin"]:
+        try:
+            if client.commercial_id and int(client.commercial_id) != int(commercial_id):
+                return JsonResponse({"error": "Accès non autorisé à ce client"}, status=403)
+        except Exception:
+            return JsonResponse({"error": "Accès non autorisé à ce client"}, status=403)
+
     try:
         commentaires = (
             CommentaireRdv.objects
@@ -4322,9 +4381,8 @@ def get_client_comments(request, client_id):
             })
 
         return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        logger.exception("get_client_comments failed for client_id=%s", client_id)
+    except Exception:
+        logger.exception("api_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
 
 @login_required
@@ -4447,6 +4505,10 @@ def api_map_tournee(request):
 @csrf_protect
 @require_POST
 def api_replace_tournee(request):
+    rate_key = f"rl:replace_tournee:{_client_ip(request)}:{request.session.get('commercial_id') or 'anon'}"
+    if _is_rate_limited(rate_key, limit=30, window_seconds=60):
+        return JsonResponse({"ok": False, "error": "rate_limited"}, status=429)
+
     # API_REPLACE_TOURNEE_SAFEJSON_V1
     try:
 

@@ -6,7 +6,7 @@ from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
 
-from front.models import ActivityLog, Adresse, Commercial, FrontClient, Rendezvous
+from front.models import ActivityLog, Adresse, Commercial, CommentaireRdv, FrontClient, Rendezvous
 
 
 class BaseSecurityFlowTestCase(TestCase):
@@ -29,6 +29,15 @@ class BaseSecurityFlowTestCase(TestCase):
             telephone="0605040302",
             password=make_password("secret123"),
             role="responsable",
+        )
+        self.other_commercial = Commercial.objects.create(
+            commercial="Commercial 3",
+            nom="Martin",
+            prenom="Eve",
+            email="eve@example.com",
+            telephone="0600000000",
+            password=make_password("secret123"),
+            role="commercial",
         )
         self.client_obj = FrontClient.objects.create(
             rs_nom="CLIENT TEST",
@@ -208,3 +217,60 @@ class ResetPasswordAndMapTests(BaseSecurityFlowTestCase):
         self.assertIn("tournee", data)
         self.assertEqual(data["date"], "2026-02-23")
         self.assertGreaterEqual(len(data["tournee"]), 1)
+
+    def test_api_client_details_forbidden_for_other_commercial(self):
+        self.login_as(self.other_commercial)
+        resp = self.client.get(reverse("api_client_details", kwargs={"client_id": self.client_obj.id}))
+        self.assertEqual(resp.status_code, 403)
+
+    def test_toggle_pin_comment_forbidden_for_other_commercial(self):
+        rdv = Rendezvous.objects.create(
+            client=self.client_obj,
+            commercial=self.commercial,
+            date_rdv=date(2026, 2, 25),
+            heure_rdv=time(9, 15),
+            statut_rdv="a_venir",
+            rs_nom=self.client_obj.rs_nom,
+        )
+        comment = CommentaireRdv.objects.create(
+            rdv=rdv,
+            commercial=self.commercial,
+            texte="Commentaire test",
+            rs_nom=self.client_obj.rs_nom,
+            is_pinned=False,
+        )
+
+        self.login_as(self.other_commercial)
+        resp = self.client.post(reverse("toggle_pin_comment", kwargs={"comment_id": comment.id}))
+        self.assertEqual(resp.status_code, 403)
+
+        self.login_as(self.responsable)
+        resp_admin = self.client.post(reverse("toggle_pin_comment", kwargs={"comment_id": comment.id}))
+        self.assertEqual(resp_admin.status_code, 200)
+        self.assertTrue(resp_admin.json().get("ok"))
+
+    def test_api_client_comments_forbidden_for_other_commercial(self):
+        rdv = Rendezvous.objects.create(
+            client=self.client_obj,
+            commercial=self.commercial,
+            date_rdv=date(2026, 2, 26),
+            heure_rdv=time(9, 45),
+            statut_rdv="a_venir",
+            rs_nom=self.client_obj.rs_nom,
+        )
+        CommentaireRdv.objects.create(
+            rdv=rdv,
+            commercial=self.commercial,
+            texte="Commentaire privé",
+            rs_nom=self.client_obj.rs_nom,
+            is_pinned=True,
+        )
+
+        self.login_as(self.other_commercial)
+        resp = self.client.get(reverse("get_client_comments", kwargs={"client_id": self.client_obj.id}))
+        self.assertEqual(resp.status_code, 403)
+
+        self.login_as(self.responsable)
+        resp_ok = self.client.get(reverse("get_client_comments", kwargs={"client_id": self.client_obj.id}))
+        self.assertEqual(resp_ok.status_code, 200)
+        self.assertIn("commentaires", resp_ok.json())

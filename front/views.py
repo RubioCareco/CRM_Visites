@@ -15,7 +15,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.db import models, IntegrityError, transaction
 from django.core.paginator import Paginator
 from django.core.cache import cache
-from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.views.decorators.csrf import csrf_protect
 from django.core import signing
 import base64
 from django.template.loader import render_to_string
@@ -52,6 +52,9 @@ def get_current_commercial(request):
 def unpin_comment(request):
     if 'commercial_id' not in request.session:
         raise PermissionDenied("Non authentifié")
+    rate_key = f"rl:unpin_comment:{_client_ip(request)}:{request.session.get('commercial_id') or 'anon'}"
+    if _is_rate_limited(rate_key, limit=120, window_seconds=60):
+        return JsonResponse({"ok": False, "error": "rate_limited"}, status=429)
 
     try:
         data = json.loads(request.body.decode("utf-8"))
@@ -4305,6 +4308,10 @@ def get_client_comments(request, client_id):
 @require_POST
 @csrf_protect
 def toggle_pin_comment(request, comment_id):
+    rate_key = f"rl:toggle_pin_comment:{_client_ip(request)}:{request.session.get('commercial_id') or 'anon'}"
+    if _is_rate_limited(rate_key, limit=120, window_seconds=60):
+        return JsonResponse({"ok": False, "error": "rate_limited"}, status=429)
+
     comment = get_object_or_404(CommentaireRdv, id=comment_id)
 
     current = get_current_commercial(request)
@@ -4341,6 +4348,9 @@ def api_client_comments(request, client_id):
     commercial_id = request.session.get("commercial_id")
     if not commercial_id:
         return JsonResponse({"error": "Non authentifié"}, status=401)
+    rate_key = f"rl:client_comments:{_client_ip(request)}:{commercial_id}"
+    if _is_rate_limited(rate_key, limit=300, window_seconds=60):
+        return JsonResponse({"error": "rate_limited"}, status=429)
 
     role = (request.session.get("role") or "").lower()
 

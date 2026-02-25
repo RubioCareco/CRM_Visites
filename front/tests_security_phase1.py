@@ -162,6 +162,24 @@ class UpdateStatutAndClientFileTests(BaseSecurityFlowTestCase):
         self.assertEqual(rdv.statut_rdv, "valide")
         self.assertTrue(ActivityLog.objects.filter(action_type="RDV_VALIDE", commercial=self.commercial).exists())
 
+    def test_update_statut_rate_limited(self):
+        self.login_as(self.commercial)
+        rdv = Rendezvous.objects.create(
+            client=self.client_obj,
+            commercial=self.commercial,
+            date_rdv=date(2026, 2, 22),
+            heure_rdv=time(9, 0),
+            statut_rdv="a_venir",
+            rs_nom=self.client_obj.rs_nom,
+        )
+        cache.set(f"rl:update_statut:127.0.0.1:{self.commercial.id}", 120, timeout=60)
+        resp = self.client.post(
+            reverse("update_statut", kwargs={"uuid": rdv.uuid, "statut": "valider"}),
+            data=json.dumps({"commentaire": "OK", "is_pinned": False}),
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 429)
+
     def test_update_client_ok(self):
         self.login_as(self.commercial)
         resp = self.client.post(
@@ -182,6 +200,16 @@ class UpdateStatutAndClientFileTests(BaseSecurityFlowTestCase):
         self.client_obj.refresh_from_db()
         self.assertEqual(self.client_obj.telephone, "0555112233")
         self.assertEqual(self.client_obj.email, "updated@example.com")
+
+    def test_update_client_rate_limited(self):
+        self.login_as(self.commercial)
+        cache.set(f"rl:update_client:127.0.0.1:{self.commercial.id}", 90, timeout=60)
+        resp = self.client.post(
+            reverse("update_client", kwargs={"client_id": self.client_obj.id}),
+            data=json.dumps({"telephone": "0555112233"}),
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 429)
 
 
 class ResetPasswordAndMapTests(BaseSecurityFlowTestCase):
@@ -218,6 +246,18 @@ class ResetPasswordAndMapTests(BaseSecurityFlowTestCase):
         self.assertEqual(data["date"], "2026-02-23")
         self.assertGreaterEqual(len(data["tournee"]), 1)
 
+    def test_replace_tournee_rate_limited(self):
+        self.login_as(self.commercial)
+        cache.set(f"rl:replace_tournee:127.0.0.1:{self.commercial.id}", 30, timeout=60)
+        resp = self.client.post(
+            reverse("api_replace_tournee"),
+            data=json.dumps(
+                {"commercial_id": self.commercial.id, "date": "2026-02-23", "client_ids": [self.client_obj.id]}
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 429)
+
     def test_api_client_details_forbidden_for_other_commercial(self):
         self.login_as(self.other_commercial)
         resp = self.client.get(reverse("api_client_details", kwargs={"client_id": self.client_obj.id}))
@@ -249,6 +289,27 @@ class ResetPasswordAndMapTests(BaseSecurityFlowTestCase):
         self.assertEqual(resp_admin.status_code, 200)
         self.assertTrue(resp_admin.json().get("ok"))
 
+    def test_toggle_pin_comment_rate_limited(self):
+        rdv = Rendezvous.objects.create(
+            client=self.client_obj,
+            commercial=self.commercial,
+            date_rdv=date(2026, 2, 25),
+            heure_rdv=time(9, 15),
+            statut_rdv="a_venir",
+            rs_nom=self.client_obj.rs_nom,
+        )
+        comment = CommentaireRdv.objects.create(
+            rdv=rdv,
+            commercial=self.commercial,
+            texte="Commentaire test",
+            rs_nom=self.client_obj.rs_nom,
+            is_pinned=False,
+        )
+        self.login_as(self.commercial)
+        cache.set(f"rl:toggle_pin_comment:127.0.0.1:{self.commercial.id}", 120, timeout=60)
+        resp = self.client.post(reverse("toggle_pin_comment", kwargs={"comment_id": comment.id}))
+        self.assertEqual(resp.status_code, 429)
+
     def test_api_client_comments_forbidden_for_other_commercial(self):
         rdv = Rendezvous.objects.create(
             client=self.client_obj,
@@ -274,3 +335,9 @@ class ResetPasswordAndMapTests(BaseSecurityFlowTestCase):
         resp_ok = self.client.get(reverse("get_client_comments", kwargs={"client_id": self.client_obj.id}))
         self.assertEqual(resp_ok.status_code, 200)
         self.assertIn("commentaires", resp_ok.json())
+
+    def test_api_client_comments_rate_limited(self):
+        self.login_as(self.commercial)
+        cache.set(f"rl:client_comments:127.0.0.1:{self.commercial.id}", 300, timeout=60)
+        resp = self.client.get(reverse("get_client_comments", kwargs={"client_id": self.client_obj.id}))
+        self.assertEqual(resp.status_code, 429)

@@ -1439,17 +1439,23 @@
   })();
 
 function getClientCommentsUrl(clientId, clientUuid){
-  if (clientUuid) return `/api/client-comments/uuid/${encodeURIComponent(clientUuid)}/`;
-  return `/api/client-comments/${encodeURIComponent(clientId)}/`;
+  if (!clientUuid) return null;
+  return `/api/client-comments/uuid/${encodeURIComponent(clientUuid)}/`;
 }
 
 function loadClientComments(clientId, clientUuid){
   const zone = document.getElementById('dbtComments');
   if(!zone) return;
 
+  const commentsUrl = getClientCommentsUrl(clientId, clientUuid);
+  if (!commentsUrl){
+    zone.innerHTML = '<span style="color:#ef4444">Client UUID manquant</span>';
+    return;
+  }
+
   zone.innerHTML = '<em>Chargement…</em>';
 
-  fetch(getClientCommentsUrl(clientId, clientUuid), { headers: { 'Accept': 'application/json' } })
+  fetch(commentsUrl, { headers: { 'Accept': 'application/json' } })
       .then(async (r) => {
         const ct = r.headers.get('content-type') || '';
         if (!r.ok) throw new Error('HTTP ' + r.status);

@@ -389,9 +389,16 @@
             `;
             
             // Appel AJAX pour récupérer les vraies données
-            const detailsUrl = clientUuid
-                ? `/api/client-details/uuid/${encodeURIComponent(clientUuid)}/`
-                : `/api/client-details/${encodeURIComponent(clientId)}/`;
+            if (!clientUuid) {
+                document.getElementById('clientModalContent').innerHTML = `
+                    <div class="error-message">
+                        <i class="fa-solid fa-exclamation-triangle"></i>
+                        Client UUID manquant.
+                    </div>
+                `;
+                return;
+            }
+            const detailsUrl = `/api/client-details/uuid/${encodeURIComponent(clientUuid)}/`;
             fetch(detailsUrl)
                 .then(response => {
                     if (!response.ok) {

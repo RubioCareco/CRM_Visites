@@ -371,3 +371,37 @@ class ResetPasswordAndMapTests(BaseSecurityFlowTestCase):
         resp = self.client.get(reverse("get_client_comments", kwargs={"client_id": self.client_obj.id}))
         self.assertEqual(resp.status_code, 429)
         self.assertEqual(resp.json().get("code"), "RATE_LIMITED")
+
+    def test_get_client_rdv_forbidden_for_other_commercial(self):
+        self.login_as(self.other_commercial)
+        resp = self.client.get(reverse("get_client_rdv", kwargs={"client_id": self.client_obj.id}))
+        self.assertEqual(resp.status_code, 403)
+
+    def test_get_last_rdv_commercial_forbidden_for_other_commercial(self):
+        self.login_as(self.other_commercial)
+        resp = self.client.get(reverse("get_last_rdv_commercial", kwargs={"commercial_id": self.commercial.id}))
+        self.assertEqual(resp.status_code, 403)
+
+    def test_set_comment_pin_forbidden_for_other_commercial(self):
+        rdv = Rendezvous.objects.create(
+            client=self.client_obj,
+            commercial=self.commercial,
+            date_rdv=date(2026, 2, 27),
+            heure_rdv=time(11, 0),
+            statut_rdv="a_venir",
+            rs_nom=self.client_obj.rs_nom,
+        )
+        comment = CommentaireRdv.objects.create(
+            rdv=rdv,
+            commercial=self.commercial,
+            texte="Commentaire privé",
+            rs_nom=self.client_obj.rs_nom,
+            is_pinned=False,
+        )
+        self.login_as(self.other_commercial)
+        resp = self.client.post(
+            reverse("set_comment_pin", kwargs={"comment_id": comment.id}),
+            data=json.dumps({"is_pinned": True}),
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 403)

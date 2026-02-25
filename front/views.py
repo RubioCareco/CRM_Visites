@@ -2075,10 +2075,9 @@ def download_satisfaction_pdf(request, uuid):
     response['Content-Disposition'] = f'inline; filename="satisfaction_{uuid}.pdf"'
     return response
 
-@require_GET
-@login_required
 @login_required
 @require_POST
+@csrf_protect
 def set_comment_pin(request, comment_id):
     # Body JSON: {"is_pinned": true/false}
     try:
@@ -2086,17 +2085,50 @@ def set_comment_pin(request, comment_id):
         is_pinned = bool(payload.get('is_pinned', False))
 
         c = CommentaireRdv.objects.get(id=comment_id)
+
+        current = get_current_commercial(request)
+        role = (request.session.get("role") or "").lower()
+        is_responsable = role in {"responsable", "admin"}
+        allowed = False
+        if is_responsable:
+            allowed = True
+        elif current:
+            if getattr(c, "commercial_id", None) == current.id:
+                allowed = True
+            elif getattr(c, "rdv_id", None) and getattr(c.rdv, "commercial_id", None) == current.id:
+                allowed = True
+        if not allowed:
+            raise PermissionDenied("Non autorisé")
+
         c.is_pinned = is_pinned
         c.save(update_fields=['is_pinned'])
 
         return JsonResponse({'status': 'ok', 'id': c.id, 'is_pinned': bool(c.is_pinned)})
     except CommentaireRdv.DoesNotExist:
         return JsonResponse({'status': 'error', 'error': 'Commentaire introuvable'}, status=404)
-    except Exception as e:
-        return JsonResponse({'status': 'error', 'error': str(e)}, status=400)
+    except PermissionDenied:
+        raise
+    except Exception:
+        return JsonResponse({'status': 'error', 'error': 'Requête invalide'}, status=400)
 
 @login_required
 def get_client_rdv(request, client_id):
+    role = (request.session.get("role") or "").lower()
+    session_commercial_id = request.session.get("commercial_id")
+    try:
+        client = FrontClient.objects.get(id=client_id)
+    except FrontClient.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Client introuvable'}, status=404)
+
+    if role not in ['responsable', 'admin']:
+        if not session_commercial_id:
+            return JsonResponse({'success': False, 'error': 'Non autorisé'}, status=403)
+        try:
+            if int(client.commercial_id or 0) != int(session_commercial_id):
+                return JsonResponse({'success': False, 'error': 'Non autorisé'}, status=403)
+        except Exception:
+            return JsonResponse({'success': False, 'error': 'Non autorisé'}, status=403)
+
     statut = request.GET.get('statut')
     qs = Rendezvous.objects.filter(client_id=client_id)
     
@@ -2110,7 +2142,6 @@ def get_client_rdv(request, client_id):
     rdvs = qs.order_by('-date_rdv', '-heure_rdv')
     
     # Récupérer le nom du client
-    client = FrontClient.objects.get(id=client_id)
     client_name = f"{client.civilite or ''} {client.rs_nom or '(sans raison sociale)'}".strip()
     
     data = []
@@ -2438,6 +2469,15 @@ def api_satisfaction_stats(request):
 
 @login_required
 def get_last_rdv_commercial(request, commercial_id):
+    role = (request.session.get("role") or "").lower()
+    session_commercial_id = request.session.get("commercial_id")
+    if role not in ['responsable', 'admin']:
+        try:
+            if int(session_commercial_id or 0) != int(commercial_id):
+                return JsonResponse({'error': 'forbidden'}, status=403)
+        except Exception:
+            return JsonResponse({'error': 'forbidden'}, status=403)
+
     commercial = Commercial.objects.get(id=commercial_id)
     dernier_rdv = Rendezvous.objects.filter(
         commercial=commercial,

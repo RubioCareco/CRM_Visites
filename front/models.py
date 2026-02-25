@@ -224,6 +224,7 @@ class ActivityLog(models.Model):
 
 
 class FrontClient(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     nom = models.CharField(max_length=100, blank=True, null=True)
     prenom = models.CharField(max_length=100, blank=True, null=True)
     civilite = models.CharField(max_length=50, blank=True, null=True)

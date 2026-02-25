@@ -80,7 +80,7 @@
           <div id="tab-general" class="tab-content active">
             {% if historique_general %}
               {% for rdv in historique_general %}
-                <div class="{% if rdv.statut_rdv == 'valide' %}visit-entry{% elif rdv.statut_rdv == 'annule' %}reminder-entry{% endif %}" data-client-id="{{ rdv.client.id }}" style="margin-bottom:18px;">
+                <div class="{% if rdv.statut_rdv == 'valide' %}visit-entry{% elif rdv.statut_rdv == 'annule' %}reminder-entry{% endif %}" data-client-id="{{ rdv.client.id }}" data-client-uuid="{{ rdv.client.uuid }}" style="margin-bottom:18px;">
                   <div class="client-name">
                     <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
                     <p class="infos-adresse">Adresse : {{ rdv.adresse_principale.adresse|default:"" }}, {{ rdv.adresse_principale.code_postal|default:"" }} {{ rdv.adresse_principale.ville|default:"" }}</p>
@@ -144,7 +144,7 @@
           <div id="tab-recent" class="tab-content">
             {% if visites_recentes %}
               {% for rdv in visites_recentes %}
-                <div class="visit-entry" style="margin-bottom:18px;">
+                <div class="visit-entry" data-client-id="{{ rdv.client.id }}" data-client-uuid="{{ rdv.client.uuid }}" style="margin-bottom:18px;">
                   <div class="client-name">
                     <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
                     <p class="infos-adresse">Adresse : {{ rdv.adresse_principale.adresse|default:"" }}, {{ rdv.adresse_principale.code_postal|default:"" }} {{ rdv.adresse_principale.ville|default:"" }}</p>
@@ -184,7 +184,7 @@
           <div id="tab-rappeler" class="tab-content">
             {% if a_rappeler %}
               {% for rdv in a_rappeler %}
-                <div class="reminder-entry" style="margin-bottom:18px;">
+                <div class="reminder-entry" data-client-id="{{ rdv.client.id }}" data-client-uuid="{{ rdv.client.uuid }}" style="margin-bottom:18px;">
                   <div class="client-name">
                     <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
                     <p class="infos-adresse">Adresse : {{ rdv.adresse_principale.adresse|default:"" }}, {{ rdv.adresse_principale.code_postal|default:"" }} {{ rdv.adresse_principale.ville|default:"" }}</p>
@@ -621,8 +621,9 @@
       document.querySelectorAll('.visit-entry, .reminder-entry').forEach(card => {
         card.addEventListener('click', function() {
           const clientId = this.getAttribute('data-client-id');
-          if (clientId) {
-            openClientModal(clientId);
+          const clientUuid = this.getAttribute('data-client-uuid');
+          if (clientId || clientUuid) {
+            openClientModal(clientId, clientUuid);
           }
         });
       });
@@ -644,12 +645,17 @@
       }
       
       // Fonction pour ouvrir la modal et charger les données
-      function openClientModal(clientId) {
+      function buildClientRdvUrl(clientId, clientUuid) {
+        if (clientUuid) return `/api/client-rdv/uuid/${encodeURIComponent(clientUuid)}/`;
+        return `/api/client-rdv/${encodeURIComponent(clientId)}/`;
+      }
+
+      function openClientModal(clientId, clientUuid) {
         modal.style.display = 'flex';
         modalContent.innerHTML = '<p style="text-align:center;color:#ccc;">Chargement...</p>';
         
         // Récupérer tous les rendez-vous du client
-        fetch(`/get_client_rdv/${clientId}/`)
+        fetch(buildClientRdvUrl(clientId, clientUuid))
           .then(response => response.json())
           .then(data => {
             if (data.success) {

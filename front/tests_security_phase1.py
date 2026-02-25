@@ -272,6 +272,24 @@ class ResetPasswordAndMapTests(BaseSecurityFlowTestCase):
         self.assertIn("tournee", data)
         self.assertEqual(data["date"], "2026-02-23")
         self.assertGreaterEqual(len(data["tournee"]), 1)
+        self.assertIn("uuid", data["clients"][0])
+        self.assertIn("client_uuid", data["tournee"][0])
+
+    def test_rdvs_by_date_payload_contains_client_uuid(self):
+        self.login_as(self.commercial)
+        Rendezvous.objects.create(
+            client=self.client_obj,
+            commercial=self.commercial,
+            date_rdv=date(2026, 2, 24),
+            heure_rdv=time(10, 45),
+            statut_rdv="a_venir",
+            rs_nom=self.client_obj.rs_nom,
+        )
+        resp = self.client.get(reverse("api_rdvs_by_date"), {"date": "2026-02-24", "statut": "a_venir"})
+        self.assertEqual(resp.status_code, 200)
+        payload = resp.json()
+        self.assertGreaterEqual(len(payload.get("rdvs", [])), 1)
+        self.assertEqual(payload["rdvs"][0]["client"]["uuid"], str(self.client_obj.uuid))
 
     def test_replace_tournee_rate_limited(self):
         self.login_as(self.commercial)

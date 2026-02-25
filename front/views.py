@@ -267,6 +267,7 @@ def api_rdvs_by_date(request):
                 'heure': rdv.heure_rdv.strftime('%H:%M') if rdv.heure_rdv else '',
                 'client': {
                     'id': client.id if client else None,
+                    'uuid': str(client.uuid) if client and getattr(client, 'uuid', None) else None,
                     'civilite': getattr(client, 'civilite', '') or '',
                     'nom': getattr(client, 'nom', '') or '',
                     'prenom': getattr(client, 'prenom', '') or '',
@@ -2560,7 +2561,17 @@ def api_rdvs_a_venir(request):
         client, adresse, client_type = get_client_and_adresse(rdv.client.id)
         data.append({
             'uuid': str(rdv.uuid),
-            'client': adresse["adresse"] if adresse else getattr(rdv.client, 'rs_nom', ''),
+            'client': {
+                'id': client.id,
+                'uuid': str(client.uuid) if getattr(client, 'uuid', None) else None,
+                'civilite': getattr(client, 'civilite', ''),
+                'nom': getattr(client, 'nom', ''),
+                'prenom': getattr(client, 'prenom', ''),
+                'rs_nom': getattr(client, 'rs_nom', ''),
+                'telephone': getattr(client, 'telephone', ''),
+                'email': getattr(client, 'email', ''),
+            },
+            'client_label': adresse["adresse"] if adresse else getattr(rdv.client, 'rs_nom', ''),
             'civilite': getattr(client, 'civilite', ''),
             'rs_nom': getattr(client, 'rs_nom', ''),
             'date': rdv.date_rdv.strftime('%d/%m/%Y'),
@@ -2620,6 +2631,7 @@ def api_clients_by_commercial(request):
         data = [
             {
                 'id': client.id,
+                'uuid': str(client.uuid) if getattr(client, 'uuid', None) else None,
                 'nom': client.rs_nom or '',
                 'prenom': client.prenom or ''
             }
@@ -2997,6 +3009,7 @@ def search_clients_table(request):
         adresse_obj = c.adresses.first()  # Utilise la relation préchargée
         results.append({
             'id': c.id,
+            'uuid': str(c.uuid) if getattr(c, 'uuid', None) else None,
             'civilite': c.civilite or '',
             'rs_nom': c.rs_nom or '',
             'prenom': c.prenom or '',
@@ -3241,6 +3254,7 @@ def objectif_annuel(request):
                 cvs.visites_valides,
                 (cvs.objectif - cvs.visites_valides) as restants,
                 CASE WHEN cvs.visites_valides >= cvs.objectif THEN 'Atteint' ELSE 'Non atteint' END as statut,
+                fc.uuid,
                 fc.rs_nom,
                 fc.nom,
                 fc.prenom
@@ -3252,13 +3266,14 @@ def objectif_annuel(request):
         
         clients_data = []
         for row in cursor.fetchall():
-            client_id, objectif, visites_valides, restants, statut, rs_nom, nom, prenom = row
+            client_id, objectif, visites_valides, restants, statut, client_uuid, rs_nom, nom, prenom = row
             
             # Nom d'affichage du client
             client_name = rs_nom or f"{nom or ''} {prenom or ''}".strip() or f"Client {client_id}"
             
             clients_data.append({
                 'client_id': client_id,
+                'client_uuid': str(client_uuid) if client_uuid else '',
                 'client_name': client_name,
                 'objectif': objectif or 0,
                 'realises': visites_valides or 0,
@@ -3566,6 +3581,7 @@ def api_map_tournee(request):
         nom = c.rs_nom or (((c.prenom or "").strip() + " " + (c.nom or "").strip()).strip()) or "Client"
         clients.append({
             "id": c.id,
+            "uuid": str(c.uuid) if getattr(c, "uuid", None) else None,
             "nom": nom,
             "lat": float(a.latitude),
             "lng": float(a.longitude),
@@ -3597,6 +3613,7 @@ def api_map_tournee(request):
         tournee.append({
             "rdv_id": r.id,
             "client_id": c.id if c else None,
+            "client_uuid": str(c.uuid) if c and getattr(c, "uuid", None) else None,
             "label": (r.rs_nom or (c.rs_nom if c else "RDV")),
             "heure": str(r.heure_rdv) if r.heure_rdv else "",
             "lat": float(a.latitude),

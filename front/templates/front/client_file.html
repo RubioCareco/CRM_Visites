@@ -305,6 +305,7 @@
             {% for client, adresse in clients_with_adresse %}
             <tr class="client-card" 
                 data-client-id="{{ client.id }}" 
+                data-client-uuid="{{ client.uuid }}"
                 data-client-nom="{{ client.rs_nom|escapejs }}"
                 data-client-prenom="{{ client.prénom|escapejs }}"
                 data-client-civilite="{{ client.civilite|escapejs }}"
@@ -501,11 +502,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // --- Commentaires client (chargement + pin) ---
 
-  function loadClientComments(clientId) {
+  function clientCommentsUrl(clientId, clientUuid) {
+    if (clientUuid) return `/api/client-comments/uuid/${encodeURIComponent(clientUuid)}/`;
+    return `/api/client-comments/${encodeURIComponent(clientId)}/`;
+  }
+
+  function updateClientUrl(clientId, clientUuid) {
+    if (clientUuid) return `/update-client/uuid/${encodeURIComponent(clientUuid)}/`;
+    return `/update-client/${encodeURIComponent(clientId)}/`;
+  }
+
+  function loadClientComments(clientId, clientUuid) {
     const commentsDiv = document.getElementById('clientComments');
     commentsDiv.innerHTML = "<i>Chargement de l'historique des commentaires...</i>";
 
-    fetch(`/api/client-comments/${clientId}/`)
+    fetch(clientCommentsUrl(clientId, clientUuid))
       .then(response => {
         if (!response.ok) {
           throw new Error('HTTP ' + response.status);
@@ -557,7 +568,8 @@ document.addEventListener("DOMContentLoaded", function () {
                           class="pin-comment-btn ${isPinned ? 'pinned' : ''}"
                           data-comment-id="${commentId}"
                           data-client-id="${clientId}"
-                          onclick="togglePinComment(${commentId}, ${clientId}, event)">
+                          data-client-uuid="${clientUuid || ''}"
+                          onclick="togglePinComment(${commentId}, ${clientId}, ${clientUuid ? `'${clientUuid}'` : 'null'}, event)">
                     <i class="fa-solid fa-thumbtack"></i>
                     ${isPinned ? 'Épinglé' : 'Épingler'}
                  </button>`
@@ -585,7 +597,7 @@ document.addEventListener("DOMContentLoaded", function () {
       });
   }
 
-  window.togglePinComment = function (commentId, clientId, ev) {
+  window.togglePinComment = function (commentId, clientId, clientUuid, ev) {
     const btn = ev?.currentTarget || ev?.target;
     const commentIdFinal = commentId ?? (btn?.dataset?.commentId ? Number(btn.dataset.commentId) : null);
     const clientIdFinal = clientId ?? (btn?.dataset?.clientId ? Number(btn.dataset.clientId) : null);
@@ -616,7 +628,7 @@ document.addEventListener("DOMContentLoaded", function () {
       })
       .then(res => {
         if (res.success) {
-          loadClientComments(clientIdFinal);
+          loadClientComments(clientIdFinal, clientUuid);
         } else {
           console.error('Réponse API comment-pin non valide :', res);
         }
@@ -639,12 +651,14 @@ document.addEventListener("DOMContentLoaded", function () {
     email,
     statut,
     clientId,
+    clientUuid,
     code_comptable,
     classement
   ) {
     const modal = document.getElementById('clientModal');
     modal.style.display = 'flex';
     modal.setAttribute('data-client-id', clientId);
+    modal.setAttribute('data-client-uuid', clientUuid || '');
 
     document.getElementById('modalClientName').textContent =
       (civilite ? civilite + ' ' : '') +
@@ -674,7 +688,7 @@ document.addEventListener("DOMContentLoaded", function () {
       );
     }
 
-    loadClientComments(clientId);
+    loadClientComments(clientId, clientUuid);
   };
 
   // --- Edition infos client dans la modale ---
@@ -700,9 +714,9 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   saveBtn.addEventListener('click', function () {
-    const clientId = document
-      .getElementById('clientModal')
-      .getAttribute('data-client-id');
+    const modal = document.getElementById('clientModal');
+    const clientId = modal.getAttribute('data-client-id');
+    const clientUuid = modal.getAttribute('data-client-uuid') || '';
     const data = {
       adresse: document.getElementById('inputAdresse').value,
       code_postal: document.getElementById('inputCP').value,
@@ -712,7 +726,7 @@ document.addEventListener("DOMContentLoaded", function () {
       classement_client: document.getElementById('inputClassement').value
     };
 
-    fetch(`/update-client/${clientId}/`, {
+    fetch(updateClientUrl(clientId, clientUuid), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -750,6 +764,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const email = this.getAttribute('data-client-email') || '';
         const statut = this.getAttribute('data-client-statut') || '';
         const id = this.getAttribute('data-client-id') || '';
+        const uuid = this.getAttribute('data-client-uuid') || '';
         const code_comptable =
           this.getAttribute('data-client-code-comptable') || '';
         const classement =
@@ -766,6 +781,7 @@ document.addEventListener("DOMContentLoaded", function () {
           email,
           statut,
           id,
+          uuid,
           code_comptable,
           classement
         );
@@ -903,6 +919,7 @@ document.addEventListener("DOMContentLoaded", function () {
             c.email || '',
             c.statut || '',
             c.id,
+            c.uuid || '',
             c.code_comptable || '',
             c.classement_client || ''
           );

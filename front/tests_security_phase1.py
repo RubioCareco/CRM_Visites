@@ -291,6 +291,11 @@ class ResetPasswordAndMapTests(BaseSecurityFlowTestCase):
         resp = self.client.get(reverse("api_client_details", kwargs={"client_id": self.client_obj.id}))
         self.assertEqual(resp.status_code, 403)
 
+    def test_api_client_details_uuid_forbidden_for_other_commercial(self):
+        self.login_as(self.other_commercial)
+        resp = self.client.get(reverse("api_client_details_uuid", kwargs={"client_uuid": self.client_obj.uuid}))
+        self.assertEqual(resp.status_code, 403)
+
     def test_toggle_pin_comment_forbidden_for_other_commercial(self):
         rdv = Rendezvous.objects.create(
             client=self.client_obj,
@@ -372,9 +377,19 @@ class ResetPasswordAndMapTests(BaseSecurityFlowTestCase):
         self.assertEqual(resp.status_code, 429)
         self.assertEqual(resp.json().get("code"), "RATE_LIMITED")
 
+    def test_api_client_comments_uuid_forbidden_for_other_commercial(self):
+        self.login_as(self.other_commercial)
+        resp = self.client.get(reverse("get_client_comments_uuid", kwargs={"client_uuid": self.client_obj.uuid}))
+        self.assertEqual(resp.status_code, 403)
+
     def test_get_client_rdv_forbidden_for_other_commercial(self):
         self.login_as(self.other_commercial)
         resp = self.client.get(reverse("get_client_rdv", kwargs={"client_id": self.client_obj.id}))
+        self.assertEqual(resp.status_code, 403)
+
+    def test_get_client_rdv_uuid_forbidden_for_other_commercial(self):
+        self.login_as(self.other_commercial)
+        resp = self.client.get(reverse("get_client_rdv_uuid", kwargs={"client_uuid": self.client_obj.uuid}))
         self.assertEqual(resp.status_code, 403)
 
     def test_get_last_rdv_commercial_forbidden_for_other_commercial(self):
@@ -405,3 +420,14 @@ class ResetPasswordAndMapTests(BaseSecurityFlowTestCase):
             content_type="application/json",
         )
         self.assertEqual(resp.status_code, 403)
+
+    def test_update_client_uuid_ok(self):
+        self.login_as(self.commercial)
+        resp = self.client.post(
+            reverse("update_client_uuid", kwargs={"client_uuid": self.client_obj.uuid}),
+            data=json.dumps({"telephone": "0555998877"}),
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.client_obj.refresh_from_db()
+        self.assertEqual(self.client_obj.telephone, "0555998877")

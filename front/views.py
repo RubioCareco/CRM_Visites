@@ -106,6 +106,13 @@ from .activity_log import log_activity
 logger = logging.getLogger(__name__)
 
 
+def _resolve_frontclient_id(client_uuid):
+    client = FrontClient.objects.filter(uuid=client_uuid).only("id").first()
+    if not client:
+        raise FrontClient.DoesNotExist
+    return client.id
+
+
 def _client_ip(request):
     # XFF first for reverse-proxy setups, fallback to REMOTE_ADDR.
     xff = request.META.get("HTTP_X_FORWARDED_FOR")
@@ -1950,6 +1957,17 @@ def update_client(request, client_id):
         logger.exception("update_client failed for client_id=%s", client_id)
         return JsonResponse({"success": False, "error": "Erreur lors de la mise à jour"}, status=500)
 
+
+@login_required
+@require_POST
+@csrf_protect
+def update_client_uuid(request, client_uuid):
+    try:
+        client_id = _resolve_frontclient_id(client_uuid)
+    except FrontClient.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Client introuvable"}, status=404)
+    return update_client(request, client_id)
+
 def satisfaction_b2b(request):
     note_recommandation_choices = list(range(1, 11))
     rs_nom = request.GET.get('rs_nom') or request.POST.get('rs_nom')
@@ -2165,6 +2183,15 @@ def get_client_rdv(request, client_id):
         'rdvs': data,
         'client_name': client_name
     })
+
+
+@login_required
+def get_client_rdv_uuid(request, client_uuid):
+    try:
+        client_id = _resolve_frontclient_id(client_uuid)
+    except FrontClient.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Client introuvable'}, status=404)
+    return get_client_rdv(request, client_id)
 
 @login_required
 def dashboard_responsable(request):
@@ -3365,6 +3392,16 @@ def api_client_details(request, client_id):
         logger.exception("api_client_details failed for client_id=%s", client_id)
         return JsonResponse({'error': 'Une erreur interne est survenue.'}, status=500)
 
+
+@login_required
+@require_GET
+def api_client_details_uuid(request, client_uuid):
+    try:
+        client_id = _resolve_frontclient_id(client_uuid)
+    except FrontClient.DoesNotExist:
+        return JsonResponse({'error': 'Client non trouvé'}, status=404)
+    return api_client_details(request, client_id)
+
 @login_required
 @require_POST
 @csrf_protect
@@ -3455,6 +3492,16 @@ def api_client_comments(request, client_id):
     except Exception:
         logger.exception("api_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
+
+
+@login_required
+@require_GET
+def api_client_comments_uuid(request, client_uuid):
+    try:
+        client_id = _resolve_frontclient_id(client_uuid)
+    except FrontClient.DoesNotExist:
+        return JsonResponse({"commentaires": []}, status=404)
+    return api_client_comments(request, client_id)
 
 @login_required
 def commercial_map(request):

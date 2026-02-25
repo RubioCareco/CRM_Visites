@@ -636,6 +636,20 @@
       requestAnimationFrame(()=> toast.classList.add('show'));
       setTimeout(removeToast, 7000);
     }
+
+    function openInNewTab(url){
+      // Robust popup-block detection across browsers.
+      const w = window.open('about:blank', '_blank');
+      if(!w) return false;
+      try{
+        w.opener = null;
+        w.location.href = url;
+      }catch(_e){
+        return false;
+      }
+      return true;
+    }
+
     window.dbtShowToast = showToast;
     window.dbtIsCommercialAbsent = isCommercialAbsent;
     const confirmOverlay = document.getElementById('dbtConfirmOverlay');
@@ -1084,8 +1098,7 @@
       btnForm.onclick    = ()=>{
         const rs = clientTitle.textContent.trim();
         const url = `/satisfaction-b2b/?rs_nom=${encodeURIComponent(rs)}&rdv_id=${rdv.uuid}`;
-        const win = window.open(url,'_blank','noopener,noreferrer');
-        if(!win) showToast("La fenêtre a été bloquée. Autorisez les popups.", "error");
+        if(!openInNewTab(url)) showToast("La fenêtre a été bloquée. Autorisez les popups.", "error");
       };
       btnSaveCom.onclick = ()=> saveComment(rdv.uuid);
       if(btnPinDraft){

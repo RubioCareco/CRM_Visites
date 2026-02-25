@@ -2,6 +2,7 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.contrib import messages
 from django.utils import timezone
+from django.conf import settings
 from datetime import timedelta
 import json
 
@@ -56,4 +57,24 @@ class SessionTimeoutMiddleware:
                     del request.session['timeout_warning_minutes']
         
         response = self.get_response(request)
-        return response 
+        return response
+
+
+class SecurityHeadersMiddleware:
+    """Apply configurable browser security headers not covered by default middleware."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+
+        coop = getattr(settings, "SECURE_CROSS_ORIGIN_OPENER_POLICY", None)
+        coep = getattr(settings, "SECURE_CROSS_ORIGIN_EMBEDDER_POLICY", None)
+
+        if coop and "Cross-Origin-Opener-Policy" not in response:
+            response["Cross-Origin-Opener-Policy"] = coop
+        if coep and "Cross-Origin-Embedder-Policy" not in response:
+            response["Cross-Origin-Embedder-Policy"] = coep
+
+        return response

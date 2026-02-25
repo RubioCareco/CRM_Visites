@@ -59,6 +59,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'front.middleware.SessionTimeoutMiddleware',
+    'front.middleware.SecurityHeadersMiddleware',
 ]
 
 ROOT_URLCONF = 'crm_visites.urls'
@@ -193,6 +194,8 @@ CSRF_COOKIE_SAMESITE = env("CSRF_COOKIE_SAMESITE", default="Lax")
 SECURE_CONTENT_TYPE_NOSNIFF = env.bool("SECURE_CONTENT_TYPE_NOSNIFF", default=True)
 SECURE_REFERRER_POLICY = env("SECURE_REFERRER_POLICY", default="strict-origin-when-cross-origin")
 X_FRAME_OPTIONS = env("X_FRAME_OPTIONS", default="SAMEORIGIN")
+SECURE_CROSS_ORIGIN_OPENER_POLICY = env("SECURE_CROSS_ORIGIN_OPENER_POLICY", default="same-origin")
+SECURE_CROSS_ORIGIN_EMBEDDER_POLICY = env("SECURE_CROSS_ORIGIN_EMBEDDER_POLICY", default="unsafe-none")
 
 # Durcissement prod (garde-fous)
 if ENV == "prod":

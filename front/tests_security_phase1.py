@@ -83,6 +83,31 @@ class AuthAndPermissionsTests(BaseSecurityFlowTestCase):
         self.assertEqual(self.client.get(reverse("dashboard_responsable")).status_code, 200)
 
 
+class SecurityHeadersTests(BaseSecurityFlowTestCase):
+    def _assert_security_headers(self, response):
+        self.assertEqual(response.get("X-Frame-Options"), "SAMEORIGIN")
+        self.assertEqual(response.get("X-Content-Type-Options"), "nosniff")
+        self.assertEqual(response.get("Referrer-Policy"), "strict-origin-when-cross-origin")
+        self.assertEqual(response.get("Cross-Origin-Opener-Policy"), "same-origin")
+        self.assertEqual(response.get("Cross-Origin-Embedder-Policy"), "unsafe-none")
+
+    def test_security_headers_login(self):
+        resp = self.client.get(reverse("login"))
+        self.assertEqual(resp.status_code, 200)
+        self._assert_security_headers(resp)
+
+    def test_security_headers_reset_password(self):
+        resp = self.client.get(reverse("reset_password"))
+        self.assertEqual(resp.status_code, 200)
+        self._assert_security_headers(resp)
+
+    def test_security_headers_dashboard(self):
+        self.login_as(self.commercial)
+        resp = self.client.get(reverse("dashboard_test"))
+        self.assertEqual(resp.status_code, 200)
+        self._assert_security_headers(resp)
+
+
 class AddRdvTests(BaseSecurityFlowTestCase):
     def test_add_rdv_missing_required_fields(self):
         self.login_as(self.commercial)
@@ -179,6 +204,7 @@ class UpdateStatutAndClientFileTests(BaseSecurityFlowTestCase):
             content_type="application/json",
         )
         self.assertEqual(resp.status_code, 429)
+        self.assertEqual(resp.json().get("code"), "RATE_LIMITED")
 
     def test_update_client_ok(self):
         self.login_as(self.commercial)
@@ -210,6 +236,7 @@ class UpdateStatutAndClientFileTests(BaseSecurityFlowTestCase):
             content_type="application/json",
         )
         self.assertEqual(resp.status_code, 429)
+        self.assertEqual(resp.json().get("code"), "RATE_LIMITED")
 
 
 class ResetPasswordAndMapTests(BaseSecurityFlowTestCase):
@@ -257,6 +284,7 @@ class ResetPasswordAndMapTests(BaseSecurityFlowTestCase):
             content_type="application/json",
         )
         self.assertEqual(resp.status_code, 429)
+        self.assertEqual(resp.json().get("code"), "RATE_LIMITED")
 
     def test_api_client_details_forbidden_for_other_commercial(self):
         self.login_as(self.other_commercial)
@@ -309,6 +337,7 @@ class ResetPasswordAndMapTests(BaseSecurityFlowTestCase):
         cache.set(f"rl:toggle_pin_comment:127.0.0.1:{self.commercial.id}", 120, timeout=60)
         resp = self.client.post(reverse("toggle_pin_comment", kwargs={"comment_id": comment.id}))
         self.assertEqual(resp.status_code, 429)
+        self.assertEqual(resp.json().get("code"), "RATE_LIMITED")
 
     def test_api_client_comments_forbidden_for_other_commercial(self):
         rdv = Rendezvous.objects.create(
@@ -341,3 +370,4 @@ class ResetPasswordAndMapTests(BaseSecurityFlowTestCase):
         cache.set(f"rl:client_comments:127.0.0.1:{self.commercial.id}", 300, timeout=60)
         resp = self.client.get(reverse("get_client_comments", kwargs={"client_id": self.client_obj.id}))
         self.assertEqual(resp.status_code, 429)
+        self.assertEqual(resp.json().get("code"), "RATE_LIMITED")

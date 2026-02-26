@@ -503,20 +503,25 @@ document.addEventListener("DOMContentLoaded", function () {
   // --- Commentaires client (chargement + pin) ---
 
   function clientCommentsUrl(clientId, clientUuid) {
-    if (clientUuid) return `/api/client-comments/uuid/${encodeURIComponent(clientUuid)}/`;
-    return `/api/client-comments/${encodeURIComponent(clientId)}/`;
+    if (!clientUuid) return null;
+    return `/api/client-comments/uuid/${encodeURIComponent(clientUuid)}/`;
   }
 
   function updateClientUrl(clientId, clientUuid) {
-    if (clientUuid) return `/update-client/uuid/${encodeURIComponent(clientUuid)}/`;
-    return `/update-client/${encodeURIComponent(clientId)}/`;
+    if (!clientUuid) return null;
+    return `/update-client/uuid/${encodeURIComponent(clientUuid)}/`;
   }
 
   function loadClientComments(clientId, clientUuid) {
     const commentsDiv = document.getElementById('clientComments');
+    const commentsUrl = clientCommentsUrl(clientId, clientUuid);
+    if (!commentsUrl) {
+      commentsDiv.innerHTML = '<span style="color:#e53935;">Client UUID manquant.</span>';
+      return;
+    }
     commentsDiv.innerHTML = "<i>Chargement de l'historique des commentaires...</i>";
 
-    fetch(clientCommentsUrl(clientId, clientUuid))
+    fetch(commentsUrl)
       .then(response => {
         if (!response.ok) {
           throw new Error('HTTP ' + response.status);
@@ -717,6 +722,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const modal = document.getElementById('clientModal');
     const clientId = modal.getAttribute('data-client-id');
     const clientUuid = modal.getAttribute('data-client-uuid') || '';
+    const saveUrl = updateClientUrl(clientId, clientUuid);
+    if (!saveUrl) {
+      alert('Client UUID manquant.');
+      return;
+    }
     const data = {
       adresse: document.getElementById('inputAdresse').value,
       code_postal: document.getElementById('inputCP').value,
@@ -726,7 +736,7 @@ document.addEventListener("DOMContentLoaded", function () {
       classement_client: document.getElementById('inputClassement').value
     };
 
-    fetch(updateClientUrl(clientId, clientUuid), {
+    fetch(saveUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

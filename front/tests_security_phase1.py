@@ -209,7 +209,7 @@ class UpdateStatutAndClientFileTests(BaseSecurityFlowTestCase):
     def test_update_client_ok(self):
         self.login_as(self.commercial)
         resp = self.client.post(
-            reverse("update_client", kwargs={"client_id": self.client_obj.id}),
+            reverse("update_client_uuid", kwargs={"client_uuid": self.client_obj.uuid}),
             data=json.dumps(
                 {
                     "telephone": "0555112233",
@@ -231,7 +231,7 @@ class UpdateStatutAndClientFileTests(BaseSecurityFlowTestCase):
         self.login_as(self.commercial)
         cache.set(f"rl:update_client:127.0.0.1:{self.commercial.id}", 90, timeout=60)
         resp = self.client.post(
-            reverse("update_client", kwargs={"client_id": self.client_obj.id}),
+            reverse("update_client_uuid", kwargs={"client_uuid": self.client_obj.uuid}),
             data=json.dumps({"telephone": "0555112233"}),
             content_type="application/json",
         )
@@ -304,11 +304,6 @@ class ResetPasswordAndMapTests(BaseSecurityFlowTestCase):
         self.assertEqual(resp.status_code, 429)
         self.assertEqual(resp.json().get("code"), "RATE_LIMITED")
 
-    def test_api_client_details_forbidden_for_other_commercial(self):
-        self.login_as(self.other_commercial)
-        resp = self.client.get(reverse("api_client_details", kwargs={"client_id": self.client_obj.id}))
-        self.assertEqual(resp.status_code, 403)
-
     def test_api_client_details_uuid_forbidden_for_other_commercial(self):
         self.login_as(self.other_commercial)
         resp = self.client.get(reverse("api_client_details_uuid", kwargs={"client_uuid": self.client_obj.uuid}))
@@ -380,29 +375,24 @@ class ResetPasswordAndMapTests(BaseSecurityFlowTestCase):
         )
 
         self.login_as(self.other_commercial)
-        resp = self.client.get(reverse("get_client_comments", kwargs={"client_id": self.client_obj.id}))
+        resp = self.client.get(reverse("get_client_comments_uuid", kwargs={"client_uuid": self.client_obj.uuid}))
         self.assertEqual(resp.status_code, 403)
 
         self.login_as(self.responsable)
-        resp_ok = self.client.get(reverse("get_client_comments", kwargs={"client_id": self.client_obj.id}))
+        resp_ok = self.client.get(reverse("get_client_comments_uuid", kwargs={"client_uuid": self.client_obj.uuid}))
         self.assertEqual(resp_ok.status_code, 200)
         self.assertIn("commentaires", resp_ok.json())
 
     def test_api_client_comments_rate_limited(self):
         self.login_as(self.commercial)
         cache.set(f"rl:client_comments:127.0.0.1:{self.commercial.id}", 300, timeout=60)
-        resp = self.client.get(reverse("get_client_comments", kwargs={"client_id": self.client_obj.id}))
+        resp = self.client.get(reverse("get_client_comments_uuid", kwargs={"client_uuid": self.client_obj.uuid}))
         self.assertEqual(resp.status_code, 429)
         self.assertEqual(resp.json().get("code"), "RATE_LIMITED")
 
     def test_api_client_comments_uuid_forbidden_for_other_commercial(self):
         self.login_as(self.other_commercial)
         resp = self.client.get(reverse("get_client_comments_uuid", kwargs={"client_uuid": self.client_obj.uuid}))
-        self.assertEqual(resp.status_code, 403)
-
-    def test_get_client_rdv_forbidden_for_other_commercial(self):
-        self.login_as(self.other_commercial)
-        resp = self.client.get(reverse("get_client_rdv", kwargs={"client_id": self.client_obj.id}))
         self.assertEqual(resp.status_code, 403)
 
     def test_get_client_rdv_uuid_forbidden_for_other_commercial(self):

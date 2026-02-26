@@ -396,9 +396,8 @@
         });
 
         function buildClientRdvUrl(clientId, clientUuid, statutParam) {
-          const base = clientUuid
-            ? `/api/client-rdv/uuid/${encodeURIComponent(clientUuid)}/`
-            : `/api/client-rdv/${encodeURIComponent(clientId)}/`;
+          if (!clientUuid) return null;
+          const base = `/api/client-rdv/uuid/${encodeURIComponent(clientUuid)}/`;
           return statutParam ? `${base}?statut=${encodeURIComponent(statutParam)}` : base;
         }
 
@@ -415,7 +414,9 @@
           // Récupérer les informations du client pour le titre
           const clientName = card.querySelector('.client-name strong').textContent.trim();
           
-          fetch(buildClientRdvUrl(clientId, clientUuid))
+          const targetUrl = buildClientRdvUrl(clientId, clientUuid);
+          if (!targetUrl) return;
+          fetch(targetUrl)
             .then(resp => {
               if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
               return resp.json();
@@ -491,7 +492,9 @@
           // Récupérer les informations du client pour le titre
           const clientName = card.querySelector('.client-name strong').textContent.trim();
           
-          fetch(buildClientRdvUrl(clientId, clientUuid, 'valide'))
+          const targetUrl = buildClientRdvUrl(clientId, clientUuid, 'valide');
+          if (!targetUrl) return;
+          fetch(targetUrl)
             .then(resp => {
               if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
               return resp.json();
@@ -567,7 +570,9 @@
         // Récupérer les informations du client pour le titre
         const clientName = card.querySelector('.client-name strong').textContent.trim();
         
-        fetch(buildClientRdvUrl(clientId, clientUuid, 'annule'))
+        const targetUrl = buildClientRdvUrl(clientId, clientUuid, 'annule');
+        if (!targetUrl) return;
+        fetch(targetUrl)
           .then(resp => {
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             return resp.json();

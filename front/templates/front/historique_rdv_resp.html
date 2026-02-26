@@ -646,16 +646,21 @@
       
       // Fonction pour ouvrir la modal et charger les données
       function buildClientRdvUrl(clientId, clientUuid) {
-        if (clientUuid) return `/api/client-rdv/uuid/${encodeURIComponent(clientUuid)}/`;
-        return `/api/client-rdv/${encodeURIComponent(clientId)}/`;
+        if (!clientUuid) return null;
+        return `/api/client-rdv/uuid/${encodeURIComponent(clientUuid)}/`;
       }
 
       function openClientModal(clientId, clientUuid) {
         modal.style.display = 'flex';
         modalContent.innerHTML = '<p style="text-align:center;color:#ccc;">Chargement...</p>';
+        const targetUrl = buildClientRdvUrl(clientId, clientUuid);
+        if (!targetUrl) {
+          modalContent.innerHTML = '<p style="text-align:center;color:#ff5a5a;">Client UUID manquant.</p>';
+          return;
+        }
         
         // Récupérer tous les rendez-vous du client
-        fetch(buildClientRdvUrl(clientId, clientUuid))
+        fetch(targetUrl)
           .then(response => response.json())
           .then(data => {
             if (data.success) {

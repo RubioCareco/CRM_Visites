@@ -395,7 +395,7 @@
           }
         });
 
-        function buildClientRdvUrl(clientId, clientUuid, statutParam) {
+        function buildClientRdvUrl(clientUuid, statutParam) {
           if (!clientUuid) return null;
           const base = `/api/client-rdv/uuid/${encodeURIComponent(clientUuid)}/`;
           return statutParam ? `${base}?statut=${encodeURIComponent(statutParam)}` : base;
@@ -409,12 +409,12 @@
           if (e.target.closest('a')) return;
           const clientId = card.getAttribute('data-client-id');
           const clientUuid = card.getAttribute('data-client-uuid');
-          if (!clientId) return;
+          if (!clientUuid) return;
           
           // Récupérer les informations du client pour le titre
           const clientName = card.querySelector('.client-name strong').textContent.trim();
           
-          const targetUrl = buildClientRdvUrl(clientId, clientUuid);
+          const targetUrl = buildClientRdvUrl(clientUuid);
           if (!targetUrl) return;
           fetch(targetUrl)
             .then(resp => {
@@ -487,12 +487,12 @@
           if (e.target.closest('a')) return;
           const clientId = card.getAttribute('data-client-id');
           const clientUuid = card.getAttribute('data-client-uuid');
-          if (!clientId) return;
+          if (!clientUuid) return;
           
           // Récupérer les informations du client pour le titre
           const clientName = card.querySelector('.client-name strong').textContent.trim();
           
-          const targetUrl = buildClientRdvUrl(clientId, clientUuid, 'valide');
+          const targetUrl = buildClientRdvUrl(clientUuid, 'valide');
           if (!targetUrl) return;
           fetch(targetUrl)
             .then(resp => {
@@ -563,14 +563,13 @@
         const card = e.target.closest('.reminder-entry');
         if (!card) return;
         if (e.target.closest('a')) return;
-        const clientId = card.getAttribute('data-client-id');
         const clientUuid = card.getAttribute('data-client-uuid');
-        if (!clientId) return;
+        if (!clientUuid) return;
         
         // Récupérer les informations du client pour le titre
         const clientName = card.querySelector('.client-name strong').textContent.trim();
         
-        const targetUrl = buildClientRdvUrl(clientId, clientUuid, 'annule');
+        const targetUrl = buildClientRdvUrl(clientUuid, 'annule');
         if (!targetUrl) return;
         fetch(targetUrl)
           .then(resp => {

@@ -622,8 +622,8 @@
         card.addEventListener('click', function() {
           const clientId = this.getAttribute('data-client-id');
           const clientUuid = this.getAttribute('data-client-uuid');
-          if (clientId || clientUuid) {
-            openClientModal(clientId, clientUuid);
+          if (clientUuid) {
+            openClientModal(clientUuid);
           }
         });
       });
@@ -645,15 +645,15 @@
       }
       
       // Fonction pour ouvrir la modal et charger les données
-      function buildClientRdvUrl(clientId, clientUuid) {
+      function buildClientRdvUrl(clientUuid) {
         if (!clientUuid) return null;
         return `/api/client-rdv/uuid/${encodeURIComponent(clientUuid)}/`;
       }
 
-      function openClientModal(clientId, clientUuid) {
+      function openClientModal(clientUuid) {
         modal.style.display = 'flex';
         modalContent.innerHTML = '<p style="text-align:center;color:#ccc;">Chargement...</p>';
-        const targetUrl = buildClientRdvUrl(clientId, clientUuid);
+        const targetUrl = buildClientRdvUrl(clientUuid);
         if (!targetUrl) {
           modalContent.innerHTML = '<p style="text-align:center;color:#ff5a5a;">Client UUID manquant.</p>';
           return;

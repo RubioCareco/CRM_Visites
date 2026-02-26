@@ -711,8 +711,8 @@
         if(data.status==='ok'){
           commentEl.value = '';
           refreshDraftPinButton();
-          if(currentRDV && (currentRDV.client_id || currentRDV.client_uuid)){
-            loadClientComments(currentRDV.client_id, currentRDV.client_uuid);
+          if(currentRDV && currentRDV.client_uuid){
+            loadClientComments(currentRDV.client_uuid);
           }
           showToast('Commentaire épinglé.', 'success');
         }else{
@@ -1079,8 +1079,8 @@
       `;
       pdfBox.innerHTML=''; commentEl.value='';
       // ✅ Commentaires CLIENT (inclut épinglés) — logique métier
-      if (rdv.client_id || rdv.client_uuid) {
-        loadClientComments(rdv.client_id, rdv.client_uuid);
+      if (rdv.client_uuid) {
+        loadClientComments(rdv.client_uuid);
       }
 
 
@@ -1438,16 +1438,16 @@
     renderCal();
   })();
 
-function getClientCommentsUrl(clientId, clientUuid){
+function getClientCommentsUrl(clientUuid){
   if (!clientUuid) return null;
   return `/api/client-comments/uuid/${encodeURIComponent(clientUuid)}/`;
 }
 
-function loadClientComments(clientId, clientUuid){
+function loadClientComments(clientUuid){
   const zone = document.getElementById('dbtComments');
   if(!zone) return;
 
-  const commentsUrl = getClientCommentsUrl(clientId, clientUuid);
+  const commentsUrl = getClientCommentsUrl(clientUuid);
   if (!commentsUrl){
     zone.innerHTML = '<span style="color:#ef4444">Client UUID manquant</span>';
     return;
@@ -1490,7 +1490,7 @@ function loadClientComments(clientId, clientUuid){
                   class="dbt-pin-btn ${isPinned ? 'pinned' : ''}"
                   data-comment-id="${id}"
                   style="margin-left:auto;background:${isPinned ? '#fff7ed' : '#f1f5f9'};border:1px solid #e2e8f0;border-radius:10px;padding:6px 10px;cursor:pointer;font-size:12px"
-                  onclick="togglePinComment(${id}, ${clientId || 'null'}, ${clientUuid ? `'${clientUuid}'` : 'null'}, event)">
+                  onclick="togglePinComment(${id}, ${clientUuid ? `'${clientUuid}'` : 'null'}, event)">
             ${isPinned ? '📌 Épinglé' : '📌 Épingler'}
           </button>
         ` : '';
@@ -1521,7 +1521,7 @@ function loadClientComments(clientId, clientUuid){
 }
 
 // Toggle pin -> POST JSON vers /api/comment-pin/<id>/
-window.togglePinComment = function(commentId, clientId, clientUuid, ev){
+window.togglePinComment = function(commentId, clientUuid, ev){
   const btn = ev?.currentTarget || ev?.target;
   const isPinnedNow = btn?.classList?.contains('pinned');
 
@@ -1534,7 +1534,7 @@ window.togglePinComment = function(commentId, clientId, clientUuid, ev){
     body: JSON.stringify({ is_pinned: !isPinnedNow })
   })
   .then(r => r.json())
-  .then(() => loadClientComments(clientId, clientUuid))
+  .then(() => loadClientComments(clientUuid))
   .catch(() => {
     if (typeof window.dbtShowToast === "function") window.dbtShowToast("Erreur lors de l'épinglage", "error");
   });

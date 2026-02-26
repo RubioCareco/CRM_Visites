@@ -56,6 +56,7 @@
     .dbt-toast.show{ display:flex; opacity:1; transform:translateY(0); }
     .dbt-toast.success{ background:linear-gradient(135deg,#34d399,#10b981); border:1px solid #10b981; }
     .dbt-toast.error{ background:linear-gradient(135deg,#fb7185,#f43f5e); border:1px solid #f43f5e; }
+    .dbt-toast.warning{ background:linear-gradient(135deg,#fbbf24,#f97316); border:1px solid #f59e0b; color:#fff; }
     .dbt-toast button{
       border:none;
       background:rgba(255,255,255,.2);
@@ -686,6 +687,19 @@
 
     function showAbsentBlockedToast(){
       showToast("Vous êtes absent : action indisponible sur les rendez-vous.", "error");
+    }
+
+    function notifyOverdueUnvalidatedOnLogin(){
+      fetch('/api/rdvs-overdue-count/', { headers:{ 'Accept':'application/json' } })
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(data => {
+          const n = Number(data?.count || 0);
+          if(n > 0){
+            const suffix = n > 1 ? 's' : '';
+            showToast(`Vous avez ${n} rendez-vous en retard${suffix} à traiter.`, 'warning');
+          }
+        })
+        .catch(()=>{});
     }
 
     function refreshDraftPinButton(){
@@ -1435,6 +1449,7 @@
       })
       .finally(()=>{ suggestions=[...new Set(suggestions)]; });
 
+    notifyOverdueUnvalidatedOnLogin();
     renderCal();
   })();
 
@@ -1652,6 +1667,14 @@ document.addEventListener("click", async (e) => {
       dbtToast("Date introuvable.", "error");
       return;
     }
+    var todayIso = (function(){
+      var d=new Date(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+      return d.getFullYear()+"-"+m+"-"+day;
+    })();
+    if (date < todayIso){
+      dbtToast("Impossible de valider une tournée sur une date passée.", "error");
+      return;
+    }
     if (!ids.length){
       dbtToast("Aucun client sélectionné.", "error");
       return;
@@ -1708,6 +1731,7 @@ document.addEventListener("click", async (e) => {
   if(!sel||!dt||!btn) return;
 
   dt.value = isoToday();
+  dt.min = isoToday();
 
   var map=L.map("dbtMap");
 map.on("click", function(e){ dbtDlog("MAP CLICK", e.latlng); });
@@ -1848,6 +1872,12 @@ map.on("click", function(e){ dbtDlog("MAP CLICK", e.latlng); });
   function loadMap(){
     var cid=sel.value, date=dt.value;
     if(!cid){ return; }
+    var minDate = dt.min || isoToday();
+    if (date && date < minDate){
+      dbtToast("Impossible de charger une tournée sur une date passée.", "error");
+      dt.value = minDate;
+      return;
+    }
     clear();
 
     var url="/api/map-tournee/?commercial_id="+encodeURIComponent(cid)+"&date="+encodeURIComponent(date);

@@ -2581,6 +2581,32 @@ def api_rdvs_a_venir(request):
         })
     return JsonResponse({'rdvs': data})
 
+
+@login_required
+@require_GET
+def api_rdvs_overdue_count(request):
+    """Nombre de RDV non validés dont la date est strictement antérieure à aujourd'hui."""
+    role = request.session.get('role')
+    commercial_id = request.GET.get('commercial_id')
+
+    # Responsable/admin: id optionnel en GET, sinon fallback session.
+    if role in ['responsable', 'admin'] and commercial_id:
+        pass
+    else:
+        commercial_id = request.session.get('commercial_id')
+
+    if not commercial_id:
+        return JsonResponse({'error': 'Non authentifié'}, status=403)
+
+    today = timezone.now().date()
+    count = Rendezvous.objects.filter(
+        commercial_id=commercial_id,
+        date_rdv__lt=today,
+        statut_rdv__in=['a_venir', 'en_retard']
+    ).count()
+
+    return JsonResponse({'count': count, 'date_reference': today.isoformat()})
+
 @login_required
 @require_GET
 def api_rdv_counters_by_client(request):
@@ -3669,6 +3695,9 @@ def api_replace_tournee(request):
         role = request.session.get("role")
         if role not in ["responsable", "admin"] and commercial_id != session_commercial_id:
             return JsonResponse({"ok": False, "error": "forbidden"}, status=403)
+        # Un commercial ne peut pas modifier une tournée sur une date passée.
+        if role not in ["responsable", "admin"] and d < timezone.localdate():
+            return JsonResponse({"ok": False, "error": "past_date_forbidden"}, status=400)
 
         from .models import Rendezvous
         qs = Rendezvous.objects.filter(commercial_id=commercial_id, date_rdv=d).order_by("heure_rdv", "id")

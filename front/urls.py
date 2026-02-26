@@ -56,6 +56,7 @@ urlpatterns = [
 
     path('api/rdv-counters/', views.api_rdv_counters, name='api_rdv_counters'),
     path('api/rdvs-a-venir/', views.api_rdvs_a_venir, name='api_rdvs_a_venir'),
+    path('api/rdvs-overdue-count/', views.api_rdvs_overdue_count, name='api_rdvs_overdue_count'),
     path('api/rdv-counters-by-client/', views.api_rdv_counters_by_client, name='api_rdv_counters_by_client'),
 
     path('api/clients-by-commercial/', views.api_clients_by_commercial, name='api_clients_by_commercial'),

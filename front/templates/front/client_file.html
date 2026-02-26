@@ -502,7 +502,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // --- Commentaires client (chargement + pin) ---
 
-  function clientCommentsUrl(clientId, clientUuid) {
+  function clientCommentsUrl(clientUuid) {
     if (!clientUuid) return null;
     return `/api/client-comments/uuid/${encodeURIComponent(clientUuid)}/`;
   }
@@ -512,9 +512,9 @@ document.addEventListener("DOMContentLoaded", function () {
     return `/update-client/uuid/${encodeURIComponent(clientUuid)}/`;
   }
 
-  function loadClientComments(clientId, clientUuid) {
+  function loadClientComments(clientUuid) {
     const commentsDiv = document.getElementById('clientComments');
-    const commentsUrl = clientCommentsUrl(clientId, clientUuid);
+    const commentsUrl = clientCommentsUrl(clientUuid);
     if (!commentsUrl) {
       commentsDiv.innerHTML = '<span style="color:#e53935;">Client UUID manquant.</span>';
       return;
@@ -572,9 +572,8 @@ document.addEventListener("DOMContentLoaded", function () {
               ? `<button type="button"
                           class="pin-comment-btn ${isPinned ? 'pinned' : ''}"
                           data-comment-id="${commentId}"
-                          data-client-id="${clientId}"
                           data-client-uuid="${clientUuid || ''}"
-                          onclick="togglePinComment(${commentId}, ${clientId}, ${clientUuid ? `'${clientUuid}'` : 'null'}, event)">
+                          onclick="togglePinComment(${commentId}, ${clientUuid ? `'${clientUuid}'` : 'null'}, event)">
                     <i class="fa-solid fa-thumbtack"></i>
                     ${isPinned ? 'Épinglé' : 'Épingler'}
                  </button>`
@@ -602,18 +601,12 @@ document.addEventListener("DOMContentLoaded", function () {
       });
   }
 
-  window.togglePinComment = function (commentId, clientId, clientUuid, ev) {
+  window.togglePinComment = function (commentId, clientUuid, ev) {
     const btn = ev?.currentTarget || ev?.target;
     const commentIdFinal = commentId ?? (btn?.dataset?.commentId ? Number(btn.dataset.commentId) : null);
-    const clientIdFinal = clientId ?? (btn?.dataset?.clientId ? Number(btn.dataset.clientId) : null);
 
     if (!commentIdFinal || Number.isNaN(commentIdFinal)) {
       console.error('togglePinComment appelé sans commentId', commentId, btn?.dataset);
-      return;
-    }
-
-    if (!clientIdFinal || Number.isNaN(clientIdFinal)) {
-      console.error('togglePinComment appelé sans clientId', clientId, btn?.dataset);
       return;
     }
 
@@ -633,7 +626,7 @@ document.addEventListener("DOMContentLoaded", function () {
       })
       .then(res => {
         if (res.success) {
-          loadClientComments(clientIdFinal, clientUuid);
+          loadClientComments(clientUuid);
         } else {
           console.error('Réponse API comment-pin non valide :', res);
         }
@@ -693,7 +686,7 @@ document.addEventListener("DOMContentLoaded", function () {
       );
     }
 
-    loadClientComments(clientId, clientUuid);
+    loadClientComments(clientUuid);
   };
 
   // --- Edition infos client dans la modale ---

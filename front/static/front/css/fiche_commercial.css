@@ -7,6 +7,13 @@ body {
     padding: 20px;
 }
 
+.fiche-commercial-page {
+    display: block !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow-x: hidden !important;
+}
+
 .main-container {
     max-width: 1600px;
     margin: auto;
@@ -598,17 +605,14 @@ footer {
 
  
 
-/* Footer overrides specific to fiche_commercial */
-.site-footer {
-  /* Supprime l'espace au-dessus et aligne bord à bord malgré le padding body:20px */
-  margin-top: 0 !important;
-  margin-left: -20px;
-  margin-right: -20px;
-  border-radius: 0;
-  /* Force la largeur complète et supprime l'espace en bas */
-  width: calc(100% + 40px) !important;
-  margin-bottom: -20px !important;
-  padding-bottom: 20px !important;
+/* Footer: keep it inside page flow, no forced overflow */
+.fiche-commercial-page .site-footer {
+  width: 100% !important;
+  margin: 20px 0 0 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  margin-bottom: 0 !important;
+  border-radius: 0 0 16px 16px !important;
 }
 
 /* ===== RESPONSIVE DESIGN ===== */
@@ -924,14 +928,12 @@ footer {
 
 /* Footer responsive */
 @media (max-width: 700px) {
-  .site-footer {
-    /* Conserve l'alignement plein écran sur mobile aussi */
-    margin-left: -20px;
-    margin-right: -20px;
-    width: calc(100% + 40px) !important;
-    margin-bottom: -20px !important;
+  .fiche-commercial-page .site-footer {
+    width: 100% !important;
+    margin: 12px 0 0 0 !important;
+    border-radius: 0 0 12px 12px !important;
   }
-} 
+}
 /* =========================================================
    RELOOK FICHE COMMERCIAL => STYLE DASHBOARD RESPONSABLE (CLAIR)
    IMPORTANT : on garde 100% les classes existantes
@@ -1510,8 +1512,8 @@ header .page-title{
     text-align: center !important;
   }
 
-  /* Evite les débordements du footer négatif en mobile */
-  .site-footer{
+  /* Evite les débordements du footer en mobile */
+  .fiche-commercial-page .site-footer{
     margin-left: 0 !important;
     margin-right: 0 !important;
     width: 100% !important;

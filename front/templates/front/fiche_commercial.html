@@ -5,32 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fiche Commercial - {{ commercial.prenom }} {{ commercial.nom }}</title>
     {% load static %}
-    <link rel="stylesheet" href="{% static 'front/css/fiche_commercial.css' %}">
     <link rel="stylesheet" href="{% static 'front/css/footer.css' %}">
+    <link rel="stylesheet" href="{% static 'front/css/fiche_commercial.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <style>
-      /* Overrides spécifiques fiche_commercial pour le footer */
-      .site-footer {
-        margin-top: 40px !important;
-        margin-left: -20px !important;
-        margin-right: -20px !important;
-        width: calc(100% + 40px) !important;
-        margin-bottom: -20px !important;
-        padding-bottom: 20px !important;
-        border-radius: 0 !important;
-      }
-      @media (max-width: 767px){
-        .site-footer{
-          margin-left: 0 !important;
-          margin-right: 0 !important;
-          width: 100% !important;
-          margin-bottom: 0 !important;
-          border-radius: 0 0 16px 16px !important;
-        }
-      }
-    </style>
 </head>
-<body>
+<body class="fiche-commercial-page">
     <div class="main-container">
         <header>
             <div class="page-title">Fiche commercial - vue responsable</div>

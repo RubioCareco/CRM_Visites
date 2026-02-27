@@ -40,12 +40,22 @@
         {% if role in 'responsable,admin' and commerciaux_list %}
         <div class="rdv-field">
           <i class="fa fa-user-tie"></i>
+          {% if lock_commercial_select and selected_commercial_id %}
+          <select id="commercialSelect" class="rdv-select" disabled aria-disabled="true">
+            <option value="">Sélectionner un commercial</option>
+            {% for comm in commerciaux_list %}
+              <option value="{{ comm.id }}" {% if selected_commercial_id == comm.id|stringformat:'s' %}selected{% endif %}>{{ comm.prenom }} {{ comm.nom }}</option>
+            {% endfor %}
+          </select>
+          <input type="hidden" name="commercial_id" value="{{ selected_commercial_id }}">
+          {% else %}
           <select name="commercial_id" id="commercialSelect" class="rdv-select" required>
             <option value="">Sélectionner un commercial</option>
             {% for comm in commerciaux_list %}
-              <option value="{{ comm.id }}">{{ comm.prenom }} {{ comm.nom }}</option>
+              <option value="{{ comm.id }}" {% if selected_commercial_id and selected_commercial_id == comm.id|stringformat:'s' %}selected{% endif %}>{{ comm.prenom }} {{ comm.nom }}</option>
             {% endfor %}
           </select>
+          {% endif %}
         </div>
         {% endif %}
 
@@ -54,9 +64,10 @@
           {% if from_new_client and client_temp %}
             <input type="text" disabled value="{{ client_temp.prenom }} {{ client_temp.nom }}">
           {% else %}
-            <input type="text" id="clientSearch" placeholder="Rechercher un client..." required value="{% if client_prefill %}{{ client_prefill.prénom|escapejs }} {{ client_prefill.rs_nom|escapejs }}{% endif %}">
+            <input type="text" id="clientSearch" placeholder="Rechercher un client..." required value="{% if client_prefill %}{% if client_prefill.prenom %}{{ client_prefill.prenom|escapejs }} {% endif %}{{ client_prefill.rs_nom|default_if_none:''|escapejs }}{% endif %}">
             <ul id="clientResults" class="autocomplete-results"></ul>
             <input type="hidden" name="client_id" id="client_id" value="{% if client_prefill %}{{ client_prefill.id }}{% endif %}">
+            <input type="hidden" name="client_uuid" id="client_uuid" value="{% if client_prefill and client_prefill.uuid %}{{ client_prefill.uuid }}{% endif %}">
           {% endif %}
         </div>
 
@@ -197,8 +208,9 @@
       {% for client in clients %}
         {
           "id": "{{ client.id }}",
+          "uuid": "{% if client.uuid %}{{ client.uuid }}{% endif %}",
           "nom": "{{ client.rs_nom|escapejs }}",
-          "prenom": "{{ client.prénom|escapejs }}"
+          "prenom": "{{ client.prenom|escapejs }}"
         }{% if not forloop.last %},{% endif %}
       {% endfor %}
     ]
@@ -218,6 +230,7 @@
       const input = document.getElementById("clientSearch");
       const results = document.getElementById("clientResults");
       const hiddenInput = document.getElementById("client_id");
+      const hiddenUuidInput = document.getElementById("client_uuid");
       let clients = [];
       const clientDataScript = document.getElementById('client-data');
       if (clientDataScript) {
@@ -228,6 +241,7 @@
         clients = newClients;
         input.value = "";
         hiddenInput.value = "";
+        if (hiddenUuidInput) hiddenUuidInput.value = "";
         results.innerHTML = "";
       }
 
@@ -249,6 +263,8 @@
       if (input && results && hiddenInput) {
         input.addEventListener("input", function () {
           const value = this.value.toLowerCase().trim();
+          hiddenInput.value = "";
+          if (hiddenUuidInput) hiddenUuidInput.value = "";
           results.innerHTML = "";
           if (value.length === 0) return;
 
@@ -265,6 +281,7 @@
             li.addEventListener("click", () => {
               input.value = li.textContent;
               hiddenInput.value = client.id;
+              if (hiddenUuidInput) hiddenUuidInput.value = client.uuid || "";
               results.innerHTML = "";
             });
             results.appendChild(li);
@@ -338,9 +355,13 @@
     document.addEventListener("DOMContentLoaded", function () {
       var input = document.getElementById("clientSearch");
       var hiddenInput = document.getElementById("client_id");
+      var hiddenUuidInput = document.getElementById("client_uuid");
       if (input && hiddenInput) {
-        input.value = "{{ client_prefill.prénom|escapejs }} {{ client_prefill.rs_nom|escapejs }}";
+        input.value = "{% if client_prefill.prenom %}{{ client_prefill.prenom|escapejs }} {% endif %}{{ client_prefill.rs_nom|default_if_none:''|escapejs }}";
         hiddenInput.value = "{{ client_prefill.id }}";
+        if (hiddenUuidInput) {
+          hiddenUuidInput.value = "{% if client_prefill.uuid %}{{ client_prefill.uuid }}{% endif %}";
+        }
       }
     });
   </script>

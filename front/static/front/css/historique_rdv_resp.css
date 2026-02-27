@@ -1458,9 +1458,10 @@ html, body{
   }
 
   .tabs-content-scroll{
-    max-height: 66vh !important;
+    max-height: clamp(240px, calc(100dvh - 430px), 56vh) !important;
     overflow-y: auto !important;
-    padding: 10px 6px 8px !important;
+    padding: 10px 6px 22px !important;
+    scroll-padding-bottom: 22px !important;
   }
 
   .visit-entry,
@@ -1519,7 +1520,7 @@ html, body{
     gap: 10px !important;
     padding: 0 4px !important;
     margin-top: 12px !important;
-    margin-bottom: 16px !important;
+    margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 18px) !important;
   }
 
   .retour-dashboard-container,
@@ -1703,6 +1704,45 @@ body.historique-rdv-resp-no-page-scroll .tabs-content-scroll{
   overflow-y: auto !important;
 }
 
+/* =========================================================
+   FINAL MOBILE FIX: éviter carte coupée + footer sur boutons
+   ========================================================= */
+@media (max-width: 768px){
+  /* Réserve de la place en bas pour 2 boutons + footer */
+  body.historique-rdv-resp-no-page-scroll{
+    --hr-reserved-bottom: 190px;
+  }
+
+  body.historique-rdv-resp-no-page-scroll .cards .card{
+    min-height: 0 !important;
+    max-height: calc(100dvh - 390px) !important;
+  }
+
+  body.historique-rdv-resp-no-page-scroll .tabs-content-scroll{
+    height: calc(100dvh - 430px) !important;
+    max-height: calc(100dvh - 430px) !important;
+    min-height: 210px !important;
+    padding-bottom: 96px !important; /* permet de voir la dernière carte entièrement */
+    scroll-padding-bottom: 96px !important;
+  }
+
+  body.historique-rdv-resp-no-page-scroll .tabs-content-scroll .tab-content{
+    padding-bottom: 56px !important;
+  }
+
+  body.historique-rdv-resp-no-page-scroll .buttons-container{
+    margin-top: 8px !important;
+    margin-bottom: 24px !important;
+    padding-bottom: 0 !important;
+  }
+
+  body.historique-rdv-resp-no-page-scroll .site-footer{
+    position: relative !important;
+    margin-top: 6px !important;
+    z-index: 1 !important;
+  }
+}
+
 /* ===== Modal client historique: alignement UI avec historique_rdv (commercial) ===== */
 body .modal-client-rdv{
   background: rgba(17,24,39,.55) !important;
@@ -1847,8 +1887,9 @@ body .table-modal-rdv tr:last-child td{
   }
 
   body.historique-rdv-resp-no-page-scroll .tabs-content-scroll{
-    max-height: 66vh !important;
+    max-height: clamp(240px, calc(100dvh - 430px), 56vh) !important;
     overflow-y: auto !important;
+    padding-bottom: 22px !important;
   }
 
   body .modal-content-client-rdv{

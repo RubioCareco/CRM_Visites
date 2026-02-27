@@ -100,6 +100,19 @@
       justify-content:center;
     }
     .dbt-toast button:hover{ background:rgba(255,255,255,.3); }
+    @media (max-width: 768px){
+      .dbt-toast-stack{
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        width: min(94vw, 420px);
+        align-items: stretch;
+      }
+      .dbt-toast{
+        min-width: 0;
+        max-width: 100%;
+      }
+    }
     .dbt-confirm-overlay{
       position:fixed;
       inset:0;
@@ -488,11 +501,13 @@
   </div>
 
   <!-- Bannière cookies (info uniquement) -->
-  <div id="cookie-banner" class="cookie-banner-center" style="display:none; position:fixed; bottom:0; left:0; width:100%; background:#222; color:#fff; padding:18px 10px; text-align:center; z-index:9999; box-shadow: 0 -2px 12px rgba(0,0,0,0.18); font-size: 1.1em;">
-    <b>Nous utilisons uniquement des cookies techniques nécessaires au fonctionnement du CRM.</b><br>
-    Aucun cookie publicitaire ou de mesure d’audience tiers n’est utilisé.
-    <a href="/politique-confidentialite" style="color:#1ecb6b; text-decoration:underline;" target="_blank">En savoir plus</a>
-    <button id="accept-cookies-btn" style="margin-left:20px; padding:8px 18px; background:#1ecb6b; color:#fff; border:none; border-radius:5px; cursor:pointer;">Compris</button>
+  <div id="cookie-banner" class="cookie-banner-center" style="display:none;">
+    <p class="cookie-banner-title">Nous utilisons uniquement des cookies techniques nécessaires au fonctionnement du CRM.</p>
+    <p class="cookie-banner-text">
+      Aucun cookie publicitaire ou de mesure d’audience tiers n’est utilisé.
+      <a href="/politique-confidentialite" class="cookie-banner-link" target="_blank" rel="noopener">En savoir plus</a>
+    </p>
+    <button id="accept-cookies-btn" class="cookie-banner-btn">Compris</button>
   </div>
 
   <!-- Modale JOUR -->
@@ -1153,8 +1168,11 @@
       btnNewRDV.onclick  = ()=>{
         if(isCommercialAbsent){ showAbsentBlockedToast(); return; }
         const next = '/dashboard_test/';
-        if (currentRDV && currentRDV.client_id) {
-          const url = `${ADD_RDV_URL}?client_id=${encodeURIComponent(currentRDV.client_id)}&next=${encodeURIComponent(next)}`;
+        if (currentRDV && (currentRDV.client_uuid || currentRDV.client_id)) {
+          const clientParam = currentRDV.client_uuid
+            ? `client_uuid=${encodeURIComponent(currentRDV.client_uuid)}`
+            : `client_id=${encodeURIComponent(currentRDV.client_id)}`;
+          const url = `${ADD_RDV_URL}?${clientParam}&next=${encodeURIComponent(next)}`;
           window.open(url,'_blank','noopener,noreferrer');
         } else {
           const url = `${ADD_RDV_URL}?next=${encodeURIComponent(next)}`;

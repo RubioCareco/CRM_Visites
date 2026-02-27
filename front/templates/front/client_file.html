@@ -680,9 +680,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const btnRdv = document.getElementById('addRdvBtn');
     if (btnRdv) {
+      const clientParam = clientUuid
+        ? `client_uuid=${encodeURIComponent(clientUuid)}`
+        : `client_id=${encodeURIComponent(clientId)}`;
       btnRdv.setAttribute(
         'onclick',
-        `window.location.href='/add-rdv/?next=/client-file/&client_id=${clientId}'`
+        `window.location.href='/add-rdv/?next=/client-file/&${clientParam}'`
       );
     }
 

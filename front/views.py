@@ -102,6 +102,7 @@ from urllib.parse import urlencode
 from django.utils.http import url_has_allowed_host_and_scheme
 import logging
 from .activity_log import log_activity
+from .services import google_distance_matrix_one_to_many
 
 logger = logging.getLogger(__name__)
 
@@ -1074,6 +1075,7 @@ def add_rdv(request):
         return default_next
     if request.method == 'POST':
         try:
+            dry_run_requested = str(request.POST.get('dry_run', '')).strip().lower() in {'1', 'true', 'yes', 'on'}
             # Cas "RDV temporaire" depuis new_client
             if 'is_temp_rdv' in request.POST:
                 request.session['rdv_temp'] = {
@@ -1118,6 +1120,36 @@ def add_rdv(request):
                 client, adresse, client_type = get_client_and_adresse(client_id)
                 objet = (request.POST.get('objet') or '').strip() or None
                 notes = (request.POST.get('notes') or '').strip() or None
+
+                if dry_run_requested:
+                    # Simulation: on valide la charge utile et les collisions, sans écrire en base.
+                    already_exists = Rendezvous.objects.filter(
+                        client=client,
+                        commercial=commercial,
+                        date_rdv=date_rdv_obj,
+                        heure_rdv=heure_rdv_obj,
+                    ).exists()
+                    if already_exists:
+                        return JsonResponse({
+                            "ok": False,
+                            "dry_run": True,
+                            "error": "duplicate_rdv",
+                            "message": "Un rendez-vous existe déjà pour ce client à cette date et heure.",
+                        }, status=409)
+
+                    return JsonResponse({
+                        "ok": True,
+                        "dry_run": True,
+                        "would_create": {
+                            "commercial_id": commercial.id,
+                            "client_id": client.id,
+                            "date_rdv": date_rdv_obj.isoformat(),
+                            "heure_rdv": heure_rdv_obj.strftime("%H:%M"),
+                            "objet": objet,
+                            "notes": notes,
+                            "statut_rdv": "a_venir",
+                        }
+                    }, status=200)
 
                 with transaction.atomic():
                     rdv = Rendezvous.objects.create(
@@ -1207,6 +1239,39 @@ def add_rdv(request):
         'today_date': date.today().isoformat(),
     })
 
+
+@login_required
+@require_GET
+def api_routing_provider_status(request):
+    """Debug endpoint: indique si Google est activé et quelle stratégie de fallback est utilisée."""
+    key_configured = bool((getattr(settings, "GOOGLE_MAPS_API_KEY", "") or "").strip())
+    travel_mode = (getattr(settings, "GOOGLE_MAPS_TRAVEL_MODE", "driving") or "driving").strip().lower()
+    payload = {
+        "ok": True,
+        "provider_precedence": "GOOGLE_THEN_HAVERSINE" if key_configured else "HAVERSINE_ONLY",
+        "google_key_configured": key_configured,
+        "google_travel_mode": travel_mode,
+    }
+
+    # Probe optionnel: test réseau vers Google Distance Matrix sur un trajet court.
+    # Utilisation: /api/routing-provider-status/?probe=1
+    probe = str(request.GET.get("probe", "")).strip().lower() in {"1", "true", "yes", "on"}
+    if probe and key_configured:
+        try:
+            rows = google_distance_matrix_one_to_many(
+                origin=(44.8378, -0.5792),             # Bordeaux centre
+                destinations=[(44.8431, -0.5729)],     # Bordeaux proche
+                mode=travel_mode,
+                timeout=6,
+            )
+            payload["probe"] = "ok" if rows and rows[0].get("status") == "OK" else "fallback_or_error"
+            payload["probe_rows"] = rows
+        except Exception as exc:
+            payload["probe"] = "error"
+            payload["probe_error"] = str(exc)
+
+    return JsonResponse(payload)
+
 # 📁 Fiche client
 @login_required
 def customer_file(request):
@@ -1220,8 +1285,68 @@ def profils_commerciaux(request):
     if role not in ['responsable', 'admin']:
         return redirect('dashboard_test') # Rediriger si pas les droits
 
+    create_error = None
+    open_add_modal = False
+    create_form = {
+        'prenom': '',
+        'nom': '',
+        'email': '',
+        'telephone': '',
+        'site_rattachement': '',
+    }
+
+    if request.method == 'POST' and request.POST.get('action') == 'create_commercial':
+        open_add_modal = True
+        prenom = (request.POST.get('prenom') or '').strip()
+        nom = (request.POST.get('nom') or '').strip()
+        email = (request.POST.get('email') or '').strip().lower()
+        telephone = (request.POST.get('telephone') or '').strip()
+        password = request.POST.get('password') or ''
+        password_confirm = request.POST.get('password_confirm') or ''
+        site_rattachement = (request.POST.get('site_rattachement') or '').strip()
+
+        create_form.update({
+            'prenom': prenom,
+            'nom': nom,
+            'email': email,
+            'telephone': telephone,
+            'site_rattachement': site_rattachement,
+        })
+
+        if not prenom or not nom or not email or not password:
+            create_error = "Veuillez renseigner tous les champs obligatoires."
+        elif password != password_confirm:
+            create_error = "Les mots de passe ne correspondent pas."
+        elif Commercial.objects.filter(email__iexact=email).exists():
+            create_error = "Un commercial existe déjà avec cet email."
+        else:
+            try:
+                validate_password(password)
+                commercial_label = f"{prenom} {nom}".strip() or email
+                Commercial.objects.create(
+                    commercial=commercial_label,
+                    nom=nom,
+                    prenom=prenom,
+                    email=email,
+                    telephone=telephone,
+                    password=make_password(password),
+                    role='commercial',
+                    site_rattachement=site_rattachement or None,
+                )
+                return redirect(f"{reverse('profils_commerciaux')}?created=1")
+            except ValidationError as e:
+                create_error = " ".join(e.messages)
+            except Exception:
+                create_error = "Impossible de créer le commercial pour le moment."
+
     commerciaux = Commercial.objects.filter(role='commercial')
-    return render(request, 'front/profils_commerciaux.html', {'commerciaux': commerciaux})
+    return render(request, 'front/profils_commerciaux.html', {
+        'commerciaux': commerciaux,
+        'commercial_created': request.GET.get('created') == '1',
+        'create_error': create_error,
+        'open_add_modal': open_add_modal,
+        'create_form': create_form,
+    })
 
 @login_required
 def profil(request, commercial_id=None):
@@ -3144,7 +3269,9 @@ def api_route_optimisee(request, date):
                 'client_name': rdv.client.rs_nom if rdv.client else 'Client inconnu',
                 'heure': rdv.heure_rdv.strftime('%H:%M'),
                 'objet': rdv.objet or '',
-                'address': address,
+                'address': address.adresse if address else '',
+                'code_postal': address.code_postal if address else '',
+                'ville': address.ville if address else '',
                 'latitude': float(address.latitude) if address else None,
                 'longitude': float(address.longitude) if address else None,
             })
@@ -3153,7 +3280,8 @@ def api_route_optimisee(request, date):
             'success': True,
             'rdvs': rdvs_data,
             'total_distance': route_data['total_distance'],
-            'estimated_time_minutes': route_data['estimated_time_minutes']
+            'estimated_time_minutes': route_data['estimated_time_minutes'],
+            'mode': route_data.get('mode', 'HAVERSINE'),
         })
         
     except Commercial.DoesNotExist:

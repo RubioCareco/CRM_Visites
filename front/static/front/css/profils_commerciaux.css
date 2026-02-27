@@ -32,6 +32,30 @@ header {
     position: relative;
 }
 
+.add-commercial-btn {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: #ef4444;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(239,68,68,0.28);
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+.add-commercial-btn:hover {
+    transform: translateY(-50%) scale(1.06);
+    box-shadow: 0 12px 26px rgba(239,68,68,0.34);
+}
+
 header h1 {
     margin: 0;
     font-size: 2rem;
@@ -159,6 +183,124 @@ footer {
   margin-top: 10px;
 }
 
+.pc-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.52);
+  z-index: 12000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.pc-modal-card {
+  width: min(92vw, 520px);
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(15,23,42,0.28);
+  overflow: hidden;
+}
+.pc-modal-header {
+  background: #5b5759;
+  color: #fff;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.pc-modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.pc-modal-close {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #ef4444;
+  font-size: 1.2rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease, border-color .2s ease, transform .2s ease;
+}
+.pc-modal-close:hover {
+  background: #ef4444;
+  color: #fff;
+  transform: translateY(-50%) scale(1.05);
+}
+.pc-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+}
+.pc-modal-form label {
+  font-weight: 600;
+  color: #374151;
+  font-size: .95rem;
+}
+.pc-modal-form input {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: .98rem;
+}
+.pc-modal-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+.pc-modal-submit {
+  border: 1px solid #ef4444;
+  background: #fff;
+  color: #ef4444;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s ease;
+}
+.pc-modal-submit:hover {
+  background: #ef4444;
+  color: #fff;
+}
+.pc-modal-error {
+  margin: 12px 16px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #fda4af;
+  background: #ffe4e6;
+  color: #be123c;
+  font-weight: 600;
+}
+
+.pc-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 12500;
+  padding: 12px 14px;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(15,23,42,.2);
+}
+.pc-toast.success {
+  background: linear-gradient(135deg,#34d399,#10b981);
+}
+
 /* ===== Responsive mobile/tablette ===== */
 @media (max-width: 900px) {
   body {
@@ -182,6 +324,11 @@ footer {
     text-align: center;
     line-height: 1.25;
     word-break: break-word;
+  }
+  .add-commercial-btn {
+    width: 40px;
+    height: 40px;
+    right: 0;
   }
 
   .commerciaux-grid {

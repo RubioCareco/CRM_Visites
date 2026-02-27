@@ -165,6 +165,54 @@ class AddRdvTests(BaseSecurityFlowTestCase):
         self.assertEqual(log.actor_commercial_id, self.responsable.id)
         self.assertEqual(log.actor_role, "responsable")
 
+    def test_add_rdv_dry_run_ok_does_not_persist(self):
+        self.login_as(self.commercial)
+        before_count = Rendezvous.objects.count()
+        resp = self.client.post(
+            reverse("add_rdv"),
+            {
+                "client_id": self.client_obj.id,
+                "date_rdv": "2026-03-01",
+                "heure_rdv": "09:40",
+                "objet": "Prospection",
+                "notes": "Simulation",
+                "dry_run": "1",
+            },
+        )
+        self.assertEqual(resp.status_code, 200)
+        payload = resp.json()
+        self.assertTrue(payload.get("ok"))
+        self.assertTrue(payload.get("dry_run"))
+        self.assertEqual(payload.get("would_create", {}).get("statut_rdv"), "a_venir")
+        self.assertEqual(Rendezvous.objects.count(), before_count)
+
+    def test_add_rdv_dry_run_duplicate_returns_409(self):
+        self.login_as(self.commercial)
+        Rendezvous.objects.create(
+            client=self.client_obj,
+            commercial=self.commercial,
+            date_rdv=date(2026, 3, 2),
+            heure_rdv=time(10, 0),
+            statut_rdv="a_venir",
+            rs_nom=self.client_obj.rs_nom,
+        )
+        before_count = Rendezvous.objects.count()
+        resp = self.client.post(
+            reverse("add_rdv"),
+            {
+                "client_id": self.client_obj.id,
+                "date_rdv": "2026-03-02",
+                "heure_rdv": "10:00",
+                "dry_run": "true",
+            },
+        )
+        self.assertEqual(resp.status_code, 409)
+        payload = resp.json()
+        self.assertFalse(payload.get("ok"))
+        self.assertTrue(payload.get("dry_run"))
+        self.assertEqual(payload.get("error"), "duplicate_rdv")
+        self.assertEqual(Rendezvous.objects.count(), before_count)
+
 
 class UpdateStatutAndClientFileTests(BaseSecurityFlowTestCase):
     def test_update_statut_ok(self):
@@ -274,6 +322,32 @@ class ResetPasswordAndMapTests(BaseSecurityFlowTestCase):
         self.assertGreaterEqual(len(data["tournee"]), 1)
         self.assertIn("uuid", data["clients"][0])
         self.assertIn("client_uuid", data["tournee"][0])
+
+    def test_routing_provider_status_endpoint_payload(self):
+        self.login_as(self.commercial)
+        resp = self.client.get(reverse("api_routing_provider_status"))
+        self.assertEqual(resp.status_code, 200)
+        payload = resp.json()
+        self.assertTrue(payload.get("ok"))
+        self.assertIn(payload.get("provider_precedence"), ["GOOGLE_THEN_HAVERSINE", "HAVERSINE_ONLY"])
+        self.assertIn("google_key_configured", payload)
+        self.assertIn("google_travel_mode", payload)
+
+    def test_api_route_optimisee_exposes_mode(self):
+        self.login_as(self.commercial)
+        Rendezvous.objects.create(
+            client=self.client_obj,
+            commercial=self.commercial,
+            date_rdv=date(2026, 2, 23),
+            heure_rdv=time(10, 30),
+            statut_rdv="a_venir",
+            rs_nom=self.client_obj.rs_nom,
+        )
+        resp = self.client.get(reverse("api_route_optimisee", kwargs={"date": "2026-02-23"}))
+        self.assertEqual(resp.status_code, 200)
+        payload = resp.json()
+        self.assertTrue(payload.get("success"))
+        self.assertIn(payload.get("mode"), ["GOOGLE", "HAVERSINE"])
 
     def test_rdvs_by_date_payload_contains_client_uuid(self):
         self.login_as(self.commercial)

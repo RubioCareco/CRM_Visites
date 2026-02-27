@@ -13,6 +13,10 @@ body {
     justify-content: center;
     z-index: 100;
     background: rgba(0, 0, 0, 0.103);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px 10px;
+    box-sizing: border-box;
   }
   
   .nc-card {
@@ -310,9 +314,15 @@ body {
   }
   
   @media (max-width: 700px) {
+    .nc-modal-bg {
+      align-items: flex-start;
+      padding: 10px 6px;
+    }
+
     .nc-card {
       width: 99vw;
       border-radius: 0;
+      margin: 0 auto;
     }
     .nc-accordion-header, .nc-accordion-content {
       padding-left: 10px;

@@ -84,6 +84,9 @@ body {
 .filters-button-section {
   display: flex;
   justify-content: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 30px;
   width: 100%;
 }
@@ -962,6 +965,7 @@ body {
   
   .filters-button-section {
     margin-bottom: 20px !important;
+    gap: 10px !important;
   }
   
   .btn-filtres {
@@ -1084,6 +1088,7 @@ body {
   
   .filters-button-section {
     margin-bottom: 40px !important;
+    gap: 14px !important;
   }
   
   .btn-filtres {
@@ -1259,6 +1264,7 @@ body {
   .filters-button-section{
     width: 100% !important;
     margin: 0 0 14px 0 !important;
+    gap: 10px !important;
   }
 
   .btn-filtres{

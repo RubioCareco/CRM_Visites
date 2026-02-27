@@ -56,6 +56,7 @@ urlpatterns = [
 
     path('api/rdv-counters/', views.api_rdv_counters, name='api_rdv_counters'),
     path('api/rdvs-a-venir/', views.api_rdvs_a_venir, name='api_rdvs_a_venir'),
+    path('api/rdvs-overdue-count/', views.api_rdvs_overdue_count, name='api_rdvs_overdue_count'),
     path('api/rdv-counters-by-client/', views.api_rdv_counters_by_client, name='api_rdv_counters_by_client'),
 
     path('api/clients-by-commercial/', views.api_clients_by_commercial, name='api_clients_by_commercial'),
@@ -63,6 +64,7 @@ urlpatterns = [
     path('api/insee/siret/<str:siret>/', views.api_insee_siret, name='api_insee_siret'),
 
     path('api/map-tournee/', views.api_map_tournee, name='api_map_tournee'),
+    path('api/routing-provider-status/', views.api_routing_provider_status, name='api_routing_provider_status'),
 
 
     path('api/last-rdv-commercial/<int:commercial_id>/', views.get_last_rdv_commercial, name='get_last_rdv_commercial'),

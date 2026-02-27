@@ -23,6 +23,15 @@
 
         <!-- Bouton Filtres -->
         <div class="filters-button-section">
+            {% if is_responsable and commerciaux_list %}
+            <select id="commercialSelectObjective" class="btn-filtres" style="max-width: 340px; background:#fff; color:#444;" onchange="changeCommercialObjective(this.value)">
+                {% for com in commerciaux_list %}
+                    <option value="{{ com.id }}" {% if selected_commercial_id == com.id|stringformat:'s' %}selected{% endif %}>
+                        {{ com.prenom }} {{ com.nom }}
+                    </option>
+                {% endfor %}
+            </select>
+            {% endif %}
             <button class="btn-filtres" onclick="openFiltersModal()">
                 <i class="fa-solid fa-filter"></i>
                 Filtres
@@ -104,7 +113,7 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{% url 'add_rdv' %}?client_id={{ client.client_id }}&next={% url 'objectif_annuel' %}" 
+                                <a href="{% url 'add_rdv' %}?{% if client.client_uuid %}client_uuid={{ client.client_uuid }}{% else %}client_id={{ client.client_id }}{% endif %}&next={{ next_url_for_add_rdv|urlencode }}" 
                                    class="btn-planifier {% if client.is_atteint %}disabled{% endif %}"
                                    onclick="event.stopPropagation()">
                                     Planifier RDV
@@ -125,7 +134,7 @@
 
         <!-- Bouton retour -->
         <div style="margin-top: 30px;">
-            <a href="{% url 'dashboard_test' %}" class="btn-retour">
+            <a href="{% url back_dashboard_url %}" class="btn-retour">
                 <i class="fa-solid fa-arrow-left" style="margin-right: 8px;"></i>
                 Retour au dashboard
             </a>
@@ -205,6 +214,8 @@
         let currentStatus = 'all';
         let tempYear = '{{ selected_year }}';
         let tempStatus = 'all';
+        const isResponsable = {{ is_responsable|yesno:"true,false" }};
+        const selectedCommercialId = '{{ selected_commercial_id|default:"" }}';
         
         document.addEventListener('DOMContentLoaded', function() {
             // Appliquer la largeur de la barre de progression
@@ -297,6 +308,16 @@
             // Mettre à jour l'URL et recharger la page
             const url = new URL(window.location);
             url.searchParams.set('year', year);
+            if (isResponsable && selectedCommercialId) {
+                url.searchParams.set('commercial_id', selectedCommercialId);
+            }
+            window.location.href = url.toString();
+        }
+
+        function changeCommercialObjective(commercialId) {
+            const url = new URL(window.location);
+            url.searchParams.set('commercial_id', commercialId);
+            url.searchParams.set('year', currentYear);
             window.location.href = url.toString();
         }
         
@@ -511,7 +532,9 @@
         // Fonction pour planifier un RDV depuis la modal
         function planifierRdvClient() {
             if (currentClientId) {
-                window.location.href = `{% url 'add_rdv' %}?client_id=${currentClientId}&next={% url 'objectif_annuel' %}`;
+                const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                const clientParam = currentClientUuid ? `client_uuid=${encodeURIComponent(currentClientUuid)}` : `client_id=${encodeURIComponent(currentClientId)}`;
+                window.location.href = `{% url 'add_rdv' %}?${clientParam}&next=${nextUrl}`;
             }
         }
         

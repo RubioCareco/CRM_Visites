@@ -59,6 +59,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'front.middleware.SessionTimeoutMiddleware',
+    'front.middleware.SecurityHeadersMiddleware',
 ]
 
 ROOT_URLCONF = 'crm_visites.urls'
@@ -166,9 +167,6 @@ PUBLIC_HOLIDAYS = env.list("PUBLIC_HOLIDAYS", default=[])  # ex: ["2025-01-01", 
 HOLIDAYS_COUNTRY = env("HOLIDAYS_COUNTRY", default="FR")
 HOLIDAYS_YEARS = env("HOLIDAYS_YEARS", default="2025,2026")
 
-# Mapbox
-MAPBOX_ACCESS_TOKEN = env("MAPBOX_ACCESS_TOKEN", default="")
-
 # Contraintes géographiques / Algorithmes
 MAX_RADIUS_KM = env.int("MAX_RADIUS_KM", default=40)
 MAX_DAILY_DISTANCE_KM = env.int("MAX_DAILY_DISTANCE_KM", default=220)
@@ -184,10 +182,30 @@ HORIZON_MAX_VISITS_PER_CLIENT = env.int("HORIZON_MAX_VISITS_PER_CLIENT", default
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True  # utile quand on est derrière un proxy
 
-# (si ce n'est pas déjà fait, on lit ces flags depuis l'env)
+# Baseline (dev/preview). En prod, un bloc dédié plus bas force des valeurs sûres.
 SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=False)
-SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=(ENV == "prod"))
-CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=(ENV == "prod"))
+SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=False)
+CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=False)
+
+# Cookies / entêtes sécurité (valeurs explicites)
+SESSION_COOKIE_HTTPONLY = env.bool("SESSION_COOKIE_HTTPONLY", default=True)
+SESSION_COOKIE_SAMESITE = env("SESSION_COOKIE_SAMESITE", default="Lax")
+CSRF_COOKIE_SAMESITE = env("CSRF_COOKIE_SAMESITE", default="Lax")
+SECURE_CONTENT_TYPE_NOSNIFF = env.bool("SECURE_CONTENT_TYPE_NOSNIFF", default=True)
+SECURE_REFERRER_POLICY = env("SECURE_REFERRER_POLICY", default="strict-origin-when-cross-origin")
+X_FRAME_OPTIONS = env("X_FRAME_OPTIONS", default="SAMEORIGIN")
+SECURE_CROSS_ORIGIN_OPENER_POLICY = env("SECURE_CROSS_ORIGIN_OPENER_POLICY", default="same-origin")
+SECURE_CROSS_ORIGIN_EMBEDDER_POLICY = env("SECURE_CROSS_ORIGIN_EMBEDDER_POLICY", default="unsafe-none")
+
+# Durcissement prod (garde-fous)
+if ENV == "prod":
+    DEBUG = False
+    SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=31536000)
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=True)
+    SECURE_HSTS_PRELOAD = env.bool("SECURE_HSTS_PRELOAD", default=False)
 
 
 # ALLOWED_HOSTS / CSRF_TRUSTED_ORIGINS depuis l'env si pas déjà définis
@@ -201,3 +219,17 @@ PASSWORD_RESET_TIMEOUT = env.int("PASSWORD_RESET_TIMEOUT", default=60*60*24)
 GOOGLE_MAPS_API_KEY = env("GOOGLE_MAPS_API_KEY", default="")
 GOOGLE_MAPS_TRAVEL_MODE = os.getenv("GOOGLE_MAPS_TRAVEL_MODE", "driving")
 GOOGLE_LOG_STATS = os.getenv("GOOGLE_LOG_STATS", "false").lower() == "true"
+
+# Logging
+LOG_LEVEL = env("LOG_LEVEL", default=("DEBUG" if ENV == "dev" else "INFO")).upper()
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {"format": "%(asctime)s %(levelname)s %(name)s: %(message)s"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "standard"},
+    },
+    "root": {"handlers": ["console"], "level": LOG_LEVEL},
+}

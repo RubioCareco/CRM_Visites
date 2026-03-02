@@ -191,10 +191,10 @@ h2 {
     width: 380px;
     padding: 16px;
     margin-top: 25px;
-    border: none;
+    border: 1.5px solid #f43f5e;
     border-radius: 8px;
-    background-color: #e53935;
-    color: white;
+    background-color: #fff;
+    color: #f43f5e;
     font-size: 16px;
     cursor: pointer;
     display: flex;
@@ -202,14 +202,44 @@ h2 {
     align-items: center;
     gap: 10px;
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s ease;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, color 0.25s ease;
     font-weight: 600;
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.edit-button::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: #f43f5e;
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.3s ease;
+    z-index: 0;
+}
+
+.edit-button i {
+    color: currentColor;
+    position: relative;
+    z-index: 1;
+}
+
+.edit-button .edit-button-label {
+    position: relative;
+    z-index: 1;
+    color: currentColor;
 }
 
 .edit-button:hover {
-    background-color: #cc2e2e;
-    transform: translateY(-3px);
+    color: #fff;
+    transform: translateY(-2px);
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.edit-button:hover::before {
+    transform: scaleX(1);
 }
 
 .edit-button:active {
@@ -302,6 +332,17 @@ h2 {
 .switch-toggle input:checked + .switch-slider:before {
   transform: translateX(24px);
   background: #fff;
+}
+
+.switch-absent.is-disabled {
+  opacity: 0.62;
+  filter: grayscale(0.35);
+}
+
+.switch-toggle input:disabled + .switch-slider {
+  cursor: not-allowed;
+  background: #3c3c3c;
+  border-color: #666;
 }
 
 /* ===== RESPONSIVE DESIGN - TABLETTE/SMARTPHONE ===== */

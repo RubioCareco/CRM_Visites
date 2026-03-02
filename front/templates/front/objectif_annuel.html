@@ -23,6 +23,15 @@
 
         <!-- Bouton Filtres -->
         <div class="filters-button-section">
+            {% if is_responsable and commerciaux_list %}
+            <select id="commercialSelectObjective" class="btn-filtres" style="max-width: 340px; background:#fff; color:#444;" onchange="changeCommercialObjective(this.value)">
+                {% for com in commerciaux_list %}
+                    <option value="{{ com.id }}" {% if selected_commercial_id == com.id|stringformat:'s' %}selected{% endif %}>
+                        {{ com.prenom }} {{ com.nom }}
+                    </option>
+                {% endfor %}
+            </select>
+            {% endif %}
             <button class="btn-filtres" onclick="openFiltersModal()">
                 <i class="fa-solid fa-filter"></i>
                 Filtres
@@ -85,7 +94,7 @@
                     </thead>
                     <tbody>
                         {% for client in clients_data %}
-                        <tr class="client-row" data-client-id="{{ client.client_id }}" onclick="openClientModal('{{ client.client_id }}')">
+                        <tr class="client-row" data-client-id="{{ client.client_id }}" data-client-uuid="{{ client.client_uuid|default:'' }}" onclick="openClientModal('{{ client.client_uuid|default:'' }}')">
                             <td>{{ client.client_name }}</td>
                             <td>{{ client.objectif }}</td>
                             <td>{{ client.realises }}</td>
@@ -104,7 +113,7 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{% url 'add_rdv' %}?client_id={{ client.client_id }}&next={% url 'objectif_annuel' %}" 
+                                <a href="{% url 'add_rdv' %}?client_uuid={{ client.client_uuid }}&next={{ next_url_for_add_rdv|urlencode }}" 
                                    class="btn-planifier {% if client.is_atteint %}disabled{% endif %}"
                                    onclick="event.stopPropagation()">
                                     Planifier RDV
@@ -125,7 +134,7 @@
 
         <!-- Bouton retour -->
         <div style="margin-top: 30px;">
-            <a href="{% url 'dashboard_test' %}" class="btn-retour">
+            <a href="{% url back_dashboard_url %}" class="btn-retour">
                 <i class="fa-solid fa-arrow-left" style="margin-right: 8px;"></i>
                 Retour au dashboard
             </a>
@@ -194,10 +203,6 @@
                     Planifier un RDV
                 </button>
                 <button class="btn-cancel" onclick="closeClientModal()">Fermer</button>
-                <div class="dbt-footer-links">
-                    <a href="/mentions-legales" class="dbt-link">Mentions légales</a>
-                    <a href="/politique-confidentialite" class="dbt-link">Politique de confidentialité</a>
-                  </div>
                   </div>
             </div>
         </div>
@@ -209,6 +214,8 @@
         let currentStatus = 'all';
         let tempYear = '{{ selected_year }}';
         let tempStatus = 'all';
+        const isResponsable = {{ is_responsable|yesno:"true,false" }};
+        const selectedCommercialId = '{{ selected_commercial_id|default:"" }}';
         
         document.addEventListener('DOMContentLoaded', function() {
             // Appliquer la largeur de la barre de progression
@@ -301,6 +308,16 @@
             // Mettre à jour l'URL et recharger la page
             const url = new URL(window.location);
             url.searchParams.set('year', year);
+            if (isResponsable && selectedCommercialId) {
+                url.searchParams.set('commercial_id', selectedCommercialId);
+            }
+            window.location.href = url.toString();
+        }
+
+        function changeCommercialObjective(commercialId) {
+            const url = new URL(window.location);
+            url.searchParams.set('commercial_id', commercialId);
+            url.searchParams.set('year', currentYear);
             window.location.href = url.toString();
         }
         
@@ -360,27 +377,27 @@
         }
         
         // Variables pour la modal client
-        let currentClientId = null;
+        let currentClientUuid = null;
         let currentClientData = null;
         
         // Fonction pour ouvrir la modal du client
-        function openClientModal(clientId) {
-            currentClientId = clientId;
+        function openClientModal(clientUuid) {
+            currentClientUuid = clientUuid || null;
             document.getElementById('clientModal').style.display = 'block';
             
             // Charger les données du client
-            loadClientData(clientId);
+            loadClientData(clientUuid);
         }
         
         // Fonction pour fermer la modal du client
         function closeClientModal() {
             document.getElementById('clientModal').style.display = 'none';
-            currentClientId = null;
+            currentClientUuid = null;
             currentClientData = null;
         }
         
         // Fonction pour charger les données du client
-        function loadClientData(clientId) {
+        function loadClientData(clientUuid) {
             // Afficher un loader
             document.getElementById('clientModalContent').innerHTML = `
                 <div class="loading">
@@ -390,7 +407,17 @@
             `;
             
             // Appel AJAX pour récupérer les vraies données
-            fetch(`/api/client-details/${clientId}/`)
+            if (!clientUuid) {
+                document.getElementById('clientModalContent').innerHTML = `
+                    <div class="error-message">
+                        <i class="fa-solid fa-exclamation-triangle"></i>
+                        Client UUID manquant.
+                    </div>
+                `;
+                return;
+            }
+            const detailsUrl = `/api/client-details/uuid/${encodeURIComponent(clientUuid)}/`;
+            fetch(detailsUrl)
                 .then(response => {
                     if (!response.ok) {
                         if (response.status === 401) {
@@ -501,8 +528,10 @@
         
         // Fonction pour planifier un RDV depuis la modal
         function planifierRdvClient() {
-            if (currentClientId) {
-                window.location.href = `{% url 'add_rdv' %}?client_id=${currentClientId}&next={% url 'objectif_annuel' %}`;
+            if (currentClientUuid) {
+                const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                const clientParam = `client_uuid=${encodeURIComponent(currentClientUuid)}`;
+                window.location.href = `{% url 'add_rdv' %}?${clientParam}&next=${nextUrl}`;
             }
         }
         

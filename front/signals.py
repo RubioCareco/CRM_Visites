@@ -12,6 +12,15 @@ from django.utils import timezone as dj_timezone
 
 logger = logging.getLogger(__name__)
 
+
+def _mask_email(email: str) -> str:
+    if not email or "@" not in email:
+        return "***"
+    local, domain = email.split("@", 1)
+    if len(local) <= 2:
+        return f"{local[0]}***@{domain}" if local else f"***@{domain}"
+    return f"{local[:2]}***@{domain}"
+
 # Dictionnaire pour stocker les anciennes valeurs avant sauvegarde
 _PRE_UPDATE_SNAPSHOT = {}
 
@@ -154,7 +163,12 @@ def update_visit_stats_on_client_classement_change(sender, instance, created, **
             WHERE client_id = %s
         """, [nouvel_objectif, instance.id])
         
-        print(f"✅ Objectif mis à jour pour le client {instance.id}: {instance.classement_client} → {nouvel_objectif} visites/an")
+        logger.info(
+            "Objectif mis a jour client=%s classement=%s objectif=%s",
+            instance.id,
+            instance.classement_client,
+            nouvel_objectif,
+        )
 
 @receiver(post_save, sender=FrontClient)
 def notify_responsable_on_client_modification(sender, instance, created, **kwargs):
@@ -177,7 +191,7 @@ def notify_responsable_on_client_modification(sender, instance, created, **kwarg
         ).values_list('email', flat=True)
         
         if not responsables:
-            print("⚠️ Aucun responsable trouvé pour l'envoi d'email")
+            logger.warning("Aucun responsable trouve pour l'envoi d'email")
             return
         
         # Convertir la date en fuseau horaire local (Europe/Paris)
@@ -263,12 +277,12 @@ def notify_responsable_on_client_modification(sender, instance, created, **kwarg
                     image.add_header('Content-Disposition', 'inline', filename=logo_filename)
                     msg.attach(image)
                 msg.send(fail_silently=False)
-                print(f"✅ Email HTML envoyé au responsable : {email_responsable}")
-            except Exception as e:
-                print(f"❌ Erreur envoi email à {email_responsable}: {e}")
-        
-    except Exception as e:
-        print(f"❌ Erreur lors de l'envoi de l'email de notification : {e}") 
+                logger.info("Email HTML envoye au responsable: %s", _mask_email(email_responsable))
+            except Exception:
+                logger.exception("Erreur envoi email a %s", _mask_email(email_responsable))
+
+    except Exception:
+        logger.exception("Erreur lors de l'envoi de l'email de notification")
 
 
 # ==========================
@@ -280,10 +294,8 @@ def _run_planning_job_background(dry_run: bool = False):
         from .services import ensure_visits_next_4_weeks
         stats = ensure_visits_next_4_weeks(dry_run=dry_run)
         logger.info("Planification J+28 exécutée: %s", stats)
-        print(f"✅ Planification J+28 exécutée: {stats}")
-    except Exception as e:
-        logger.exception("Erreur planification J+28: %s", e)
-        print(f"❌ Erreur planification J+28: {e}")
+    except Exception:
+        logger.exception("Erreur planification J+28")
 
 
 @receiver(user_logged_in)

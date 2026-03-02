@@ -39,7 +39,9 @@
         <button type="submit" class="login-btn">Se connecter</button>
 
         {% if erreur %}
-          <p style="color: red; margin-top: 10px;">Email ou mot de passe incorrect.</p>
+          <p style="color: red; margin-top: 10px;">
+            {% if throttle_message %}{{ throttle_message }}{% else %}Email ou mot de passe incorrect.{% endif %}
+          </p>
         {% endif %}
         
         {% if messages %}

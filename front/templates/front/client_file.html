@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fichier Clients</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'front/css/dashboard.css' %}">
@@ -89,23 +90,13 @@
       color: #fff;
     }
     #resetClientFilters {
-      color: #ff3030 !important;
-      font-weight: 600;
-      font-size: 1.08rem;
-      background: rgba(255,48,48,0.08);
-      border-radius: 8px;
-      padding: 6px 16px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+      color: #ff3b3b !important;
+      transition: color 0.25s ease !important;
     }
     #resetClientFilters:hover {
-      background: rgba(255,4,0,0.18);
-      color: #ff0400 !important;
-      box-shadow: 0 4px 16px rgba(255,48,48,0.10);
-      text-decoration: underline;
+      color: #ffffff !important;
+      background: transparent !important;
+      text-decoration: none !important;
     }
     .commercial-select {
       background: rgba(255, 255, 255, 0.18);
@@ -143,8 +134,10 @@
       white-space: nowrap;
     }
     #clientModal .modal-buttons .action-button {
-      padding: 12px 18px !important;
-      font-size: 1.05rem !important;
+      padding: 13px 0 !important;
+      font-size: 1.08em !important;
+      font-weight: 600 !important;
+      border-radius: 8px !important;
     }
     #clientModal .modal-content h3 {
       text-align: left;
@@ -153,23 +146,67 @@
     #dashboard {
       background-color: #f5f7fb;
     }
+    /* Harmonisation finale avec dashboard_test / new_client / add_rdv */
+    .commercial-select {
+      background: #ffffff !important;
+      color: #111827 !important;
+      border: 1px solid #e6e9f2 !important;
+      border-radius: 10px !important;
+      padding: 8px 12px !important;
+      font-size: 0.95rem !important;
+      box-shadow: none !important;
+    }
+    #filterPanelClient input {
+      width: 100% !important;
+      margin: 0 0 12px 0 !important;
+      padding: 10px 12px !important;
+      border: 1px solid #e6e9f2 !important;
+      border-radius: 12px !important;
+      background: #ffffff !important;
+      color: #111827 !important;
+      font-size: 0.95rem !important;
+      transition: border-color .2s ease, box-shadow .2s ease !important;
+    }
+    #filterPanelClient input:hover {
+      transform: none !important;
+      box-shadow: none !important;
+      border-color: #d9deea !important;
+      background: #ffffff !important;
+    }
+    #filterPanelClient input:focus {
+      transform: none !important;
+      background: #ffffff !important;
+      border-color: rgba(229,57,53,.35) !important;
+      box-shadow: 0 0 0 4px rgba(229,57,53,.10) !important;
+    }
+    #filterPanelClient input::placeholder {
+      color: #9aa3b2 !important;
+    }
   </style>
 </head>
 <body class="dashboard">
 
-  <h1 class="dashboard-title">Fichier Clients</h1>
+  <div class="cf-page-header">
+    <h1 class="dashboard-title">
+      <i class="fa fa-address-book" aria-hidden="true"></i>
+      <span>Fichier Clients</span>
+    </h1>
+    <p class="cf-page-subtitle">Consultez, filtrez et mettez à jour vos clients</p>
+    <div class="cf-page-underline" aria-hidden="true"></div>
+  </div>
 
   <!-- Barre de recherche -->
   <div class="search-bar" style="position:relative;">
+    <i class="fa fa-search cf-search-icon" aria-hidden="true"></i>
     <input type="text" id="clientSearchBar" placeholder="Rechercher par clients, entreprises ..." autocomplete="off">
     <ul id="clientSearchSuggestions" class="autocomplete-results" style="position:absolute;left:0;right:0;top:38px;z-index:10;background:rgba(30,30,30,0.95);color:#fff;border-radius:0 0 8px 8px;max-height:180px;overflow-y:auto;display:none;"></ul>
   </div>
 
   <div class="cards" style="display:flex;justify-content:center;align-items:flex-start;min-height:10vh; border-radius: 15px;">
     <div class="card" style="width:90%;max-width:1600px;margin:40px auto 0 auto;min-height:850px;background-color: rgb(250, 250, 250);color: #444444e3;box-shadow: 0 26px 72px rgba(15, 23, 42, .14), 0 6px 16px rgba(15, 23, 42, .06);border-radius: 15px;">
-      <h2 style="text-align:center;margin-bottom:24px;">
-        Liste des clients
-      </h2>
+      <div class="client-list-header">
+        <h2>Liste des clients</h2>
+      </div>
 
       <!-- Pagination + filtre commercial -->
       <div class="pagination-container" style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-left:25px;">
@@ -200,7 +237,7 @@
         </form>
         {% endif %}
 
-        <button class="back-login" id="filterBtnClient" type="button" style="display:flex;align-items:center;gap:8px;font-size:1.15rem;padding:8px 22px;border-radius:8px;backdrop-filter:blur(6px);border:none;text-decoration:none;background:#e53935;color:#fff;cursor:pointer;">
+        <button class="back-login" id="filterBtnClient" type="button" style="display:flex;align-items:center;gap:8px;font-size:1.15rem;padding:8px 22px;border-radius:8px;backdrop-filter:blur(6px);text-decoration:none;color:#fff;cursor:pointer;">
           <i class="fa fa-filter"></i> Filtres
         </button>
 
@@ -241,8 +278,12 @@
             <input type="text" id="filterVille" name="filterVille" class="date-input" placeholder="Ville...">
           </div>
           <div class="filter-panel-footer">
-            <button id="applyClientFiltersBtn" class="apply-btn" type="submit">Appliquer</button>
-            <button id="resetClientFilters" class="reset-link" type="button">Réinitialiser</button>
+            <button id="applyClientFiltersBtn" class="apply-btn" type="submit">
+              <i class="fa fa-check"></i> <span>Appliquer</span>
+            </button>
+            <button id="resetClientFilters" class="reset-link" type="button">
+              <i class="fa fa-rotate-left"></i> <span>Réinitialiser</span>
+            </button>
           </div>
         </form>
       </div>
@@ -264,6 +305,7 @@
             {% for client, adresse in clients_with_adresse %}
             <tr class="client-card" 
                 data-client-id="{{ client.id }}" 
+                data-client-uuid="{{ client.uuid }}"
                 data-client-nom="{{ client.rs_nom|escapejs }}"
                 data-client-prenom="{{ client.prénom|escapejs }}"
                 data-client-civilite="{{ client.civilite|escapejs }}"
@@ -312,10 +354,10 @@
   <!-- Modale client -->
   <div id="clientModal" class="client-modal">
     <div class="client-modal-content">
-      <span class="close-button" onclick="closeClientModal()">
-        <i class="fa fa-times"></i>
-      </span>
-      <h3 id="modalClientName" class="modal-title" style="text-align:center;margin-bottom:18px;"></h3>
+      <div class="client-modal-header">
+        <h3 id="modalClientName" class="modal-title"></h3>
+        <button type="button" class="close-button" onclick="closeClientModal()" aria-label="Fermer">×</button>
+      </div>
       <form id="modalClientForm">
         <div id="modalClientDetails" class="modal-details" style="margin-bottom:18px;text-align:left;">
           <div class="input-icon-group"><b>Adresse :</b> <input type="text" id="inputAdresse" name="adresse" disabled></div>
@@ -358,6 +400,61 @@
 </body>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+  const backBtn = document.getElementById('backDashboardBtn');
+  const backBtnOriginalParent = backBtn ? backBtn.parentNode : null;
+  const backBtnOriginalNext = backBtn ? backBtn.nextSibling : null;
+
+  function restoreBackBtnParent() {
+    if (!backBtn || !backBtnOriginalParent) return;
+    if (backBtnOriginalNext && backBtnOriginalNext.parentNode === backBtnOriginalParent) {
+      backBtnOriginalParent.insertBefore(backBtn, backBtnOriginalNext);
+    } else {
+      backBtnOriginalParent.appendChild(backBtn);
+    }
+  }
+
+  function moveBackBtnIntoCard() {
+    if (!backBtn) return;
+    const card = document.querySelector('.cards .card');
+    if (!card) return;
+    if (backBtn.parentNode !== card) card.appendChild(backBtn);
+  }
+
+  function applyMobileBackBtnLayout() {
+    if (!backBtn) return;
+    const isMobile = window.matchMedia('(max-width: 640px)').matches;
+    if (isMobile) {
+      moveBackBtnIntoCard();
+      backBtn.style.position = 'relative';
+      backBtn.style.left = '0';
+      backBtn.style.right = '0';
+      backBtn.style.bottom = '0';
+      backBtn.style.width = '100%';
+      backBtn.style.marginTop = '12px';
+      backBtn.style.marginBottom = '12px';
+      backBtn.style.display = 'flex';
+      backBtn.style.justifyContent = 'center';
+      backBtn.style.zIndex = 'auto';
+      backBtn.style.minHeight = '44px';
+    } else {
+      restoreBackBtnParent();
+      backBtn.style.position = 'fixed';
+      backBtn.style.left = '24px';
+      backBtn.style.right = '';
+      backBtn.style.bottom = '20px';
+      backBtn.style.width = '';
+      backBtn.style.marginTop = '';
+      backBtn.style.marginBottom = '';
+      backBtn.style.display = 'flex';
+      backBtn.style.justifyContent = '';
+      backBtn.style.zIndex = '9999';
+      backBtn.style.minHeight = '';
+    }
+  }
+
+  applyMobileBackBtnLayout();
+  window.addEventListener('resize', applyMobileBackBtnLayout);
+
   // --- Références générales ---
   const searchInput = document.getElementById('clientSearchBar');
   const suggestionBox = document.getElementById('clientSearchSuggestions');
@@ -374,6 +471,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const modifyBtn = document.getElementById('modifyBtn');
   const saveBtn = document.getElementById('saveBtn');
   const cancelBtn = document.getElementById('cancelBtn');
+  const addRdvBtn = document.getElementById('addRdvBtn');
   const editableFields = [
     document.getElementById('inputAdresse'),
     document.getElementById('inputCP'),
@@ -404,11 +502,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // --- Commentaires client (chargement + pin) ---
 
-  function loadClientComments(clientId) {
+  function clientCommentsUrl(clientUuid) {
+    if (!clientUuid) return null;
+    return `/api/client-comments/uuid/${encodeURIComponent(clientUuid)}/`;
+  }
+
+  function updateClientUrl(clientId, clientUuid) {
+    if (!clientUuid) return null;
+    return `/update-client/uuid/${encodeURIComponent(clientUuid)}/`;
+  }
+
+  function loadClientComments(clientUuid) {
     const commentsDiv = document.getElementById('clientComments');
+    const commentsUrl = clientCommentsUrl(clientUuid);
+    if (!commentsUrl) {
+      commentsDiv.innerHTML = '<span style="color:#e53935;">Client UUID manquant.</span>';
+      return;
+    }
     commentsDiv.innerHTML = "<i>Chargement de l'historique des commentaires...</i>";
 
-    fetch(`/api/client-comments/${clientId}/`)
+    fetch(commentsUrl)
       .then(response => {
         if (!response.ok) {
           throw new Error('HTTP ' + response.status);
@@ -459,8 +572,8 @@ document.addEventListener("DOMContentLoaded", function () {
               ? `<button type="button"
                           class="pin-comment-btn ${isPinned ? 'pinned' : ''}"
                           data-comment-id="${commentId}"
-                          data-client-id="${clientId}"
-                          onclick="togglePinComment(${commentId}, ${clientId}, event)">
+                          data-client-uuid="${clientUuid || ''}"
+                          onclick="togglePinComment(${commentId}, ${clientUuid ? `'${clientUuid}'` : 'null'}, event)">
                     <i class="fa-solid fa-thumbtack"></i>
                     ${isPinned ? 'Épinglé' : 'Épingler'}
                  </button>`
@@ -488,18 +601,12 @@ document.addEventListener("DOMContentLoaded", function () {
       });
   }
 
-  window.togglePinComment = function (commentId, clientId, ev) {
+  window.togglePinComment = function (commentId, clientUuid, ev) {
     const btn = ev?.currentTarget || ev?.target;
     const commentIdFinal = commentId ?? (btn?.dataset?.commentId ? Number(btn.dataset.commentId) : null);
-    const clientIdFinal = clientId ?? (btn?.dataset?.clientId ? Number(btn.dataset.clientId) : null);
 
     if (!commentIdFinal || Number.isNaN(commentIdFinal)) {
       console.error('togglePinComment appelé sans commentId', commentId, btn?.dataset);
-      return;
-    }
-
-    if (!clientIdFinal || Number.isNaN(clientIdFinal)) {
-      console.error('togglePinComment appelé sans clientId', clientId, btn?.dataset);
       return;
     }
 
@@ -519,7 +626,7 @@ document.addEventListener("DOMContentLoaded", function () {
       })
       .then(res => {
         if (res.success) {
-          loadClientComments(clientIdFinal);
+          loadClientComments(clientUuid);
         } else {
           console.error('Réponse API comment-pin non valide :', res);
         }
@@ -542,12 +649,14 @@ document.addEventListener("DOMContentLoaded", function () {
     email,
     statut,
     clientId,
+    clientUuid,
     code_comptable,
     classement
   ) {
     const modal = document.getElementById('clientModal');
     modal.style.display = 'flex';
     modal.setAttribute('data-client-id', clientId);
+    modal.setAttribute('data-client-uuid', clientUuid || '');
 
     document.getElementById('modalClientName').textContent =
       (civilite ? civilite + ' ' : '') +
@@ -567,16 +676,22 @@ document.addEventListener("DOMContentLoaded", function () {
     modifyBtn.style.display = 'inline-block';
     saveBtn.style.display = 'none';
     cancelBtn.style.display = 'none';
+    if (addRdvBtn) addRdvBtn.style.display = 'inline-flex';
 
     const btnRdv = document.getElementById('addRdvBtn');
     if (btnRdv) {
-      btnRdv.setAttribute(
-        'onclick',
-        `window.location.href='/add-rdv/?next=/client-file/&client_id=${clientId}'`
-      );
+      if (clientUuid) {
+        const clientParam = `client_uuid=${encodeURIComponent(clientUuid)}`;
+        btnRdv.setAttribute(
+          'onclick',
+          `window.location.href='/add-rdv/?next=/client-file/&${clientParam}'`
+        );
+      } else {
+        btnRdv.setAttribute('onclick', `showToast('Client UUID manquant.', 'error')`);
+      }
     }
 
-    loadClientComments(clientId);
+    loadClientComments(clientUuid);
   };
 
   // --- Edition infos client dans la modale ---
@@ -585,8 +700,9 @@ document.addEventListener("DOMContentLoaded", function () {
     editableFields.forEach(input => (oldValues[input.id] = input.value));
     editableFields.forEach(input => (input.disabled = false));
     modifyBtn.style.display = 'none';
-    saveBtn.style.display = 'inline-block';
-    cancelBtn.style.display = 'inline-block';
+    saveBtn.style.display = 'inline-flex';
+    cancelBtn.style.display = 'inline-flex';
+    if (addRdvBtn) addRdvBtn.style.display = 'none';
   });
 
   cancelBtn.addEventListener('click', function () {
@@ -597,12 +713,18 @@ document.addEventListener("DOMContentLoaded", function () {
     modifyBtn.style.display = 'inline-block';
     saveBtn.style.display = 'none';
     cancelBtn.style.display = 'none';
+    if (addRdvBtn) addRdvBtn.style.display = 'inline-flex';
   });
 
   saveBtn.addEventListener('click', function () {
-    const clientId = document
-      .getElementById('clientModal')
-      .getAttribute('data-client-id');
+    const modal = document.getElementById('clientModal');
+    const clientId = modal.getAttribute('data-client-id');
+    const clientUuid = modal.getAttribute('data-client-uuid') || '';
+    const saveUrl = updateClientUrl(clientId, clientUuid);
+    if (!saveUrl) {
+      alert('Client UUID manquant.');
+      return;
+    }
     const data = {
       adresse: document.getElementById('inputAdresse').value,
       code_postal: document.getElementById('inputCP').value,
@@ -612,7 +734,7 @@ document.addEventListener("DOMContentLoaded", function () {
       classement_client: document.getElementById('inputClassement').value
     };
 
-    fetch(`/update-client/${clientId}/`, {
+    fetch(saveUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -650,6 +772,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const email = this.getAttribute('data-client-email') || '';
         const statut = this.getAttribute('data-client-statut') || '';
         const id = this.getAttribute('data-client-id') || '';
+        const uuid = this.getAttribute('data-client-uuid') || '';
         const code_comptable =
           this.getAttribute('data-client-code-comptable') || '';
         const classement =
@@ -666,6 +789,7 @@ document.addEventListener("DOMContentLoaded", function () {
           email,
           statut,
           id,
+          uuid,
           code_comptable,
           classement
         );
@@ -803,6 +927,7 @@ document.addEventListener("DOMContentLoaded", function () {
             c.email || '',
             c.statut || '',
             c.id,
+            c.uuid || '',
             c.code_comptable || '',
             c.classement_client || ''
           );

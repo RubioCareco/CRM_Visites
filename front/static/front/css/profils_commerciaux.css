@@ -4,14 +4,14 @@ body {
     background-color: #f5f7fb;
     margin: 0;
     padding: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: block;
     min-height: 100vh;
     box-sizing: border-box;
+    overflow-x: hidden;
 }
 
 .main-container {
+    width: min(1200px, 100%);
     max-width: 1200px;
     box-shadow: 0 2px 8px #5555556b;
     margin: auto;
@@ -19,6 +19,7 @@ body {
     backdrop-filter: blur(10px);
     border-radius: 20px;
     padding: 30px;
+    box-sizing: border-box;
     
 
 }
@@ -29,6 +30,30 @@ header {
     align-items: center;
     margin-bottom: 30px;
     position: relative;
+}
+
+.add-commercial-btn {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: #ef4444;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(239,68,68,0.28);
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+.add-commercial-btn:hover {
+    transform: translateY(-50%) scale(1.06);
+    box-shadow: 0 12px 26px rgba(239,68,68,0.34);
 }
 
 header h1 {
@@ -83,24 +108,26 @@ footer {
 
 .commerciaux-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 25px;
 }
 
 .commercial-card {
-    background: rgba(255, 255, 255, 0.08);
+    background: #fff;
     border-radius: 15px;
     border: 1px solid #e5393514;
     padding: 25px;
     text-align: center;
     text-decoration: none;
-    color: #fff;
+    color: #1f2937;
     transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    box-sizing: border-box;
+    min-width: 0;
 }
 
 .commercial-card:hover {
     transform: translateY(-5px);
-    background-color: rgba(255, 255, 255, 0.15);
+    background-color: #fff;
     box-shadow: 0 8px 24px rgba(0,0,0,0.2);
 }
 
@@ -109,6 +136,7 @@ footer {
     height: 80px;
     border-radius: 50%;
     background: #666;
+    color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -121,11 +149,14 @@ footer {
     font-size: 1.2rem;
     font-weight: 600;
     margin-bottom: 5px;
+    color: #1f2937;
+    word-break: break-word;
 }
 
 .commercial-email {
     font-size: 0.9rem;
     color: #ee4d4d;
+    word-break: break-word;
 }
 
 .absent-commercial {
@@ -150,4 +181,214 @@ footer {
   z-index: 2;
   margin-left: 10px;
   margin-top: 10px;
-} 
+}
+
+.pc-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.52);
+  z-index: 12000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.pc-modal-card {
+  width: min(92vw, 520px);
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(15,23,42,0.28);
+  overflow: hidden;
+}
+.pc-modal-header {
+  background: #5b5759;
+  color: #fff;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.pc-modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.pc-modal-close {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #ef4444;
+  font-size: 1.2rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease, border-color .2s ease, transform .2s ease;
+}
+.pc-modal-close:hover {
+  background: #ef4444;
+  color: #fff;
+  transform: translateY(-50%) scale(1.05);
+}
+.pc-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+}
+.pc-modal-form label {
+  font-weight: 600;
+  color: #374151;
+  font-size: .95rem;
+}
+.pc-modal-form input {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: .98rem;
+}
+.pc-modal-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+.pc-modal-submit {
+  border: 1px solid #ef4444;
+  background: #fff;
+  color: #ef4444;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s ease;
+}
+.pc-modal-submit:hover {
+  background: #ef4444;
+  color: #fff;
+}
+.pc-modal-error {
+  margin: 12px 16px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #fda4af;
+  background: #ffe4e6;
+  color: #be123c;
+  font-weight: 600;
+}
+
+.pc-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 12500;
+  padding: 12px 14px;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(15,23,42,.2);
+}
+.pc-toast.success {
+  background: linear-gradient(135deg,#34d399,#10b981);
+}
+
+/* ===== Responsive mobile/tablette ===== */
+@media (max-width: 900px) {
+  body {
+    padding: 12px;
+  }
+
+  .main-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  header {
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+
+  header h1 {
+    font-size: 1.55rem;
+    text-align: left;
+    line-height: 1.25;
+    word-break: break-word;
+    flex: 1 1 auto;
+    margin-right: 10px;
+  }
+  .add-commercial-btn {
+    position: static;
+    transform: none;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 auto;
+  }
+
+  .commerciaux-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .commercial-card {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .commercial-avatar {
+    width: 62px;
+    height: 62px;
+    font-size: 1.55rem;
+    margin-bottom: 10px;
+  }
+
+  .commercial-name {
+    font-size: 1.02rem;
+  }
+
+  .commercial-email {
+    font-size: 0.85rem;
+  }
+
+  /* Le style inline du template est écrasé ici en mobile */
+  footer {
+    position: static !important;
+    margin-top: 14px;
+  }
+
+  #backDashboardBtn {
+    position: relative !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    z-index: auto !important;
+    width: 100% !important;
+    justify-content: center !important;
+    font-size: 1rem !important;
+    padding: 12px 14px !important;
+    border-radius: 10px !important;
+    box-sizing: border-box !important;
+  }
+}
+
+@media (max-width: 480px) {
+  header h1 {
+    font-size: 1.3rem;
+  }
+  .add-commercial-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 1rem;
+  }
+}

@@ -56,12 +56,15 @@ urlpatterns = [
 
     path('api/rdv-counters/', views.api_rdv_counters, name='api_rdv_counters'),
     path('api/rdvs-a-venir/', views.api_rdvs_a_venir, name='api_rdvs_a_venir'),
+    path('api/rdvs-overdue-count/', views.api_rdvs_overdue_count, name='api_rdvs_overdue_count'),
     path('api/rdv-counters-by-client/', views.api_rdv_counters_by_client, name='api_rdv_counters_by_client'),
 
     path('api/clients-by-commercial/', views.api_clients_by_commercial, name='api_clients_by_commercial'),
     path('api/commerciaux/', views.api_commerciaux, name='api_commerciaux'),
+    path('api/insee/siret/<str:siret>/', views.api_insee_siret, name='api_insee_siret'),
 
     path('api/map-tournee/', views.api_map_tournee, name='api_map_tournee'),
+    path('api/routing-provider-status/', views.api_routing_provider_status, name='api_routing_provider_status'),
 
 
     path('api/last-rdv-commercial/<int:commercial_id>/', views.get_last_rdv_commercial, name='get_last_rdv_commercial'),
@@ -70,17 +73,17 @@ urlpatterns = [
 
     path('api/search-rdv-historique/', views.api_search_rdv_historique, name='api_search_rdv_historique'),
 
-    path('api/client-details/<int:client_id>/', views.api_client_details, name='api_client_details'),
+    path('api/client-details/uuid/<uuid:client_uuid>/', views.api_client_details_uuid, name='api_client_details_uuid'),
 
-    path('api/client-comments/<int:client_id>/', views.get_client_comments, name='get_client_comments'),
+    path('api/client-comments/uuid/<uuid:client_uuid>/', views.api_client_comments_uuid, name='get_client_comments_uuid'),
     path('api/comment-pin/<int:comment_id>/', views.set_comment_pin, name='set_comment_pin'),
     path('api/toggle-pin-comment/<int:comment_id>/', views.toggle_pin_comment, name='toggle_pin_comment'),
-    path('api/client-rdv/<int:client_id>/', views.get_client_rdv, name='get_client_rdv'),
+    path('api/client-rdv/uuid/<uuid:client_uuid>/', views.get_client_rdv_uuid, name='get_client_rdv_uuid'),
 
     path('api/clients-import-excel/', views.import_clients_excel, name='import_clients_excel'),
 
     # Mise à jour client
-    path('update-client/<int:client_id>/', views.update_client, name='update_client'),
+    path('update-client/uuid/<uuid:client_uuid>/', views.update_client_uuid, name='update_client_uuid'),
 
     # Update statut RDV / infos RDV
     path('update-statut/<uuid:uuid>/<str:statut>/', views.update_statut, name='update_statut'),

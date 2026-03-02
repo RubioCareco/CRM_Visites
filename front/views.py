@@ -7,19 +7,24 @@ from django.http import JsonResponse, HttpResponse, Http404
 from datetime import datetime, timedelta, date
 from django.utils import timezone
 import json
-from django.core.mail import send_mail, EmailMultiAlternatives
-from django.utils.crypto import get_random_string
+from django.core.mail import EmailMultiAlternatives
 from django.urls import reverse
+from django.conf import settings
 from django.contrib.auth.models import User
-from django.db import models
+from django.contrib.auth.password_validation import validate_password
+from django.db import models, IntegrityError, transaction
 from django.core.paginator import Paginator
-from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.core.cache import cache
+from django.views.decorators.csrf import csrf_protect
+from django.core import signing
 import base64
 from django.template.loader import render_to_string
 from xhtml2pdf import pisa
 from io import BytesIO
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.views.decorators.http import require_GET, require_POST
+from .siret_utils import validate_siret, normalize_siret
+from .insee_service import fetch_company_by_siret
 
 # =========================
 # UNPIN COMMENT (API)
@@ -47,6 +52,9 @@ def get_current_commercial(request):
 def unpin_comment(request):
     if 'commercial_id' not in request.session:
         raise PermissionDenied("Non authentifié")
+    rate_key = f"rl:unpin_comment:{_client_ip(request)}:{request.session.get('commercial_id') or 'anon'}"
+    if _is_rate_limited(rate_key, limit=120, window_seconds=60):
+        return _rate_limited_response()
 
     try:
         data = json.loads(request.body.decode("utf-8"))
@@ -90,6 +98,77 @@ from django.db.models.functions import Coalesce, TruncDay, TruncWeek, TruncMonth
 from .models import Adresse
 from front.utils import generer_rendezvous_automatiques, generer_rendezvous_simples
 from django.db import connection
+from urllib.parse import urlencode
+from django.utils.http import url_has_allowed_host_and_scheme
+import logging
+from .activity_log import log_activity
+from .services import google_distance_matrix_one_to_many
+
+logger = logging.getLogger(__name__)
+
+
+def _resolve_frontclient_id(client_uuid):
+    client = FrontClient.objects.filter(uuid=client_uuid).only("id").first()
+    if not client:
+        raise FrontClient.DoesNotExist
+    return client.id
+
+
+def _client_ip(request):
+    # XFF first for reverse-proxy setups, fallback to REMOTE_ADDR.
+    xff = request.META.get("HTTP_X_FORWARDED_FOR")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR", "unknown")
+
+
+def _is_rate_limited(key: str, limit: int, window_seconds: int) -> bool:
+    """Simple cache-based fixed-window limiter."""
+    current = cache.get(key)
+    if current is None:
+        cache.set(key, 1, timeout=window_seconds)
+        return False
+    if int(current) >= limit:
+        return True
+    try:
+        cache.incr(key)
+    except ValueError:
+        cache.set(key, int(current) + 1, timeout=window_seconds)
+    return False
+
+
+def _clear_rate_limit(key: str):
+    cache.delete(key)
+
+
+def _rate_limited_response(
+    message: str = "Trop de requêtes. Merci de réessayer dans quelques instants.",
+    extra: dict | None = None,
+):
+    payload = {
+        "ok": False,
+        "success": False,
+        "error": "rate_limited",
+        "code": "RATE_LIMITED",
+        "message": message,
+    }
+    if extra:
+        payload.update(extra)
+    return JsonResponse(payload, status=429)
+
+
+def _make_reset_token(account_type: str, account_id: int, email: str) -> str:
+    payload = {
+        "type": account_type,
+        "id": int(account_id),
+        "email": (email or "").strip().lower(),
+    }
+    return signing.dumps(payload, salt="front.reset-password")
+
+
+def _read_reset_token(token: str):
+    max_age = int(getattr(settings, "PASSWORD_RESET_TIMEOUT", 60 * 60 * 24))
+    return signing.loads(token, salt="front.reset-password", max_age=max_age)
 
 def get_current_commercial(request):
     """
@@ -132,7 +211,7 @@ def get_current_commercial(request):
 @require_GET
 
 def api_rdvs_by_date(request):
-    """Retourne jusqu'à 6 RDV pour un jour donné et un statut donné.
+    """Retourne les RDV pour un jour donné et un statut donné.
     Paramètres:
       - date (YYYY-MM-DD) obligatoire
       - statut in {a_venir, valide, annule} obligatoire
@@ -154,7 +233,7 @@ def api_rdvs_by_date(request):
         qs = (Rendezvous.objects
               .filter(commercial_id=commercial_id, date_rdv=target_date, statut_rdv=statut)
               .select_related('client')
-              .order_by('heure_rdv')[:6])
+              .order_by('heure_rdv'))
 
         results = []
         for rdv in qs:
@@ -189,12 +268,20 @@ def api_rdvs_by_date(request):
                 'heure': rdv.heure_rdv.strftime('%H:%M') if rdv.heure_rdv else '',
                 'client': {
                     'id': client.id if client else None,
+                    'uuid': str(client.uuid) if client and getattr(client, 'uuid', None) else None,
+                    'civilite': getattr(client, 'civilite', '') or '',
                     'nom': getattr(client, 'nom', '') or '',
                     'prenom': getattr(client, 'prenom', '') or '',
-                    'rs_nom': getattr(client, 'rs_nom', '') or ''
+                    'rs_nom': getattr(client, 'rs_nom', '') or '',
+                    'telephone': getattr(client, 'telephone', '') or '',
+                    'email': getattr(client, 'email', '') or '',
+                    'code_comptable': getattr(client, 'code_comptable', '') or '',
+                    'classement_client': getattr(client, 'classement_client', '') or '',
                 } if client else None,
                 'adresse': adresse,
                 'statut': rdv.statut_rdv,
+                'objet': rdv.objet or '',
+                'commentaire': rdv.notes or '',
                 'pdf': pdf_info,
             })
         return JsonResponse({'date': target_date.isoformat(), 'statut': statut, 'rdvs': results})
@@ -250,10 +337,11 @@ def nettoyer_rdv_anciens_automatiquement():
                 rdv.save()
                 
                 # Log de l'action
-                ActivityLog.objects.create(
-                    commercial=commercial,
+                log_activity(
                     action_type='RDV_AUTO_RETARD',
-                    description=f"RDV du {reference_date} {rdv.heure_rdv} - {rdv.client.rs_nom if rdv.client else 'Client supprimé'} automatiquement marqué comme en retard"
+                    description=f"RDV du {reference_date} {rdv.heure_rdv} - {rdv.client.rs_nom if rdv.client else 'Client supprimé'} automatiquement marqué comme en retard",
+                    target_commercial=commercial,
+                    actor_commercial=commercial,
                 )
                 
                 total_rdv_traites += 1
@@ -272,14 +360,23 @@ def login_required(view_func):
 # 🔐 Vue de connexion
 def login_view(request):
     erreur = False
+    throttle_message = None
 
     if request.method == 'POST':
-        email = request.POST.get('email')
-        password = request.POST.get('password')
+        email = (request.POST.get('email') or "").strip()
+        password = request.POST.get('password') or ""
+
+        # Rate-limit: 10 tentatives / 10 min par IP+email.
+        login_rate_key = f"rl:login:{_client_ip(request)}:{email.lower()}"
+        if _is_rate_limited(login_rate_key, limit=10, window_seconds=600):
+            erreur = True
+            throttle_message = "Trop de tentatives. Réessayez dans quelques minutes."
+            return render(request, 'front/login.html', {'erreur': erreur, 'throttle_message': throttle_message})
 
         commercial = Commercial.objects.filter(email=email).first()
 
         if commercial and check_password(password, commercial.password):
+            _clear_rate_limit(login_rate_key)
             # Stockage en session
             request.session['commercial_id'] = commercial.id
             request.session['commercial_nom'] = commercial.commercial
@@ -301,143 +398,130 @@ def login_view(request):
         else:
             erreur = True
 
-    return render(request, 'front/login.html', {'erreur': erreur})
+    return render(request, 'front/login.html', {'erreur': erreur, 'throttle_message': throttle_message})
 
 # 🔐 Déconnexion
 def logout_view(request):
     request.session.flush()
     return redirect('login')
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
-
+@login_required
+@require_GET
+@login_required
+@require_GET
 @login_required
 def dashboard_test(request):
-    return render(request, 'front/dashboard_test.html', {})
-
-reset_tokens = {}
+    commercial = None
+    commercial_id = request.session.get('commercial_id')
+    if commercial_id:
+        commercial = Commercial.objects.filter(id=commercial_id).first()
+    return render(request, 'front/dashboard_test.html', {'commercial': commercial})
 
 def reset_password(request):
-    print("RESET PASSWORD VIEW CALLED")
+    logger.debug("reset_password view called")
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if request.method == 'POST':
-        email = request.POST.get('email')
-        users = User.objects.filter(email=email)
-        commercials = Commercial.objects.filter(email=email)
-        if not users.exists() and not commercials.exists():
-            return render(request, 'front/reset_password.html', {'error': "Aucun compte avec cet email."})
-        reset_links = []
-        for user in users:
-            token = get_random_string(48)
-            reset_tokens[token] = ('user', user.id)
-            reset_link = request.build_absolute_uri(reverse('new_password')) + f'?token={token}'
-            subject = render_to_string('front/reset_password_subject.txt').strip()
-            html_content = render_to_string('front/reset_password_email.html', {
-                'reset_link': reset_link,
-                'user': user,
-            })
-            text_content = f"Pour réinitialiser votre mot de passe, cliquez sur ce lien : {reset_link}"
-            print("HTML CONTENT:", html_content)
-            msg = EmailMultiAlternatives(subject, text_content, 'bznjamin.gillens@gmail.com', [email])
-            msg.attach_alternative(html_content, "text/html")
-            msg.send()
-            reset_links.append(reset_link)
-        for commercial in commercials:
-            token = get_random_string(48)
-            reset_tokens[token] = ('commercial', commercial.id)
-            reset_link = request.build_absolute_uri(reverse('new_password')) + f'?token={token}'
-            subject = render_to_string('front/reset_password_subject.txt').strip()
-            html_content = render_to_string('front/reset_password_email.html', {
-                'reset_link': reset_link,
-                'user': commercial,
-            })
-            text_content = f"Pour réinitialiser votre mot de passe, cliquez sur ce lien : {reset_link}"
-            print("HTML CONTENT:", html_content)
-            msg = EmailMultiAlternatives(subject, text_content, 'bznjamin.gillens@gmail.com', [email])
-            msg.attach_alternative(html_content, "text/html")
-            msg.send()
-            reset_links.append(reset_link)
-        return render(request, 'front/reset_password_done.html', {'email': email, 'reset_link': reset_links[-1]})
+        email = (request.POST.get('email') or '').strip()
+        if not email:
+            msg = "Veuillez renseigner une adresse email."
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': msg}, status=400)
+            return render(request, 'front/reset_password.html', {'error': msg})
+
+        # Rate-limit reset password: 5 tentatives / 10 min par IP.
+        reset_rate_key = f"rl:reset:{_client_ip(request)}"
+        if _is_rate_limited(reset_rate_key, limit=5, window_seconds=600):
+            msg = "Trop de demandes. Réessayez dans quelques minutes."
+            if is_ajax:
+                return _rate_limited_response(message=msg)
+            return render(request, 'front/reset_password.html', {'error': msg})
+
+        users = User.objects.filter(email__iexact=email)
+        commercials = Commercial.objects.filter(email__iexact=email)
+        generic_success = "Si l'adresse existe, un lien de réinitialisation a été envoyé."
+
+        try:
+            for user in users:
+                token = _make_reset_token('user', user.id, email)
+                reset_link = request.build_absolute_uri(reverse('new_password')) + f'?token={token}'
+                subject = render_to_string('front/reset_password_subject.txt').strip()
+                html_content = render_to_string('front/reset_password_email.html', {
+                    'reset_link': reset_link,
+                    'user': user,
+                })
+                text_content = f"Pour réinitialiser votre mot de passe, cliquez sur ce lien : {reset_link}"
+                msg = EmailMultiAlternatives(subject, text_content, 'bznjamin.gillens@gmail.com', [email])
+                msg.attach_alternative(html_content, "text/html")
+                msg.send()
+
+            for commercial in commercials:
+                token = _make_reset_token('commercial', commercial.id, email)
+                reset_link = request.build_absolute_uri(reverse('new_password')) + f'?token={token}'
+                subject = render_to_string('front/reset_password_subject.txt').strip()
+                html_content = render_to_string('front/reset_password_email.html', {
+                    'reset_link': reset_link,
+                    'user': commercial,
+                })
+                text_content = f"Pour réinitialiser votre mot de passe, cliquez sur ce lien : {reset_link}"
+                msg = EmailMultiAlternatives(subject, text_content, 'bznjamin.gillens@gmail.com', [email])
+                msg.attach_alternative(html_content, "text/html")
+                msg.send()
+        except Exception:
+            # Réponse neutre pour éviter l'énumération d'emails.
+            logger.exception("reset_password email send failed")
+
+        if is_ajax:
+            return JsonResponse({'success': True, 'message': generic_success})
+        return render(request, 'front/reset_password_done.html', {'email': email})
     return render(request, 'front/reset_password.html')
 
 def new_password(request):
-    token = request.GET.get('token')
-    token_info = reset_tokens.get(token)
-    if not token_info:
+    token = (request.POST.get('token') or request.GET.get('token') or "").strip()
+    if not token:
         return render(request, 'front/new_password.html', {'error': "Lien invalide ou expiré."})
-    user_type, obj_id = token_info
+
+    try:
+        token_info = _read_reset_token(token)
+        user_type = token_info.get("type")
+        obj_id = token_info.get("id")
+        token_email = token_info.get("email")
+    except signing.BadSignature:
+        return render(request, 'front/new_password.html', {'error': "Lien invalide ou expiré."})
+    except signing.SignatureExpired:
+        return render(request, 'front/new_password.html', {'error': "Lien invalide ou expiré."})
+
     if request.method == 'POST':
-        pwd = request.POST.get('password')
+        pwd = request.POST.get('password') or ""
+        confirm = request.POST.get('confirm_password') or ""
+        if pwd != confirm:
+            return render(request, 'front/new_password.html', {'token': token, 'error': "Les mots de passe ne correspondent pas."})
+
         if user_type == 'user':
-            user = User.objects.get(id=obj_id)
+            user = User.objects.filter(id=obj_id).first()
+            if not user or (user.email or "").strip().lower() != (token_email or "").strip().lower():
+                return render(request, 'front/new_password.html', {'error': "Lien invalide ou expiré."})
+            try:
+                validate_password(pwd, user=user)
+            except ValidationError as e:
+                return render(request, 'front/new_password.html', {'token': token, 'error': " ".join(e.messages)})
             user.set_password(pwd)
             user.save()
         elif user_type == 'commercial':
-            commercial = Commercial.objects.get(id=obj_id)
+            commercial = Commercial.objects.filter(id=obj_id).first()
+            if not commercial or (commercial.email or "").strip().lower() != (token_email or "").strip().lower():
+                return render(request, 'front/new_password.html', {'error': "Lien invalide ou expiré."})
+            try:
+                validate_password(pwd)
+            except ValidationError as e:
+                return render(request, 'front/new_password.html', {'token': token, 'error': " ".join(e.messages)})
             commercial.password = make_password(pwd)
             commercial.save()
-        del reset_tokens[token]
+        else:
+            return render(request, 'front/new_password.html', {'error': "Lien invalide ou expiré."})
+
         return redirect('login')
     return render(request, 'front/new_password.html', {'token': token})
 
 # 🏠 Dashboard
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
-
 @login_required
 def dashboard(request):
     # --- Génération automatique des RDV à la demande (hors week-end) ---
@@ -750,37 +834,6 @@ def dashboard(request):
     })
 
 # ➕ Nouveau client
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
-
 @login_required
 def new_client(request):
     commercial_id = request.session.get('commercial_id')
@@ -788,11 +841,30 @@ def new_client(request):
 
     if request.method == 'POST':
         if 'add_rdv' in request.POST:
+            is_valid_siret, cleaned_siret, siret_error = validate_siret(request.POST.get('siret'))
+            if not is_valid_siret:
+                return render(request, 'front/new_client.html', {
+                    'client_temp': {
+                        'nom': request.POST.get('nom'),
+                        'prenom': request.POST.get('prenom'),
+                        'entreprise': request.POST.get('entreprise'),
+                        'siret': cleaned_siret,
+                        'adresse': request.POST.get('adresse'),
+                        'code_postal': request.POST.get('code_postal'),
+                        'ville': request.POST.get('ville'),
+                        'email': request.POST.get('email'),
+                        'telephone': request.POST.get('telephone'),
+                    },
+                    'rdv_temp': request.session.get('rdv_temp'),
+                    'success': False,
+                    'error': siret_error,
+                    'role': request.session.get('role'),
+                })
             request.session['client_temp'] = {
                 'nom': request.POST.get('nom'),
                 'prenom': request.POST.get('prenom'),
                 'entreprise': request.POST.get('entreprise'),
-                'siret': request.POST.get('siret'),
+                'siret': cleaned_siret,
                 'adresse': request.POST.get('adresse'),
                 'code_postal': request.POST.get('code_postal'),
                 'ville': request.POST.get('ville'),
@@ -806,14 +878,34 @@ def new_client(request):
         nom = request.POST.get('nom') or temp_data.get('nom')
         prenom = request.POST.get('prenom') or temp_data.get('prenom')
         entreprise = request.POST.get('entreprise') or temp_data.get('entreprise')
-        siret = request.POST.get('siret') or temp_data.get('siret')
+        raw_siret = request.POST.get('siret') or temp_data.get('siret')
         adresse = request.POST.get('adresse') or temp_data.get('adresse')
         code_postal = request.POST.get('code_postal') or temp_data.get('code_postal')
         ville = request.POST.get('ville') or temp_data.get('ville')
         email = request.POST.get('email') or temp_data.get('email')
         telephone = request.POST.get('telephone') or temp_data.get('telephone')
 
-        client = FrontClient.objects.create(
+        is_valid_siret, siret, siret_error = validate_siret(raw_siret)
+        if not is_valid_siret:
+            return render(request, 'front/new_client.html', {
+                'client_temp': {
+                    'nom': nom,
+                    'prenom': prenom,
+                    'entreprise': entreprise,
+                    'siret': siret,
+                    'adresse': adresse,
+                    'code_postal': code_postal,
+                    'ville': ville,
+                    'email': email,
+                    'telephone': telephone,
+                },
+                'rdv_temp': request.session.get('rdv_temp'),
+                'success': False,
+                'error': siret_error,
+                'role': request.session.get('role'),
+            })
+
+        client = FrontClient(
             nom=nom,
             prenom=prenom,
             rs_nom=entreprise,
@@ -822,6 +914,27 @@ def new_client(request):
             telephone=telephone,
             commercial=commercial
         )
+        try:
+            client.full_clean()
+            client.save()
+        except ValidationError:
+            return render(request, 'front/new_client.html', {
+                'client_temp': {
+                    'nom': nom,
+                    'prenom': prenom,
+                    'entreprise': entreprise,
+                    'siret': siret,
+                    'adresse': adresse,
+                    'code_postal': code_postal,
+                    'ville': ville,
+                    'email': email,
+                    'telephone': telephone,
+                },
+                'rdv_temp': request.session.get('rdv_temp'),
+                'success': False,
+                'error': "Numéro SIRET invalide : 14 chiffres et contrôle requis.",
+                'role': request.session.get('role'),
+            })
 
         # Ajout : création de l'adresse liée
         Adresse.objects.create(
@@ -831,56 +944,72 @@ def new_client(request):
             ville=ville
         )
 
-        # Création d'un rendez-vous si besoin
-    date_rdv = request.POST.get('date_rdv')
-    heure_rdv = request.POST.get('heure_rdv')
-    objet = request.POST.get('objet')
-    notes = request.POST.get('notes')
+        # Création d'un rendez-vous si date+heure sont fournies
+        date_rdv = request.POST.get('date_rdv')
+        heure_rdv = request.POST.get('heure_rdv')
+        objet = request.POST.get('objet')
+        notes = request.POST.get('notes')
 
-    rdv, created = Rendezvous.objects.get_or_create(
-        client=client,
-        commercial=commercial,
-        date_rdv=date_rdv,
-        heure_rdv=heure_rdv,
-        defaults={
-            'objet': objet,
-            'notes': notes,
-            'statut_rdv': 'a_venir',
-            'rs_nom': client.rs_nom,
-    }
-)
+        if date_rdv and heure_rdv:
+            rdv, created = Rendezvous.objects.get_or_create(
+                client=client,
+                commercial=commercial,
+                date_rdv=date_rdv,
+                heure_rdv=heure_rdv,
+                defaults={
+                    'objet': objet,
+                    'notes': notes,
+                    'statut_rdv': 'a_venir',
+                    'rs_nom': client.rs_nom,
+                }
+            )
 
-# Optionnel : si le RDV existait déjà, on peut mettre à jour objet/notes
-# (si tu veux que le dernier submit écrase l'ancien)
-# if not created:
-#     rdv.objet = objet
-#     rdv.notes = notes
-#     rdv.save(update_fields=["objet", "notes"])
+            # Optionnel : si le RDV existait déjà, on peut mettre à jour objet/notes
+            # (si tu veux que le dernier submit écrase l'ancien)
+            # if not created:
+            #     rdv.objet = objet
+            #     rdv.notes = notes
+            #     rdv.save(update_fields=["objet", "notes"])
 
-    if created:
-        ActivityLog.objects.create(
-            commercial=commercial,
-            action_type='RDV_AJOUTE',
-            description=f'Nouveau RDV ajouté pour {client.rs_nom}'
-        )
+            if created:
+                log_activity(
+                    action_type='RDV_AJOUTE',
+                    description=f'Nouveau RDV ajouté pour {client.rs_nom}',
+                    target_commercial=commercial,
+                    request=request,
+                )
 
-        # Nettoyage des données temporaires
+                # Nettoyage des données temporaires
+                request.session.pop('client_temp', None)
+                request.session.pop('rdv_temp', None)
+
+                # Affichage notification succès puis redirection JS
+                return render(request, 'front/new_client.html', {
+                    'client_temp': None,
+                    'rdv_temp': None,
+                    'success': True,
+                    'success_message': 'Votre rendez-vous a bien été ajouté',
+                    'role': request.session.get('role'),
+                })
+            else:
+                error_message = "⚠️ RDV déjà existant (doublon évité)."
+                return render(request, 'front/new_client.html', {
+                    'client_temp': request.session.get('client_temp'),
+                    'rdv_temp': request.session.get('rdv_temp'),
+                    'success': False,
+                    'error': error_message,
+                    'role': request.session.get('role'),
+                })
+
+        # Si pas de RDV saisi: on valide juste la création du client
         request.session.pop('client_temp', None)
         request.session.pop('rdv_temp', None)
-
-        # Affichage notification succès puis redirection JS
         return render(request, 'front/new_client.html', {
             'client_temp': None,
             'rdv_temp': None,
-            'success': True
-        })
-    else:
-        error_message = "⚠️ RDV déjà existant (doublon évité)."
-        return render(request, 'front/new_client.html', {
-            'client_temp': request.session.get('client_temp'),
-            'rdv_temp': request.session.get('rdv_temp'),
-            'success': False,
-            'error': error_message,
+            'success': True,
+            'success_message': 'Client ajouté avec succès',
+            'role': request.session.get('role'),
         })
 
     # En GET, on récupère le flag de succès éventuel
@@ -891,51 +1020,40 @@ def new_client(request):
         'client_temp': client_temp,
         'rdv_temp': rdv_temp,
         'success': success,
+        'success_message': 'Votre rendez-vous a bien été ajouté' if success else '',
         'role': request.session.get('role')
     })
 
+
+@login_required
+@require_GET
+def api_insee_siret(request, siret):
+    cleaned = normalize_siret(siret)
+    is_valid, cleaned, error_message = validate_siret(cleaned)
+    if not is_valid:
+        return JsonResponse({"success": False, "error": error_message}, status=400)
+
+    payload, status_code = fetch_company_by_siret(cleaned)
+    return JsonResponse(payload, status=status_code)
+
 # ➕ Nouveau rendez-vous
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
-
 @login_required
 def add_rdv(request):
     commercial_id = request.session.get('commercial_id')
     commercial = Commercial.objects.get(id=commercial_id)
     from_new_client = request.GET.get('from') == 'new-client'
 
-    # Pré-remplissage client si client_id passé en GET
+    # Pré-remplissage client (UUID prioritaire, fallback ID legacy)
+    client_uuid_prefill = (request.GET.get('client_uuid') or '').strip()
     client_id_prefill = request.GET.get('client_id')
     client_prefill = None
-    if client_id_prefill:
+    if client_uuid_prefill:
+        try:
+            resolved_id = _resolve_frontclient_id(client_uuid_prefill)
+            client_prefill, adresse_prefill, client_type_prefill = get_client_and_adresse(resolved_id)
+        except (FrontClient.DoesNotExist, ValueError, TypeError):
+            client_prefill = None
+    elif client_id_prefill:
         try:
             client_prefill, adresse_prefill, client_type_prefill = get_client_and_adresse(client_id_prefill)
         except FrontClient.DoesNotExist:
@@ -943,12 +1061,36 @@ def add_rdv(request):
 
     role = request.session.get('role')
     commerciaux_list = None
+    selected_commercial_id = None
+    lock_commercial_select = False
     if role in ['responsable', 'admin']:
         commerciaux_list = Commercial.objects.filter(role='commercial')
+        if client_prefill and getattr(client_prefill, 'commercial_id', None):
+            selected_commercial_id = str(client_prefill.commercial_id)
+            raw_next = (request.GET.get('next') or '').strip()
+            # Depuis objectifs annuels, le commercial doit rester celui du client sélectionné.
+            if raw_next.startswith('/objectif-annuel'):
+                lock_commercial_select = True
 
     error_message = None
+
+    def resolve_next_url(raw_next):
+        default_next = '/dashboard-responsable/' if role in ['responsable', 'admin'] else '/dashboard-test/'
+        if not raw_next:
+            return default_next
+        if url_has_allowed_host_and_scheme(
+            url=raw_next,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure()
+        ):
+            # Evite de reboucler vers add_rdv
+            if raw_next.startswith('/add-rdv'):
+                return default_next
+            return raw_next
+        return default_next
     if request.method == 'POST':
         try:
+            dry_run_requested = str(request.POST.get('dry_run', '')).strip().lower() in {'1', 'true', 'yes', 'on'}
             # Cas "RDV temporaire" depuis new_client
             if 'is_temp_rdv' in request.POST:
                 request.session['rdv_temp'] = {
@@ -971,55 +1113,118 @@ def add_rdv(request):
             if commercial.is_absent:
                 error_message = "❄️ Ce commercial est absent : création de rendez-vous bloquée."
             else:
-                client_id = request.POST.get('client_id')
+                client_uuid = (request.POST.get('client_uuid') or '').strip()
+                client_id = (request.POST.get('client_id') or '').strip()
+                date_rdv = (request.POST.get('date_rdv') or '').strip()
+                heure_rdv = (request.POST.get('heure_rdv') or '').strip()
+                if (not client_uuid and not client_id) or not date_rdv or not heure_rdv:
+                    error_message = "Veuillez renseigner date, heure et client."
+                    raise ValueError("MISSING_REQUIRED_FIELDS")
+
+                # Parse explicite pour éviter les erreurs de type dans les signaux/statistiques.
+                try:
+                    date_rdv_obj = datetime.strptime(date_rdv, "%Y-%m-%d").date()
+                except ValueError:
+                    error_message = "Date invalide. Format attendu : YYYY-MM-DD."
+                    raise ValueError("INVALID_DATE")
+                try:
+                    heure_rdv_obj = datetime.strptime(heure_rdv, "%H:%M").time()
+                except ValueError:
+                    error_message = "Heure invalide. Format attendu : HH:MM."
+                    raise ValueError("INVALID_TIME")
+
+                # UUID prioritaire ; fallback ID pour compat.
+                if client_uuid:
+                    client_id = _resolve_frontclient_id(client_uuid)
                 client, adresse, client_type = get_client_and_adresse(client_id)
+                objet = (request.POST.get('objet') or '').strip() or None
+                notes = (request.POST.get('notes') or '').strip() or None
 
-                rdv = Rendezvous.objects.create(
-                    client=client,
-                    commercial=commercial,
-                    date_rdv=request.POST.get('date_rdv'),
-                    heure_rdv=request.POST.get('heure_rdv'),
-                    objet=request.POST.get('objet'),
-                    notes=request.POST.get('notes'),
-                    statut_rdv='a_venir',
-                    rs_nom=client.rs_nom
-                )
-
-
-                # ✅ Si une note/commentaire est saisi lors de la création -> créer un CommentaireRdv
-                notes_txt = (request.POST.get('notes') or '').strip()
-                if notes_txt:
-                    CommentaireRdv.objects.create(
-                        rdv=rdv,
-                        auteur=request.user if getattr(request, "user", None) and request.user.is_authenticated else None,
+                if dry_run_requested:
+                    # Simulation: on valide la charge utile et les collisions, sans écrire en base.
+                    already_exists = Rendezvous.objects.filter(
+                        client=client,
                         commercial=commercial,
-                        texte=notes_txt,
+                        date_rdv=date_rdv_obj,
+                        heure_rdv=heure_rdv_obj,
+                    ).exists()
+                    if already_exists:
+                        return JsonResponse({
+                            "ok": False,
+                            "dry_run": True,
+                            "error": "duplicate_rdv",
+                            "message": "Un rendez-vous existe déjà pour ce client à cette date et heure.",
+                        }, status=409)
+
+                    return JsonResponse({
+                        "ok": True,
+                        "dry_run": True,
+                        "would_create": {
+                            "commercial_id": commercial.id,
+                            "client_id": client.id,
+                            "client_uuid": str(getattr(client, "uuid", "") or ""),
+                            "date_rdv": date_rdv_obj.isoformat(),
+                            "heure_rdv": heure_rdv_obj.strftime("%H:%M"),
+                            "objet": objet,
+                            "notes": notes,
+                            "statut_rdv": "a_venir",
+                        }
+                    }, status=200)
+
+                with transaction.atomic():
+                    rdv = Rendezvous.objects.create(
+                        client=client,
+                        commercial=commercial,
+                        date_rdv=date_rdv_obj,
+                        heure_rdv=heure_rdv_obj,
+                        objet=objet,
+                        notes=notes,
+                        statut_rdv='a_venir',
                         rs_nom=client.rs_nom
                     )
 
-                ActivityLog.objects.create(
-                    commercial=commercial,
-                    action_type='RDV_AJOUTE',
-                    description=f'Nouveau RDV ajouté pour {client.rs_nom}'
-                )
+                    # ✅ Si une note/commentaire est saisi lors de la création -> créer un CommentaireRdv
+                    notes_txt = notes or ''
+                    if notes_txt:
+                        CommentaireRdv.objects.create(
+                            rdv=rdv,
+                            auteur=request.user if getattr(request, "user", None) and request.user.is_authenticated else None,
+                            commercial=commercial,
+                            texte=notes_txt,
+                            rs_nom=client.rs_nom
+                        )
+
+                    log_activity(
+                        action_type='RDV_AJOUTE',
+                        description=f'Nouveau RDV ajouté pour {client.rs_nom}',
+                        target_commercial=commercial,
+                        request=request,
+                    )
 
                 if request.session.get('show_success'):
                     request.session.pop('show_success')
-                    return redirect('/new-client?success=1')
+                    next_url = '/new-client?success=1'
+                else:
+                    next_url = resolve_next_url(request.POST.get('next') or request.GET.get('next'))
 
-                if role in ['responsable', 'admin']:
-                    return redirect('dashboard_responsable')
+                params = urlencode({
+                    'success': '1',
+                    'next': next_url,
+                })
+                return redirect(f"{reverse('add_rdv')}?{params}")
 
-                next_url = request.POST.get('next') or request.GET.get('next')
-                if next_url:
-                    return redirect(next_url)
-
-                return redirect('dashboard_test')
-
+        except ValueError as e:
+            if str(e) == "MISSING_REQUIRED_FIELDS":
+                error_message = "Veuillez renseigner date, heure et client."
+            elif str(e) not in {"INVALID_DATE", "INVALID_TIME"}:
+                error_message = "Veuillez vérifier les champs saisis."
         except FrontClient.DoesNotExist:
             error_message = "Le client sélectionné est introuvable."
-        except Exception as e:
-            error_message = f"Une erreur est survenue : {e}"
+        except IntegrityError:
+            error_message = "Un rendez-vous existe déjà pour ce client à cette date et heure."
+        except Exception:
+            logger.exception("add_rdv failed")
+            error_message = "Une erreur est survenue. Merci de réessayer."
 
 
     # Si responsable/admin, on affiche tous les clients, sinon seulement ceux du commercial
@@ -1034,9 +1239,10 @@ def add_rdv(request):
                     where=["REPLACE(UPPER(commercial), ' ', '') = %s"], params=[nom_normalise]
                 )
     client_temp = request.session.get('client_temp') if from_new_client else None
-    # Valeur par défaut du next_url selon le rôle
-    default_next = '/dashboard-responsable/' if role in ['responsable', 'admin'] else '/dashboard-test/'
-    next_url = request.GET.get('next', default_next)
+    # Valeur de retour validée (page d'origine)
+    next_url = resolve_next_url(request.GET.get('next'))
+    success = request.GET.get('success') == '1'
+    show_error_toast = request.method == 'POST' and bool(error_message)
 
     return render(request, 'front/add_rdv.html', {
         'clients': clients,
@@ -1046,78 +1252,54 @@ def add_rdv(request):
         'client_prefill': client_prefill,
         'role': role,
         'commerciaux_list': commerciaux_list,
+        'selected_commercial_id': selected_commercial_id,
+        'lock_commercial_select': lock_commercial_select,
         'error_message': error_message,
+        'show_error_toast': show_error_toast,
+        'success': success,
+        'success_redirect_url': next_url,
         'today_date': date.today().isoformat(),
     })
 
+
+@login_required
+@require_GET
+def api_routing_provider_status(request):
+    """Debug endpoint: indique si Google est activé et quelle stratégie de fallback est utilisée."""
+    key_configured = bool((getattr(settings, "GOOGLE_MAPS_API_KEY", "") or "").strip())
+    travel_mode = (getattr(settings, "GOOGLE_MAPS_TRAVEL_MODE", "driving") or "driving").strip().lower()
+    payload = {
+        "ok": True,
+        "provider_precedence": "GOOGLE_THEN_HAVERSINE" if key_configured else "HAVERSINE_ONLY",
+        "google_key_configured": key_configured,
+        "google_travel_mode": travel_mode,
+    }
+
+    # Probe optionnel: test réseau vers Google Distance Matrix sur un trajet court.
+    # Utilisation: /api/routing-provider-status/?probe=1
+    probe = str(request.GET.get("probe", "")).strip().lower() in {"1", "true", "yes", "on"}
+    if probe and key_configured:
+        try:
+            rows = google_distance_matrix_one_to_many(
+                origin=(44.8378, -0.5792),             # Bordeaux centre
+                destinations=[(44.8431, -0.5729)],     # Bordeaux proche
+                mode=travel_mode,
+                timeout=6,
+            )
+            payload["probe"] = "ok" if rows and rows[0].get("status") == "OK" else "fallback_or_error"
+            payload["probe_rows"] = rows
+        except Exception as exc:
+            payload["probe"] = "error"
+            payload["probe_error"] = str(exc)
+
+    return JsonResponse(payload)
+
 # 📁 Fiche client
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
-
 @login_required
 def customer_file(request):
     return render(request, 'front/customer_file.html')
 
 # 👤 Profil commercial
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
-
 @login_required
 def profils_commerciaux(request):
     # Assurez-vous que seul un responsable ou admin peut voir cette page
@@ -1125,39 +1307,68 @@ def profils_commerciaux(request):
     if role not in ['responsable', 'admin']:
         return redirect('dashboard_test') # Rediriger si pas les droits
 
+    create_error = None
+    open_add_modal = False
+    create_form = {
+        'prenom': '',
+        'nom': '',
+        'email': '',
+        'telephone': '',
+        'site_rattachement': '',
+    }
+
+    if request.method == 'POST' and request.POST.get('action') == 'create_commercial':
+        open_add_modal = True
+        prenom = (request.POST.get('prenom') or '').strip()
+        nom = (request.POST.get('nom') or '').strip()
+        email = (request.POST.get('email') or '').strip().lower()
+        telephone = (request.POST.get('telephone') or '').strip()
+        password = request.POST.get('password') or ''
+        password_confirm = request.POST.get('password_confirm') or ''
+        site_rattachement = (request.POST.get('site_rattachement') or '').strip()
+
+        create_form.update({
+            'prenom': prenom,
+            'nom': nom,
+            'email': email,
+            'telephone': telephone,
+            'site_rattachement': site_rattachement,
+        })
+
+        if not prenom or not nom or not email or not password:
+            create_error = "Veuillez renseigner tous les champs obligatoires."
+        elif password != password_confirm:
+            create_error = "Les mots de passe ne correspondent pas."
+        elif Commercial.objects.filter(email__iexact=email).exists():
+            create_error = "Un commercial existe déjà avec cet email."
+        else:
+            try:
+                validate_password(password)
+                commercial_label = f"{prenom} {nom}".strip() or email
+                Commercial.objects.create(
+                    commercial=commercial_label,
+                    nom=nom,
+                    prenom=prenom,
+                    email=email,
+                    telephone=telephone,
+                    password=make_password(password),
+                    role='commercial',
+                    site_rattachement=site_rattachement or None,
+                )
+                return redirect(f"{reverse('profils_commerciaux')}?created=1")
+            except ValidationError as e:
+                create_error = " ".join(e.messages)
+            except Exception:
+                create_error = "Impossible de créer le commercial pour le moment."
+
     commerciaux = Commercial.objects.filter(role='commercial')
-    return render(request, 'front/profils_commerciaux.html', {'commerciaux': commerciaux})
-
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
+    return render(request, 'front/profils_commerciaux.html', {
+        'commerciaux': commerciaux,
+        'commercial_created': request.GET.get('created') == '1',
+        'create_error': create_error,
+        'open_add_modal': open_add_modal,
+        'create_form': create_form,
+    })
 
 @login_required
 def profil(request, commercial_id=None):
@@ -1193,7 +1404,7 @@ def profil(request, commercial_id=None):
         commercial.save()
 
         # Geler/dégeler les rendez-vous à venir si changement d'état
-        from .models import Rendezvous, ActivityLog
+        from .models import Rendezvous
         today = timezone.now().date()
         if not was_absent and is_absent_now:
             # Passage à absent : geler tous les RDV à venir
@@ -1203,10 +1414,11 @@ def profil(request, commercial_id=None):
                 date_rdv__gte=today
             ).update(statut_rdv='gele')
             # Log activité absence
-            ActivityLog.objects.create(
-                commercial=commercial,
+            log_activity(
                 action_type='ABSENCE_ON',
-                description=f"{commercial.prenom} {commercial.nom} s'est déclaré absent"
+                description=f"{commercial.prenom} {commercial.nom} s'est déclaré absent",
+                target_commercial=commercial,
+                request=request,
             )
         elif was_absent and not is_absent_now:
             # Passage à présent :
@@ -1244,10 +1456,11 @@ def profil(request, commercial_id=None):
                     rdv.save()
                     occupied_times.add(rdv.heure_rdv)
             # Log activité retour
-            ActivityLog.objects.create(
-                commercial=commercial,
+            log_activity(
                 action_type='ABSENCE_OFF',
-                description=f"{commercial.prenom} {commercial.nom} est de retour (présent)"
+                description=f"{commercial.prenom} {commercial.nom} est de retour (présent)",
+                target_commercial=commercial,
+                request=request,
             )
 
         # Redirection appropriée
@@ -1274,215 +1487,143 @@ def profil(request, commercial_id=None):
     })
 
 # ❌ Supprimer le rdv temporaire
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
-
 @login_required
 def delete_temp_rdv(request):
     request.session.pop('rdv_temp', None)
     return JsonResponse({'status': 'ok'})
 
 # ✅ Mise à jour du statut via modal dynamique
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
-
 @login_required
+@require_POST
+@csrf_protect
 def update_statut(request, uuid, statut):
-    print("DEBUG méthode reçue :", request.method)
+    rate_key = f"rl:update_statut:{_client_ip(request)}:{request.session.get('commercial_id') or 'anon'}"
+    if _is_rate_limited(rate_key, limit=120, window_seconds=60):
+        return _rate_limited_response(extra={"status": "error"})
+
     rdv = get_object_or_404(Rendezvous, uuid=uuid)
     if not (request.user.is_superuser or (rdv.commercial and rdv.commercial.id == request.session.get('commercial_id'))):
         raise PermissionDenied("Vous n'avez pas le droit d'accéder à ce rendez-vous.")
-
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        commentaire = data.get('commentaire', '')
-
-        if statut == "valider":
-            rdv.statut_rdv = 'valide'
-            rdv.date_statut = timezone.now()
-            if commentaire.strip():
-                rdv.notes = commentaire  # (optionnel)
-                client, adresse, client_type = get_client_and_adresse(rdv.client.id)
-                rs_nom = adresse["adresse"] if adresse else getattr(rdv.client, 'rs_nom', None) or getattr(rdv.client, 'nom', None) or ''
-                commercial_id = request.session.get('commercial_id')
-                commercial = Commercial.objects.get(id=commercial_id) if commercial_id else None
-                CommentaireRdv.objects.create(
-                    rdv=rdv,
-                    auteur=request.user if request.user.is_authenticated else None,
-                    commercial=commercial,
-                    texte=commentaire,
-                    rs_nom=rs_nom
-                )
-        elif statut == "annuler":
-            rdv.statut_rdv = 'annule'
-            rdv.date_statut = timezone.now()
-            if commentaire.strip():
-                rdv.notes = commentaire  # (optionnel)
-                client, adresse, client_type = get_client_and_adresse(rdv.client.id)
-                rs_nom = adresse["adresse"] if adresse else getattr(rdv.client, 'rs_nom', None) or getattr(rdv.client, 'nom', None) or ''
-                commercial_id = request.session.get('commercial_id')
-                commercial = Commercial.objects.get(id=commercial_id) if commercial_id else None
-                CommentaireRdv.objects.create(
-                    rdv=rdv,
-                    auteur=request.user if request.user.is_authenticated else None,
-                    commercial=commercial,
-                    texte=commentaire,
-                    rs_nom=rs_nom
-                )
-        elif statut == "commentaire":
-            # On ajoute juste un commentaire sans changer le statut
-            if commentaire.strip():
-                client, adresse, client_type = get_client_and_adresse(rdv.client.id)
-                rs_nom = adresse["adresse"] if adresse else getattr(rdv.client, 'rs_nom', None) or getattr(rdv.client, 'nom', None) or ''
-                commercial_id = request.session.get('commercial_id')
-                commercial = Commercial.objects.get(id=commercial_id) if commercial_id else None
-                CommentaireRdv.objects.create(
-                    rdv=rdv,
-                    auteur=request.user if request.user.is_authenticated else None,
-                    commercial=commercial,
-                    texte=commentaire,
-                    rs_nom=rs_nom
-                )
-            return JsonResponse({'status': 'ok'})
-
-        rdv.save()
-
-        # Enregistrer l'activité dans le journal
-        action_type = ''
-        if statut in ['valide', 'valider']:
-            action_type = 'RDV_VALIDE'
-            description = f"RDV avec {rdv.client.rs_nom} validé"
-        elif statut in ['annule', 'annuler']:
-            action_type = 'RDV_ANNULE'
-            description = f"RDV avec {rdv.client.rs_nom} annulé"
-        
-        if action_type:
-            ActivityLog.objects.create(
-                commercial=rdv.commercial,
-                action_type=action_type,
-                description=description
-            )
-
-        client = rdv.client
-        
-        # Calculer le nombre de RDV validés pour ce client
-        nb_rdv_valides = Rendezvous.objects.filter(
-            client__rs_nom=client.rs_nom,
-            statut_rdv='valide'
-        ).count()
-        
-        # On récupère tous les champs utiles pour la carte
-        return JsonResponse({
-            'status': 'ok',
-            'id': rdv.id,
-            'nom': getattr(client, 'prénom', ''),
-            'prenom': getattr(client, 'prénom', ''),
-            'rs_nom': getattr(client, 'rs_nom', ''),
-            'civilite': getattr(client, 'civilite', ''),
-            'adresse': getattr(client, 'adresse', ''),
-            'code_postal': getattr(client, 'code_postal', ''),
-            'ville': getattr(client, 'ville', ''),
-            'telephone': getattr(client, 'telephone', ''),
-            'e_mail': getattr(client, 'e_mail', ''),
-            'code_comptable': getattr(client, 'code_comptable', ''),
-            'statut': rdv.statut_rdv,
-            'date': rdv.date_rdv.strftime('%d/%m/%Y'),
-            'heure': rdv.heure_rdv.strftime('%H:%M'),
-            'date_statut': rdv.date_statut.strftime('%d/%m/%Y %H:%M') if rdv.date_statut else '',
-            'nb_rdv_valides': nb_rdv_valides,
-        })
-    else:
-        print("DEBUG : Méthode non autorisée pour update_statut")
-        return JsonResponse({'status': 'error', 'message': f"Méthode {request.method} non autorisée"}, status=405)
-
-from django.http import JsonResponse
-
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
+    if (
+        statut in {"valider", "annuler"}
+        and rdv.commercial
+        and rdv.commercial.is_absent
+        and not request.user.is_superuser
+    ):
+        return JsonResponse(
+            {"status": "error", "message": "Commercial absent: action bloquée."},
+            status=403,
         )
 
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
+    try:
+        data = json.loads(request.body.decode("utf-8") or "{}")
+    except Exception:
+        return JsonResponse({'status': 'error', 'message': "JSON invalide"}, status=400)
+    commentaire = data.get('commentaire', '')
+    is_pinned = bool(data.get('is_pinned', False))
 
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
+    if statut == "valider":
+        rdv.statut_rdv = 'valide'
+        rdv.date_statut = timezone.now()
+        if commentaire.strip():
+            rdv.notes = commentaire  # (optionnel)
+            client, adresse, client_type = get_client_and_adresse(rdv.client.id)
+            rs_nom = getattr(rdv.client, 'rs_nom', None) or getattr(rdv.client, 'nom', None) or ''
+            commercial_id = request.session.get('commercial_id')
+            commercial = Commercial.objects.get(id=commercial_id) if commercial_id else None
+            CommentaireRdv.objects.create(
+                rdv=rdv,
+                auteur=request.user if request.user.is_authenticated else None,
+                commercial=commercial,
+                texte=commentaire,
+                rs_nom=rs_nom,
+                is_pinned=is_pinned
+            )
+    elif statut == "annuler":
+        rdv.statut_rdv = 'annule'
+        rdv.date_statut = timezone.now()
+        if commentaire.strip():
+            rdv.notes = commentaire  # (optionnel)
+            client, adresse, client_type = get_client_and_adresse(rdv.client.id)
+            rs_nom = getattr(rdv.client, 'rs_nom', None) or getattr(rdv.client, 'nom', None) or ''
+            commercial_id = request.session.get('commercial_id')
+            commercial = Commercial.objects.get(id=commercial_id) if commercial_id else None
+            CommentaireRdv.objects.create(
+                rdv=rdv,
+                auteur=request.user if request.user.is_authenticated else None,
+                commercial=commercial,
+                texte=commentaire,
+                rs_nom=rs_nom,
+                is_pinned=is_pinned
+            )
+    elif statut == "commentaire":
+        # On ajoute juste un commentaire sans changer le statut
+        if commentaire.strip():
+            client, adresse, client_type = get_client_and_adresse(rdv.client.id)
+            rs_nom = getattr(rdv.client, 'rs_nom', None) or getattr(rdv.client, 'nom', None) or ''
+            commercial_id = request.session.get('commercial_id')
+            commercial = Commercial.objects.get(id=commercial_id) if commercial_id else None
+            CommentaireRdv.objects.create(
+                rdv=rdv,
+                auteur=request.user if request.user.is_authenticated else None,
+                commercial=commercial,
+                texte=commentaire,
+                rs_nom=rs_nom,
+                is_pinned=is_pinned
+            )
+        return JsonResponse({'status': 'ok'})
+    else:
+        return JsonResponse({'status': 'error', 'message': "Statut non supporté"}, status=400)
 
-        return JsonResponse({"commentaires": data})
+    rdv.save()
 
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
+    # Enregistrer l'activité dans le journal
+    action_type = ''
+    if statut in ['valide', 'valider']:
+        action_type = 'RDV_VALIDE'
+        description = f"RDV avec {rdv.client.rs_nom} validé"
+    elif statut in ['annule', 'annuler']:
+        action_type = 'RDV_ANNULE'
+        description = f"RDV avec {rdv.client.rs_nom} annulé"
+    
+    if action_type:
+        log_activity(
+            action_type=action_type,
+            description=description,
+            target_commercial=rdv.commercial,
+            request=request,
+        )
+
+    client = rdv.client
+    
+    # Calculer le nombre de RDV validés pour ce client
+    nb_rdv_valides = Rendezvous.objects.filter(
+        client__rs_nom=client.rs_nom,
+        statut_rdv='valide'
+    ).count()
+    
+    # On récupère tous les champs utiles pour la carte
+    return JsonResponse({
+        'status': 'ok',
+        'id': rdv.id,
+        'nom': getattr(client, 'prénom', ''),
+        'prenom': getattr(client, 'prénom', ''),
+        'rs_nom': getattr(client, 'rs_nom', ''),
+        'civilite': getattr(client, 'civilite', ''),
+        'adresse': getattr(client, 'adresse', ''),
+        'code_postal': getattr(client, 'code_postal', ''),
+        'ville': getattr(client, 'ville', ''),
+        'telephone': getattr(client, 'telephone', ''),
+        'e_mail': getattr(client, 'e_mail', ''),
+        'code_comptable': getattr(client, 'code_comptable', ''),
+        'statut': rdv.statut_rdv,
+        'date': rdv.date_rdv.strftime('%d/%m/%Y'),
+        'heure': rdv.heure_rdv.strftime('%H:%M'),
+        'date_statut': rdv.date_statut.strftime('%d/%m/%Y %H:%M') if rdv.date_statut else '',
+        'nb_rdv_valides': nb_rdv_valides,
+    })
+
+from django.http import JsonResponse
 
 @login_required
 def get_rdv_info(request, uuid):
@@ -1536,6 +1677,7 @@ def get_rdv_info(request, uuid):
     except Rendezvous.DoesNotExist:
         return JsonResponse({'error': 'Rendez-vous introuvable'}, status=404)
     
+@login_required
 def client_file(request):
     per_page = int(request.GET.get('per_page', 50))
     page_number = request.GET.get('page', 1)
@@ -1602,37 +1744,6 @@ def client_file(request):
         'commerciaux': commerciaux,
         'selected_commercial': selected_commercial,
     })    
-
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
 
 @login_required
 def historique_rdv(request):
@@ -1736,37 +1847,6 @@ def historique_rdv(request):
         'request': request,
     })    
 
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
-
 @login_required
 def historique_rdv_resp(request):
     # Filtrer selon le statut si besoin (ex: ?statut=valide)
@@ -1854,10 +1934,11 @@ def historique_rdv_resp(request):
             # En cas d'erreur de conversion de date, on ignore le filtrage
             pass
     
-    # DEBUG : Afficher toutes les dates de RDV annulés avant filtrage
-    print('--- RDV annulés AVANT filtrage ---')
-    for rdv in Rendezvous.objects.filter(statut_rdv='annule').order_by('date_rdv'):
-        print(f"Annulé : {rdv.date_rdv} (date_statut={rdv.date_statut})")
+    # DEBUG (logs)
+    logger.debug(
+        "RDV annulés avant filtrage: %s",
+        Rendezvous.objects.filter(statut_rdv='annule').count()
+    )
 
     # Correction : si aucun filtre, on transmet tout
     if not statut and not date_debut and not date_fin:
@@ -1884,9 +1965,7 @@ def historique_rdv_resp(request):
                 rdv.adresse_principale = None
     
     # DEBUG : Afficher toutes les dates de RDV annulés après filtrage
-    print('--- RDV annulés APRES filtrage ---')
-    for rdv in rdvs_archives.filter(statut_rdv='annule').order_by('date_rdv'):
-        print(f"Annulé filtré : {rdv.date_rdv} (date_statut={rdv.date_statut})")
+    logger.debug("RDV annulés après filtrage: %s", len(a_rappeler))
 
     # Ajout systématique de l'adresse principale pour chaque rdv (sécurisé)
     for rdv in set(visites_recentes + a_rappeler + historique_general):
@@ -1959,34 +2038,83 @@ def historique_rdv_resp(request):
         'statut_label': statut_label,
     })
 
-@csrf_exempt  # À remplacer par @login_required + gestion CSRF si besoin
+@login_required
+@require_POST
+@csrf_protect
 def update_client(request, client_id):
-    if request.method == "POST":
-        try:
-            data = json.loads(request.body)
-            client, adresse, client_type = get_client_and_adresse(client_id)
-            
-            # Mettre à jour les champs du client
-            client.telephone = data.get("telephone", client.telephone)
-            client.email = data.get("email", client.email)
-            client.classement_client = data.get("classement_client", client.classement_client)
-            client.save()
-            
-            # Mettre à jour l'adresse si elle existe
-            if adresse and client_type == "front":
-                # Chercher l'adresse principale du client
-                from .models import Adresse
-                adresse_obj = Adresse.objects.filter(client=client).first()
-                if adresse_obj:
-                    adresse_obj.adresse = data.get("adresse", adresse_obj.adresse)
-                    adresse_obj.code_postal = data.get("code_postal", adresse_obj.code_postal)
-                    adresse_obj.ville = data.get("ville", adresse_obj.ville)
-                    adresse_obj.save()
-            
-            return JsonResponse({"success": True})
-        except Exception as e:
-            return JsonResponse({"success": False, "error": str(e)})
-    return JsonResponse({"success": False, "error": "Méthode non autorisée"})    
+    rate_key = f"rl:update_client:{_client_ip(request)}:{request.session.get('commercial_id') or 'anon'}"
+    if _is_rate_limited(rate_key, limit=90, window_seconds=60):
+        return _rate_limited_response()
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except Exception:
+        return JsonResponse({"success": False, "error": "JSON invalide"}, status=400)
+
+    try:
+        client, adresse, client_type = get_client_and_adresse(client_id)
+    except FrontClient.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Client introuvable"}, status=404)
+
+    role = (request.session.get("role") or "").lower()
+    session_commercial_id = request.session.get("commercial_id")
+
+    # Autorisation:
+    # - responsable/admin: autorisé
+    # - commercial: uniquement ses propres clients
+    if role not in ["responsable", "admin"]:
+        if not session_commercial_id:
+            return JsonResponse({"success": False, "error": "Non autorisé"}, status=403)
+
+        allowed = False
+        client_commercial_id = getattr(client, "commercial_id", None)
+        if client_commercial_id is not None:
+            try:
+                allowed = int(client_commercial_id) == int(session_commercial_id)
+            except Exception:
+                allowed = False
+
+        # Fallback legacy: comparaison par nom commercial normalisé
+        if not allowed:
+            session_commercial_nom = (request.session.get("commercial_nom") or "").replace(" ", "").upper()
+            client_commercial_nom = (getattr(client, "commercial", "") or "").replace(" ", "").upper()
+            allowed = bool(session_commercial_nom and session_commercial_nom == client_commercial_nom)
+
+        if not allowed:
+            return JsonResponse({"success": False, "error": "Accès refusé à ce client"}, status=403)
+
+    try:
+        # Mettre à jour les champs du client
+        client.telephone = data.get("telephone", client.telephone)
+        client.email = data.get("email", client.email)
+        client.classement_client = data.get("classement_client", client.classement_client)
+        client.save()
+
+        # Mettre à jour l'adresse si elle existe
+        if adresse and client_type == "front":
+            from .models import Adresse
+            adresse_obj = Adresse.objects.filter(client=client).first()
+            if adresse_obj:
+                adresse_obj.adresse = data.get("adresse", adresse_obj.adresse)
+                adresse_obj.code_postal = data.get("code_postal", adresse_obj.code_postal)
+                adresse_obj.ville = data.get("ville", adresse_obj.ville)
+                adresse_obj.save()
+
+        return JsonResponse({"success": True})
+    except Exception:
+        logger.exception("update_client failed for client_id=%s", client_id)
+        return JsonResponse({"success": False, "error": "Erreur lors de la mise à jour"}, status=500)
+
+
+@login_required
+@require_POST
+@csrf_protect
+def update_client_uuid(request, client_uuid):
+    try:
+        client_id = _resolve_frontclient_id(client_uuid)
+    except FrontClient.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Client introuvable"}, status=404)
+    return update_client(request, client_id)
 
 def satisfaction_b2b(request):
     note_recommandation_choices = list(range(1, 11))
@@ -2113,72 +2241,9 @@ def download_satisfaction_pdf(request, uuid):
     response['Content-Disposition'] = f'inline; filename="satisfaction_{uuid}.pdf"'
     return response
 
-@require_GET
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
-
-@login_required
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
-
 @login_required
 @require_POST
+@csrf_protect
 def set_comment_pin(request, comment_id):
     # Body JSON: {"is_pinned": true/false}
     try:
@@ -2186,17 +2251,50 @@ def set_comment_pin(request, comment_id):
         is_pinned = bool(payload.get('is_pinned', False))
 
         c = CommentaireRdv.objects.get(id=comment_id)
+
+        current = get_current_commercial(request)
+        role = (request.session.get("role") or "").lower()
+        is_responsable = role in {"responsable", "admin"}
+        allowed = False
+        if is_responsable:
+            allowed = True
+        elif current:
+            if getattr(c, "commercial_id", None) == current.id:
+                allowed = True
+            elif getattr(c, "rdv_id", None) and getattr(c.rdv, "commercial_id", None) == current.id:
+                allowed = True
+        if not allowed:
+            raise PermissionDenied("Non autorisé")
+
         c.is_pinned = is_pinned
         c.save(update_fields=['is_pinned'])
 
         return JsonResponse({'status': 'ok', 'id': c.id, 'is_pinned': bool(c.is_pinned)})
     except CommentaireRdv.DoesNotExist:
         return JsonResponse({'status': 'error', 'error': 'Commentaire introuvable'}, status=404)
-    except Exception as e:
-        return JsonResponse({'status': 'error', 'error': str(e)}, status=400)
+    except PermissionDenied:
+        raise
+    except Exception:
+        return JsonResponse({'status': 'error', 'error': 'Requête invalide'}, status=400)
 
 @login_required
 def get_client_rdv(request, client_id):
+    role = (request.session.get("role") or "").lower()
+    session_commercial_id = request.session.get("commercial_id")
+    try:
+        client = FrontClient.objects.get(id=client_id)
+    except FrontClient.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Client introuvable'}, status=404)
+
+    if role not in ['responsable', 'admin']:
+        if not session_commercial_id:
+            return JsonResponse({'success': False, 'error': 'Non autorisé'}, status=403)
+        try:
+            if int(client.commercial_id or 0) != int(session_commercial_id):
+                return JsonResponse({'success': False, 'error': 'Non autorisé'}, status=403)
+        except Exception:
+            return JsonResponse({'success': False, 'error': 'Non autorisé'}, status=403)
+
     statut = request.GET.get('statut')
     qs = Rendezvous.objects.filter(client_id=client_id)
     
@@ -2210,7 +2308,6 @@ def get_client_rdv(request, client_id):
     rdvs = qs.order_by('-date_rdv', '-heure_rdv')
     
     # Récupérer le nom du client
-    client = FrontClient.objects.get(id=client_id)
     client_name = f"{client.civilite or ''} {client.rs_nom or '(sans raison sociale)'}".strip()
     
     data = []
@@ -2235,36 +2332,14 @@ def get_client_rdv(request, client_id):
         'client_name': client_name
     })
 
-def get_client_comments(request, client_id):
+
+@login_required
+def get_client_rdv_uuid(request, client_uuid):
     try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
+        client_id = _resolve_frontclient_id(client_uuid)
+    except FrontClient.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Client introuvable'}, status=404)
+    return get_client_rdv(request, client_id)
 
 @login_required
 def dashboard_responsable(request):
@@ -2414,37 +2489,6 @@ def dashboard_responsable(request):
         ]),
     }
     return render(request, 'front/dashboard_responsable.html', context)
-
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
 
 @login_required
 def api_satisfaction_stats(request):
@@ -2598,39 +2642,17 @@ def api_satisfaction_stats(request):
     }
     return JsonResponse(chart_data)
 
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
-
 @login_required
 def get_last_rdv_commercial(request, commercial_id):
+    role = (request.session.get("role") or "").lower()
+    session_commercial_id = request.session.get("commercial_id")
+    if role not in ['responsable', 'admin']:
+        try:
+            if int(session_commercial_id or 0) != int(commercial_id):
+                return JsonResponse({'error': 'forbidden'}, status=403)
+        except Exception:
+            return JsonResponse({'error': 'forbidden'}, status=403)
+
     commercial = Commercial.objects.get(id=commercial_id)
     dernier_rdv = Rendezvous.objects.filter(
         commercial=commercial,
@@ -2648,37 +2670,6 @@ def get_last_rdv_commercial(request, commercial_id):
     else:
         return JsonResponse({'statut': None})
 
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
-
 @login_required
 def api_rdv_counters(request):
     now = timezone.now()
@@ -2694,37 +2685,6 @@ def api_rdv_counters(request):
         'total_avenir': total_avenir,
         'total_annule': total_annule,
     })
-
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
 
 @login_required
 @require_GET
@@ -2748,7 +2708,17 @@ def api_rdvs_a_venir(request):
         client, adresse, client_type = get_client_and_adresse(rdv.client.id)
         data.append({
             'uuid': str(rdv.uuid),
-            'client': adresse["adresse"] if adresse else getattr(rdv.client, 'rs_nom', ''),
+            'client': {
+                'id': client.id,
+                'uuid': str(client.uuid) if getattr(client, 'uuid', None) else None,
+                'civilite': getattr(client, 'civilite', ''),
+                'nom': getattr(client, 'nom', ''),
+                'prenom': getattr(client, 'prenom', ''),
+                'rs_nom': getattr(client, 'rs_nom', ''),
+                'telephone': getattr(client, 'telephone', ''),
+                'email': getattr(client, 'email', ''),
+            },
+            'client_label': adresse["adresse"] if adresse else getattr(rdv.client, 'rs_nom', ''),
             'civilite': getattr(client, 'civilite', ''),
             'rs_nom': getattr(client, 'rs_nom', ''),
             'date': rdv.date_rdv.strftime('%d/%m/%Y'),
@@ -2758,36 +2728,31 @@ def api_rdvs_a_venir(request):
         })
     return JsonResponse({'rdvs': data})
 
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
 
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
+@login_required
+@require_GET
+def api_rdvs_overdue_count(request):
+    """Nombre de RDV non validés dont la date est strictement antérieure à aujourd'hui."""
+    role = request.session.get('role')
+    commercial_id = request.GET.get('commercial_id')
 
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
+    # Responsable/admin: id optionnel en GET, sinon fallback session.
+    if role in ['responsable', 'admin'] and commercial_id:
+        pass
+    else:
+        commercial_id = request.session.get('commercial_id')
 
-        return JsonResponse({"commentaires": data})
+    if not commercial_id:
+        return JsonResponse({'error': 'Non authentifié'}, status=403)
 
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
+    today = timezone.now().date()
+    count = Rendezvous.objects.filter(
+        commercial_id=commercial_id,
+        date_rdv__lt=today,
+        statut_rdv__in=['a_venir', 'en_retard']
+    ).count()
+
+    return JsonResponse({'count': count, 'date_reference': today.isoformat()})
 
 @login_required
 @require_GET
@@ -2806,44 +2771,26 @@ def api_rdv_counters_by_client(request):
     return JsonResponse({'nb_rdv_valides': nb_rdv_valides})
 
 @require_GET
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
-
 @login_required
 def api_clients_by_commercial(request):
     commercial_id = request.GET.get('commercial_id')
+    role = (request.session.get('role') or '').lower()
+    session_commercial_id = request.session.get('commercial_id')
+
     if not commercial_id:
         return JsonResponse({'clients': []})
+
     try:
-        commercial = Commercial.objects.get(id=commercial_id)
+        requested_id = int(commercial_id)
+    except Exception:
+        return JsonResponse({'clients': []})
+
+    if role not in ['responsable', 'admin']:
+        if not session_commercial_id or int(session_commercial_id) != requested_id:
+            return JsonResponse({'error': 'forbidden', 'clients': []}, status=403)
+
+    try:
+        commercial = Commercial.objects.get(id=requested_id)
         # Normaliser le nom du commercial (suppression des espaces + upper)
         nom_normalise = commercial.commercial.replace(' ', '').upper()
         # Comparaison normalisée côté base: REPLACE(UPPER(commercial), ' ', '') = nom_normalise
@@ -2857,6 +2804,7 @@ def api_clients_by_commercial(request):
         data = [
             {
                 'id': client.id,
+                'uuid': str(client.uuid) if getattr(client, 'uuid', None) else None,
                 'nom': client.rs_nom or '',
                 'prenom': client.prenom or ''
             }
@@ -2865,37 +2813,6 @@ def api_clients_by_commercial(request):
         return JsonResponse({'clients': data})
     except Commercial.DoesNotExist:
         return JsonResponse({'clients': []})
-
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
 
 @login_required
 @require_POST
@@ -2972,37 +2889,6 @@ def import_clients_excel(request):
     except Exception as e:
         return JsonResponse({'message': f"Erreur lors de l'import : {e}"}, status=400)
 
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
-
 @login_required
 def api_commerciaux(request):
     commerciaux = Commercial.objects.filter(role='commercial')
@@ -3016,37 +2902,6 @@ def api_commerciaux(request):
         for commercial in commerciaux
     ]
     return JsonResponse({'commerciaux': data})
-
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
 
 @login_required
 def fiche_commercial_view(request, commercial_id):
@@ -3235,37 +3090,6 @@ def fiche_commercial_view(request, commercial_id):
     }
     return render(request, 'front/fiche_commercial.html', context)
 
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
-
 @login_required
 def export_satisfactions_excel(request):
     data = SatisfactionB2B.objects.all().values()
@@ -3283,6 +3107,7 @@ def export_satisfactions_excel(request):
     df.to_excel(response, index=False)
     return response
 
+@login_required
 @require_GET
 def search_clients(request):
     q = request.GET.get('q', '').strip()
@@ -3322,6 +3147,7 @@ def search_clients(request):
     ]
     return JsonResponse({'results': results})
 
+@login_required
 @require_GET
 def search_clients_table(request):
     q = request.GET.get('q', '').strip()
@@ -3356,6 +3182,7 @@ def search_clients_table(request):
         adresse_obj = c.adresses.first()  # Utilise la relation préchargée
         results.append({
             'id': c.id,
+            'uuid': str(c.uuid) if getattr(c, 'uuid', None) else None,
             'civilite': c.civilite or '',
             'rs_nom': c.rs_nom or '',
             'prenom': c.prenom or '',
@@ -3411,77 +3238,12 @@ def politique_confidentialite(request):
     role = request.session.get('role', '')
     return render(request, 'front/politique_confidentialite.html', {'role': role})
 
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
-
 @login_required
 def mentions_legales(request):
     role = request.session.get('role', '')
     return render(request, 'front/mentions_legales.html', {'role': role})
 
-def mentions_legales(request):
-    return render(request, 'front/mentions_legales.html')
-
 # Nouvelles vues pour l'optimisation de trajet
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
-
 @login_required
 def route_optimisee(request):
     """Vue pour afficher la page de route optimisée"""
@@ -3499,37 +3261,6 @@ def route_optimisee(request):
         'commercial': commercial,
         'default_date': default_date
     })
-
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
 
 @login_required
 def api_route_optimisee(request, date):
@@ -3560,7 +3291,9 @@ def api_route_optimisee(request, date):
                 'client_name': rdv.client.rs_nom if rdv.client else 'Client inconnu',
                 'heure': rdv.heure_rdv.strftime('%H:%M'),
                 'objet': rdv.objet or '',
-                'address': address,
+                'address': address.adresse if address else '',
+                'code_postal': address.code_postal if address else '',
+                'ville': address.ville if address else '',
                 'latitude': float(address.latitude) if address else None,
                 'longitude': float(address.longitude) if address else None,
             })
@@ -3569,44 +3302,15 @@ def api_route_optimisee(request, date):
             'success': True,
             'rdvs': rdvs_data,
             'total_distance': route_data['total_distance'],
-            'estimated_time_minutes': route_data['estimated_time_minutes']
+            'estimated_time_minutes': route_data['estimated_time_minutes'],
+            'mode': route_data.get('mode', 'HAVERSINE'),
         })
         
     except Commercial.DoesNotExist:
         return JsonResponse({'error': 'Commercial non trouvé'}, status=404)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
-
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
+    except Exception:
+        logger.exception("api_route_optimisee failed for date=%s", date)
+        return JsonResponse({'error': 'Une erreur interne est survenue.'}, status=500)
 
 @login_required
 def geocoder_adresses(request):
@@ -3616,43 +3320,13 @@ def geocoder_adresses(request):
             from .services import GeocodingService
             GeocodingService.geocode_all_addresses()
             return JsonResponse({'success': True, 'message': 'Géocodage terminé avec succès'})
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
+        except Exception:
+            logger.exception("geocoder_adresses failed")
+            return JsonResponse({'success': False, 'error': 'Une erreur interne est survenue.'})
     
     return render(request, 'front/geocoder_adresses.html')
 
 from django.http import JsonResponse
-
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
 
 @login_required
 def api_search_rdv_historique(request):
@@ -3687,66 +3361,52 @@ def api_search_rdv_historique(request):
                 break
     return JsonResponse({'results': results})
 
-@csrf_exempt
+@login_required
+@require_POST
+@csrf_protect
 def extend_session(request):
     """Vue pour prolonger la session utilisateur"""
-    if request.method == 'POST':
-        if 'commercial_id' in request.session:
-            # Mettre à jour le timestamp de dernière activité
-            request.session['last_activity'] = timezone.now().isoformat()
-            
-            # Supprimer les flags d'alerte
-            if 'show_timeout_warning' in request.session:
-                del request.session['show_timeout_warning']
-            if 'timeout_warning_minutes' in request.session:
-                del request.session['timeout_warning_minutes']
-            
-            return JsonResponse({'success': True, 'message': 'Session prolongée'})
-        else:
-            return JsonResponse({'success': False, 'message': 'Utilisateur non connecté'}, status=401)
-    
-    return JsonResponse({'success': False, 'message': 'Méthode non autorisée'}, status=405)
+    if 'commercial_id' not in request.session:
+        return JsonResponse({'success': False, 'message': 'Utilisateur non connecté'}, status=401)
 
-def get_client_comments(request, client_id):
-    try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
+    # Mettre à jour le timestamp de dernière activité
+    request.session['last_activity'] = timezone.now().isoformat()
 
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
+    # Supprimer les flags d'alerte
+    if 'show_timeout_warning' in request.session:
+        del request.session['show_timeout_warning']
+    if 'timeout_warning_minutes' in request.session:
+        del request.session['timeout_warning_minutes']
 
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
+    return JsonResponse({'success': True, 'message': 'Session prolongée'})
 
 @login_required
 def objectif_annuel(request):
     """Vue pour afficher les objectifs annuels du commercial"""
-    commercial_id = request.session.get('commercial_id')
-    if not commercial_id:
+    session_commercial_id = request.session.get('commercial_id')
+    role = (request.session.get('role') or '').lower()
+    is_responsable = role in ['responsable', 'admin']
+
+    if not session_commercial_id:
         return redirect('login')
-    
+
+    # Sélection du commercial : session pour un commercial, paramètre pour responsable/admin.
+    selected_commercial_id = str(session_commercial_id)
+    commerciaux_list = []
+    if is_responsable:
+        commerciaux_list = list(
+            Commercial.objects.filter(role='commercial').order_by('nom', 'prenom')
+        )
+        requested_commercial_id = (request.GET.get('commercial_id') or '').strip()
+        valid_commercial_ids = {str(c.id) for c in commerciaux_list}
+
+        if requested_commercial_id and requested_commercial_id in valid_commercial_ids:
+            selected_commercial_id = requested_commercial_id
+        elif commerciaux_list:
+            selected_commercial_id = str(commerciaux_list[0].id)
+
     try:
-        commercial = Commercial.objects.get(id=commercial_id)
+        commercial = Commercial.objects.get(id=selected_commercial_id)
     except Commercial.DoesNotExist:
         return redirect('login')
     
@@ -3768,7 +3428,7 @@ def objectif_annuel(request):
                 SUM(visites_valides) as done_global
             FROM front_clientvisitstats 
             WHERE commercial_id = %s AND annee = %s
-        """, [commercial_id, selected_year])
+        """, [selected_commercial_id, selected_year])
         
         kpis_result = cursor.fetchone()
         target_global = kpis_result[0] or 0
@@ -3788,6 +3448,7 @@ def objectif_annuel(request):
                 cvs.visites_valides,
                 (cvs.objectif - cvs.visites_valides) as restants,
                 CASE WHEN cvs.visites_valides >= cvs.objectif THEN 'Atteint' ELSE 'Non atteint' END as statut,
+                fc.uuid,
                 fc.rs_nom,
                 fc.nom,
                 fc.prenom
@@ -3795,17 +3456,18 @@ def objectif_annuel(request):
             LEFT JOIN front_client fc ON cvs.client_id = fc.id
             WHERE cvs.commercial_id = %s AND cvs.annee = %s
             ORDER BY restants DESC, statut DESC, fc.rs_nom
-        """, [commercial_id, selected_year])
+        """, [selected_commercial_id, selected_year])
         
         clients_data = []
         for row in cursor.fetchall():
-            client_id, objectif, visites_valides, restants, statut, rs_nom, nom, prenom = row
+            client_id, objectif, visites_valides, restants, statut, client_uuid, rs_nom, nom, prenom = row
             
             # Nom d'affichage du client
             client_name = rs_nom or f"{nom or ''} {prenom or ''}".strip() or f"Client {client_id}"
             
             clients_data.append({
                 'client_id': client_id,
+                'client_uuid': str(client_uuid) if client_uuid else '',
                 'client_name': client_name,
                 'objectif': objectif or 0,
                 'realises': visites_valides or 0,
@@ -3817,6 +3479,12 @@ def objectif_annuel(request):
     # Contexte pour le template
     context = {
         'commercial': commercial,
+        'role': role,
+        'is_responsable': is_responsable,
+        'commerciaux_list': commerciaux_list,
+        'selected_commercial_id': str(selected_commercial_id),
+        'next_url_for_add_rdv': request.get_full_path(),
+        'back_dashboard_url': 'dashboard_responsable' if is_responsable else 'dashboard_test',
         'selected_year': selected_year,
         'current_year': current_year,
         'kpis': {
@@ -3831,35 +3499,32 @@ def objectif_annuel(request):
     
     return render(request, 'front/objectif_annuel.html', context)
 
-@csrf_exempt
+@login_required
+@require_GET
 def api_client_details(request, client_id):
     """API pour récupérer les détails d'un client avec ses questionnaires"""
-    # Pour les tests, utiliser le premier commercial
     commercial_id = request.session.get('commercial_id')
     if not commercial_id:
-        commercial = Commercial.objects.first()
-        commercial_id = commercial.id if commercial else None
-        print(f"DEBUG: Utilisation du commercial par défaut: {commercial_id}")
-    
-    print(f"DEBUG: API appelée pour client_id={client_id}, commercial_id={commercial_id}")
-    print(f"DEBUG: Session commercial_id: {request.session.get('commercial_id')}")
-    
+        return JsonResponse({'error': 'Non authentifié'}, status=401)
+
+    role = (request.session.get('role') or '').lower()
+
     try:
         # Récupérer les informations du client
         client = FrontClient.objects.get(id=client_id)
-        
-        # Vérifier que le client appartient bien à ce commercial
-        commercial = Commercial.objects.get(id=commercial_id)
-        print(f"DEBUG: client.commercial='{client.commercial}', commercial.commercial='{commercial.commercial}'")
-        
-        # Vérification plus flexible - ignorer les espaces et la casse
-        client_commercial_clean = (client.commercial or '').strip().lower()
-        commercial_name_clean = (commercial.commercial or '').strip().lower()
-        
-        if client_commercial_clean != commercial_name_clean:
-            print(f"DEBUG: Accès refusé - commercial ne correspond pas")
-            print(f"DEBUG: client_commercial_clean='{client_commercial_clean}', commercial_name_clean='{commercial_name_clean}'")
-            return JsonResponse({'error': 'Accès non autorisé à ce client'}, status=403)
+
+        # Contrôle d'accès robuste
+        if role not in ['responsable', 'admin']:
+            if client.commercial_id:
+                if int(client.commercial_id) != int(commercial_id):
+                    return JsonResponse({'error': 'Accès non autorisé à ce client'}, status=403)
+            else:
+                # Fallback legacy quand commercial_id n'est pas renseigné.
+                commercial = Commercial.objects.filter(id=commercial_id).first()
+                client_commercial_clean = (client.commercial or '').replace(' ', '').strip().lower()
+                commercial_name_clean = ((commercial.commercial if commercial else '') or '').replace(' ', '').strip().lower()
+                if not commercial_name_clean or client_commercial_clean != commercial_name_clean:
+                    return JsonResponse({'error': 'Accès non autorisé à ce client'}, status=403)
         
         # Récupérer les RDV réalisés du client pour ce commercial
         rdv_realises = Rendezvous.objects.filter(
@@ -3932,51 +3597,51 @@ def api_client_details(request, client_id):
             'restants': restants
         }
         
-        print(f"DEBUG: Données envoyées pour client {client_id}")
+        logger.debug("api_client_details success for client_id=%s", client_id)
         return JsonResponse(response_data)
         
     except FrontClient.DoesNotExist:
-        print(f"DEBUG: Client {client_id} non trouvé")
+        logger.info("api_client_details client not found client_id=%s", client_id)
         return JsonResponse({'error': 'Client non trouvé'}, status=404)
-    except Exception as e:
-        print(f"DEBUG: Erreur pour client {client_id}: {str(e)}")
-        return JsonResponse({'error': str(e)}, status=500)
+    except Exception:
+        logger.exception("api_client_details failed for client_id=%s", client_id)
+        return JsonResponse({'error': 'Une erreur interne est survenue.'}, status=500)
 
-def get_client_comments(request, client_id):
+
+@login_required
+@require_GET
+def api_client_details_uuid(request, client_uuid):
     try:
-        commentaires = (
-            CommentaireRdv.objects
-            .filter(rdv__client_id=client_id)
-            .select_related("commercial", "auteur")
-            .order_by("-is_pinned", "-date_creation")
-        )
-
-        data = []
-        for c in commentaires:
-            auteur = "Système"
-            if c.commercial:
-                auteur = c.commercial.commercial
-            elif c.auteur:
-                auteur = c.auteur.username
-
-            data.append({
-                "id": c.id,
-                "texte": c.texte,
-                "date": c.date_creation.strftime("%d/%m/%Y %H:%M"),
-                "auteur": auteur,
-                "is_pinned": bool(getattr(c, "is_pinned", False)),
-            })
-
-        return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
-        return JsonResponse({"commentaires": []})
+        client_id = _resolve_frontclient_id(client_uuid)
+    except FrontClient.DoesNotExist:
+        return JsonResponse({'error': 'Client non trouvé'}, status=404)
+    return api_client_details(request, client_id)
 
 @login_required
 @require_POST
+@csrf_protect
 def toggle_pin_comment(request, comment_id):
+    rate_key = f"rl:toggle_pin_comment:{_client_ip(request)}:{request.session.get('commercial_id') or 'anon'}"
+    if _is_rate_limited(rate_key, limit=120, window_seconds=60):
+        return _rate_limited_response()
+
     comment = get_object_or_404(CommentaireRdv, id=comment_id)
+
+    current = get_current_commercial(request)
+    role = (request.session.get("role") or "").lower()
+    is_responsable = role in {"responsable", "admin"}
+
+    allowed = False
+    if is_responsable:
+        allowed = True
+    elif current:
+        if getattr(comment, "commercial_id", None) == current.id:
+            allowed = True
+        elif getattr(comment, "rdv_id", None) and getattr(comment.rdv, "commercial_id", None) == current.id:
+            allowed = True
+
+    if not allowed:
+        raise PermissionDenied("Non autorisé")
 
     # toggle
     comment.is_pinned = not comment.is_pinned
@@ -3984,7 +3649,36 @@ def toggle_pin_comment(request, comment_id):
 
     return JsonResponse({"ok": True, "pinned": comment.is_pinned})
 
-def get_client_comments(request, client_id):
+@login_required
+@require_GET
+def api_client_comments(request, client_id):
+    """
+    Endpoint canonique pour les commentaires client.
+    Contrôle d'accès:
+    - responsable/admin: accès complet
+    - commercial: accès uniquement à ses clients
+    """
+    commercial_id = request.session.get("commercial_id")
+    if not commercial_id:
+        return JsonResponse({"error": "Non authentifié"}, status=401)
+    rate_key = f"rl:client_comments:{_client_ip(request)}:{commercial_id}"
+    if _is_rate_limited(rate_key, limit=300, window_seconds=60):
+        return _rate_limited_response()
+
+    role = (request.session.get("role") or "").lower()
+
+    try:
+        client = FrontClient.objects.get(id=client_id)
+    except FrontClient.DoesNotExist:
+        return JsonResponse({"commentaires": []}, status=404)
+
+    if role not in ["responsable", "admin"]:
+        try:
+            if client.commercial_id and int(client.commercial_id) != int(commercial_id):
+                return JsonResponse({"error": "Accès non autorisé à ce client"}, status=403)
+        except Exception:
+            return JsonResponse({"error": "Accès non autorisé à ce client"}, status=403)
+
     try:
         commentaires = (
             CommentaireRdv.objects
@@ -4010,10 +3704,19 @@ def get_client_comments(request, client_id):
             })
 
         return JsonResponse({"commentaires": data})
-
-    except Exception as e:
-        print(f"Erreur get_client_comments: {e}")
+    except Exception:
+        logger.exception("api_client_comments failed for client_id=%s", client_id)
         return JsonResponse({"commentaires": []})
+
+
+@login_required
+@require_GET
+def api_client_comments_uuid(request, client_uuid):
+    try:
+        client_id = _resolve_frontclient_id(client_uuid)
+    except FrontClient.DoesNotExist:
+        return JsonResponse({"commentaires": []}, status=404)
+    return api_client_comments(request, client_id)
 
 @login_required
 def commercial_map(request):
@@ -4031,6 +3734,7 @@ def healthz(request):
 # === API MAP TOURNEE ===
 from django.views.decorators.http import require_GET
 
+@login_required
 @require_GET
 def api_map_tournee(request):
     """Retourne clients géocodés + tournée du jour pour un commercial."""
@@ -4057,6 +3761,11 @@ def api_map_tournee(request):
     except Exception:
         return JsonResponse({"error": "commercial_id invalide"}, status=400)
 
+    role = (request.session.get("role") or "").lower()
+    session_commercial_id = int(request.session.get("commercial_id") or 0)
+    if role not in ["responsable", "admin"] and com_id != session_commercial_id:
+        return JsonResponse({"error": "forbidden"}, status=403)
+
     commercial = Commercial.objects.filter(id=com_id).first()
 
     clients_qs = FrontClient.objects.filter(commercial_id=com_id)
@@ -4072,12 +3781,17 @@ def api_map_tournee(request):
         nom = c.rs_nom or (((c.prenom or "").strip() + " " + (c.nom or "").strip()).strip()) or "Client"
         clients.append({
             "id": c.id,
+            "uuid": str(c.uuid) if getattr(c, "uuid", None) else None,
             "nom": nom,
             "lat": float(a.latitude),
             "lng": float(a.longitude),
             "ville": a.ville,
             "adresse": a.adresse,
             "code_postal": a.code_postal,
+            "telephone": c.telephone,
+            "email": c.email,
+            "classement_client": c.classement_client,
+            "code_comptable": c.code_comptable,
         })
     rdvs_qs = (Rendezvous.objects
         .filter(commercial_id=com_id, date_rdv=d)
@@ -4099,10 +3813,18 @@ def api_map_tournee(request):
         tournee.append({
             "rdv_id": r.id,
             "client_id": c.id if c else None,
+            "client_uuid": str(c.uuid) if c and getattr(c, "uuid", None) else None,
             "label": (r.rs_nom or (c.rs_nom if c else "RDV")),
             "heure": str(r.heure_rdv) if r.heure_rdv else "",
             "lat": float(a.latitude),
             "lng": float(a.longitude),
+            "ville": a.ville,
+            "adresse": a.adresse,
+            "code_postal": a.code_postal,
+            "telephone": c.telephone if c else "",
+            "email": c.email if c else "",
+            "classement_client": c.classement_client if c else "",
+            "code_comptable": c.code_comptable if c else "",
         })
 
     return JsonResponse({
@@ -4114,9 +3836,14 @@ def api_map_tournee(request):
     })
 
 # API_REPLACE_TOURNEE_V2
-@csrf_exempt
+@login_required
+@csrf_protect
 @require_POST
 def api_replace_tournee(request):
+    rate_key = f"rl:replace_tournee:{_client_ip(request)}:{request.session.get('commercial_id') or 'anon'}"
+    if _is_rate_limited(rate_key, limit=30, window_seconds=60):
+        return _rate_limited_response()
+
     # API_REPLACE_TOURNEE_SAFEJSON_V1
     try:
 
@@ -4128,47 +3855,88 @@ def api_replace_tournee(request):
 
         commercial_id = int(payload.get("commercial_id") or 0)
         date_str = (payload.get("date") or "").strip()
-        client_ids = payload.get("client_ids") or []
+        client_uuids = payload.get("client_uuids") or []
+        legacy_client_ids = payload.get("client_ids") or []
 
-        if (not commercial_id) or (not date_str) or (not isinstance(client_ids, list)) or (not client_ids):
+        if (not commercial_id) or (not date_str):
             return JsonResponse({"ok": False, "error": "missing_fields"}, status=400)
+        if client_uuids and not isinstance(client_uuids, list):
+            return JsonResponse({"ok": False, "error": "invalid_client_uuids"}, status=400)
+        if legacy_client_ids and not isinstance(legacy_client_ids, list):
+            return JsonResponse({"ok": False, "error": "invalid_client_ids"}, status=400)
 
         d = parse_date(date_str)
         if not d:
             return JsonResponse({"ok": False, "error": "invalid_date"}, status=400)
 
+        # Canonique: client_uuids. Compat legacy: client_ids.
+        resolved_client_ids = []
+        if client_uuids:
+            uuid_map = {
+                str(c.uuid): c.id
+                for c in FrontClient.objects.filter(uuid__in=client_uuids).only("id", "uuid")
+            }
+            missing = [u for u in client_uuids if str(u) not in uuid_map]
+            if missing:
+                return JsonResponse({"ok": False, "error": "unknown_client_uuid", "missing": missing[:3]}, status=400)
+            resolved_client_ids = [int(uuid_map[str(u)]) for u in client_uuids]
+        elif legacy_client_ids:
+            try:
+                resolved_client_ids = [int(cid) for cid in legacy_client_ids]
+            except Exception:
+                return JsonResponse({"ok": False, "error": "invalid_client_ids"}, status=400)
+        else:
+            return JsonResponse({"ok": False, "error": "missing_clients"}, status=400)
+
+        # Permissions: un commercial ne peut modifier que sa propre tournée.
+        session_commercial_id = int(request.session.get("commercial_id") or 0)
+        role = request.session.get("role")
+        if role not in ["responsable", "admin"] and commercial_id != session_commercial_id:
+            return JsonResponse({"ok": False, "error": "forbidden"}, status=403)
+        # Un commercial ne peut pas modifier une tournée sur une date passée.
+        if role not in ["responsable", "admin"] and d < timezone.localdate():
+            return JsonResponse({"ok": False, "error": "past_date_forbidden"}, status=400)
+
         from .models import Rendezvous
         qs = Rendezvous.objects.filter(commercial_id=commercial_id, date_rdv=d).order_by("heure_rdv", "id")
         rdvs = list(qs)
 
-        n_update = min(len(rdvs), len(client_ids))
+        n_update = min(len(rdvs), len(resolved_client_ids))
         updated = 0
         for i in range(n_update):
             rv = rdvs[i]
-            cid = int(client_ids[i])
+            cid = int(resolved_client_ids[i])
             if getattr(rv, "client_id", None) != cid:
                 rv.client_id = cid
                 rv.save(update_fields=["client"])
             updated += 1
 
         created = 0
-        if len(client_ids) > len(rdvs):
+        if len(resolved_client_ids) > len(rdvs):
             from datetime import time, datetime, timedelta
             if rdvs:
                 last_h = rdvs[-1].heure_rdv
                 base_dt = datetime.combine(d, last_h) + timedelta(minutes=30)
             else:
                 base_dt = datetime.combine(d, time(9, 0))
-            for j in range(len(rdvs), len(client_ids)):
-                cid = int(client_ids[j])
-                rv = Rendezvous(commercial_id=commercial_id, client_id=cid, date_rdv=d, heure_rdv=base_dt.time())
+            for j in range(len(rdvs), len(resolved_client_ids)):
+                cid = int(resolved_client_ids[j])
+                client = FrontClient.objects.filter(id=cid).first()
+                rv = Rendezvous(
+                    commercial_id=commercial_id,
+                    client_id=cid,
+                    date_rdv=d,
+                    heure_rdv=base_dt.time(),
+                    statut_rdv="a_venir",
+                    rs_nom=(client.rs_nom if client else None),
+                )
                 rv.save()
                 created += 1
                 base_dt = base_dt + timedelta(minutes=30)
 
         deleted = 0
-        if len(client_ids) < len(rdvs):
-            extra = rdvs[len(client_ids):]
+        if len(resolved_client_ids) < len(rdvs):
+            extra = rdvs[len(resolved_client_ids):]
             deleted = len(extra)
             for rv in extra:
                 rv.delete()

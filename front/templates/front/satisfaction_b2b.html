@@ -6,7 +6,6 @@
   <title>Enquête de satisfaction B2B Careco Rubio</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'front/css/satisfaction_b2b.css' %}">
-  <link rel="stylesheet" href="{% static 'front/css/footer.css' %}">
 </head>
 <body>
   <div class="satisfaction-container">
@@ -203,6 +202,9 @@
       }
     });
   </script>
-  {% include 'front/footer.html' %}
+  <div class="dbt-footer-links" style="display:flex;justify-content:center;align-items:center;gap:16px;width:100%;margin:14px 2px;">
+    <a href="/mentions-legales" class="dbt-link" style="color:#ef4444;text-decoration:none;font-size:16px;font-weight:500;">Mentions légales</a>
+    <a href="/politique-confidentialite" class="dbt-link" style="color:#ef4444;text-decoration:none;font-size:16px;font-weight:500;">Politique de confidentialité</a>
+  </div>
 </body>
-</html> 
+</html>

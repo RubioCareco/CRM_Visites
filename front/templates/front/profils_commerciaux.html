@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profils des Commerciaux</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'front/css/profils_commerciaux.css' %}">
@@ -11,6 +12,9 @@
     <div class="main-container">
         <header>
             <h1>Profils des Commerciaux</h1>
+            <button type="button" id="openAddCommercialModal" class="add-commercial-btn" aria-label="Ajouter un commercial">
+                <i class="fa fa-plus"></i>
+            </button>
         </header>
 
         <div class="commerciaux-grid">
@@ -31,8 +35,73 @@
         </div>
     </div>
 
+    {% if commercial_created %}
+    <div class="pc-toast success" role="status">Commercial ajouté avec succès.</div>
+    {% endif %}
+
+    <div id="addCommercialModal" class="pc-modal" style="display:none;">
+        <div class="pc-modal-card">
+            <div class="pc-modal-header">
+                <h2>Nouveau commercial</h2>
+                <button type="button" id="closeAddCommercialModal" class="pc-modal-close" aria-label="Fermer">×</button>
+            </div>
+            {% if create_error %}
+            <div class="pc-modal-error">{{ create_error }}</div>
+            {% endif %}
+            <form method="post" class="pc-modal-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create_commercial">
+
+                <label>Prénom *</label>
+                <input type="text" name="prenom" value="{{ create_form.prenom|default:'' }}" required>
+
+                <label>Nom *</label>
+                <input type="text" name="nom" value="{{ create_form.nom|default:'' }}" required>
+
+                <label>Email *</label>
+                <input type="email" name="email" value="{{ create_form.email|default:'' }}" required>
+
+                <label>Téléphone</label>
+                <input type="text" name="telephone" value="{{ create_form.telephone|default:'' }}">
+
+                <label>Mot de passe *</label>
+                <input type="password" name="password" required>
+
+                <label>Confirmer le mot de passe *</label>
+                <input type="password" name="password_confirm" required>
+
+                <label>Site de rattachement</label>
+                <input type="text" name="site_rattachement" value="{{ create_form.site_rattachement|default:'' }}">
+
+                <div class="pc-modal-actions">
+                    <button type="submit" class="pc-modal-submit">
+                        <i class="fa fa-user-plus"></i> Ajouter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <footer>
         <a href="{% url 'dashboard_responsable' %}" class="back-login" id="backDashboardBtn" style="position:fixed;left:24px;bottom:20px;z-index:9999;display:flex;align-items:center;gap:8px;color:#666;font-size:1.15rem;padding:8px 22px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,31%);backdrop-filter:blur(6px);border:none;text-decoration:none;background-color: #fff;"><i class="fa fa-arrow-left"></i> Retour</a>
     </footer>
+    <script>
+    (function(){
+        const modal = document.getElementById('addCommercialModal');
+        const openBtn = document.getElementById('openAddCommercialModal');
+        const closeBtn = document.getElementById('closeAddCommercialModal');
+        if (!modal || !openBtn || !closeBtn) return;
+
+        function openModal(){ modal.style.display = 'flex'; }
+        function closeModal(){ modal.style.display = 'none'; }
+
+        openBtn.addEventListener('click', openModal);
+        closeBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e)=>{ if (e.target === modal) closeModal(); });
+
+        const shouldOpen = {{ open_add_modal|yesno:"true,false" }};
+        if (shouldOpen) openModal();
+    })();
+    </script>
 </body>
 </html> 

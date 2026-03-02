@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Historique des rendez-vous (Responsable)</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'front/css/dashboard.css' %}">
@@ -25,8 +26,15 @@
     }
   </style>
 </head>
-<body>
-  <div><H1 class="Title">Historique rendez-vous</H1></div>
+<body class="historique-rdv-resp-no-page-scroll">
+  <div class="hr-page-header">
+    <h1 class="dashboard-title historique-title Title">
+      <i class="fa fa-clock-rotate-left" aria-hidden="true"></i>
+      <span>Historique des rendez-vous</span>
+    </h1>
+    <p class="hr-page-subtitle">Historique détaillé des actions commerciales</p>
+    <div class="hr-page-underline" aria-hidden="true"></div>
+  </div>
   <div class="actions-row">
     <div class="filters-container">
       <button id="openFilterPanelBtn" class="filter-button">
@@ -35,7 +43,7 @@
     </div>
   
     <div class="search-client" role="search">
-      <i class="fa fa-search search-icon" aria-hidden="true"></i>
+      <i class="fa fa-search search-icon hr-search-icon" aria-hidden="true"></i>
       <input
         type="search"
         class="search-client"
@@ -46,8 +54,7 @@
       <ul id="historiqueSearchSuggestions" class="autocomplete-results"></ul>
     </div>
   </div>
-  
-  
+  <div class="active-filters-row">
         {% if date_label %}
           <span class="filter-badge">
             {{ date_label }}
@@ -60,19 +67,19 @@
             <a href="?{% for key, value in request.GET.items %}{% if key != 'statut' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}" title="Supprimer ce filtre">&times;</a>
           </span>
         {% endif %}
-    </div>
+  </div>
     <div class="cards" style="margin-top:10px;justify-content:center;align-items:flex-start;">
-      <div class="card" style="background-color: #fff;width:100%;max-width:1600px;margin:auto;min-height:750px;padding-top:0;padding-left:0;padding-right:0;border-radius:12px;overflow:hidden;margin-bottom: 5px;">
+      <div class="card" style="background-color: #fff;width:100%;max-width:1600px;margin:auto;padding-top:0;padding-left:0;padding-right:0;border-radius:12px;overflow:hidden;margin-bottom: 5px;">
         <div class="tabs-container">
           <button class="tab-btn active" onclick="showTab('general')">Historique général</button>
           <button class="tab-btn" onclick="showTab('recent')">Rendez-vous validés</button>
-          <button class="tab-btn" onclick="showTab('rappeler')">À rappeler</button>
+          <button class="tab-btn" onclick="showTab('rappeler')">Rendez-vous annulés</button>
         </div>
         <div class="tabs-content-scroll">
           <div id="tab-general" class="tab-content active">
             {% if historique_general %}
               {% for rdv in historique_general %}
-                <div class="{% if rdv.statut_rdv == 'valide' %}visit-entry{% elif rdv.statut_rdv == 'annule' %}reminder-entry{% endif %}" data-client-id="{{ rdv.client.id }}" style="margin-bottom:18px;">
+                <div class="{% if rdv.statut_rdv == 'valide' %}visit-entry{% elif rdv.statut_rdv == 'annule' %}reminder-entry{% endif %}" data-client-id="{{ rdv.client.id }}" data-client-uuid="{{ rdv.client.uuid }}" style="margin-bottom:18px;">
                   <div class="client-name">
                     <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
                     <p class="infos-adresse">Adresse : {{ rdv.adresse_principale.adresse|default:"" }}, {{ rdv.adresse_principale.code_postal|default:"" }} {{ rdv.adresse_principale.ville|default:"" }}</p>
@@ -136,7 +143,7 @@
           <div id="tab-recent" class="tab-content">
             {% if visites_recentes %}
               {% for rdv in visites_recentes %}
-                <div class="visit-entry" style="margin-bottom:18px;">
+                <div class="visit-entry" data-client-id="{{ rdv.client.id }}" data-client-uuid="{{ rdv.client.uuid }}" style="margin-bottom:18px;">
                   <div class="client-name">
                     <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
                     <p class="infos-adresse">Adresse : {{ rdv.adresse_principale.adresse|default:"" }}, {{ rdv.adresse_principale.code_postal|default:"" }} {{ rdv.adresse_principale.ville|default:"" }}</p>
@@ -176,7 +183,7 @@
           <div id="tab-rappeler" class="tab-content">
             {% if a_rappeler %}
               {% for rdv in a_rappeler %}
-                <div class="reminder-entry" style="margin-bottom:18px;">
+                <div class="reminder-entry" data-client-id="{{ rdv.client.id }}" data-client-uuid="{{ rdv.client.uuid }}" style="margin-bottom:18px;">
                   <div class="client-name">
                     <strong>{% if rdv.client.civilite %}{{ rdv.client.civilite }} {% endif %}{{ rdv.client.rs_nom|default:"(sans raison sociale)" }}</strong>
                     <p class="infos-adresse">Adresse : {{ rdv.adresse_principale.adresse|default:"" }}, {{ rdv.adresse_principale.code_postal|default:"" }} {{ rdv.adresse_principale.ville|default:"" }}</p>
@@ -252,13 +259,12 @@
         </a>
       </div>
     </div>
-  </div>
   
   <!-- Modal pour l'historique du client -->
   <div id="modalClientRDV" class="modal-client-rdv" style="display:none;">
     <div class="modal-content-client-rdv">
       <button id="closeModalClientRDV" class="close-btn"><i class="fa fa-times"></i></button>
-      <h2 style="margin-bottom:18px; text-align:center; padding-bottom: 10px;">Historique du client</h2>
+      <h2 id="modalClientTitle">Historique du client</h2>
       <div id="modalClientRDVContent">
         <!-- Les rendez-vous seront injectés ici -->
       </div>
@@ -303,6 +309,28 @@
     </form>
   </div>
   <script>
+    function enforceSingleScrollZone() {
+      const html = document.documentElement;
+      const body = document.body;
+
+      html.style.overflow = 'hidden';
+      html.style.height = '100dvh';
+      body.style.overflow = 'hidden';
+      body.style.height = '100dvh';
+
+      ['main', '.dashboard-container', '.content-wrapper', '.dashboard'].forEach((selector) => {
+        const node = document.querySelector(selector);
+        if (!node) return;
+        node.style.overflow = 'hidden';
+        node.style.maxHeight = '100dvh';
+      });
+
+      const historyScroller = document.querySelector('.tabs-content-scroll');
+      if (historyScroller) {
+        historyScroller.style.overflowY = 'auto';
+      }
+    }
+
     function showTab(tab) {
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
@@ -320,6 +348,7 @@
 
     // Activation de l'onglet selon le paramètre ?tab= dans l'URL
     document.addEventListener('DOMContentLoaded', function() {
+      enforceSingleScrollZone();
       const params = new URLSearchParams(window.location.search);
       const tab = params.get('tab');
       if(tab) showTab(tab);
@@ -613,8 +642,9 @@
       document.querySelectorAll('.visit-entry, .reminder-entry').forEach(card => {
         card.addEventListener('click', function() {
           const clientId = this.getAttribute('data-client-id');
-          if (clientId) {
-            openClientModal(clientId);
+          const clientUuid = this.getAttribute('data-client-uuid');
+          if (clientUuid) {
+            openClientModal(clientUuid);
           }
         });
       });
@@ -636,12 +666,22 @@
       }
       
       // Fonction pour ouvrir la modal et charger les données
-      function openClientModal(clientId) {
+      function buildClientRdvUrl(clientUuid) {
+        if (!clientUuid) return null;
+        return `/api/client-rdv/uuid/${encodeURIComponent(clientUuid)}/`;
+      }
+
+      function openClientModal(clientUuid) {
         modal.style.display = 'flex';
         modalContent.innerHTML = '<p style="text-align:center;color:#ccc;">Chargement...</p>';
+        const targetUrl = buildClientRdvUrl(clientUuid);
+        if (!targetUrl) {
+          modalContent.innerHTML = '<p style="text-align:center;color:#ff5a5a;">Client UUID manquant.</p>';
+          return;
+        }
         
         // Récupérer tous les rendez-vous du client
-        fetch(`/get_client_rdv/${clientId}/`)
+        fetch(targetUrl)
           .then(response => response.json())
           .then(data => {
             if (data.success) {
@@ -659,11 +699,15 @@
       // Fonction pour afficher les rendez-vous dans la modal
       function displayClientRDVs(rdvs, clientName) {
         let html = '';
+        const modalTitle = document.getElementById('modalClientTitle');
+        if (modalTitle) {
+          modalTitle.textContent = clientName || 'Historique du client';
+        }
         
         if (rdvs.length === 0) {
           html = '<p style="color:#ccc;">Aucun rendez-vous trouvé pour ce client.</p>';
         } else {
-          html = `<table class="table-modal-rdv">
+          html = `<div class="modal-table-scroll"><table class="table-modal-rdv">
             <thead>
               <tr>
                 <th>Date</th>
@@ -700,12 +744,14 @@
             </tr>`;
           });
           
-          html += '</tbody></table>';
+          html += '</tbody></table></div>';
         }
         
         modalContent.innerHTML = html;
       }
     });
+
+    window.addEventListener('resize', enforceSingleScrollZone);
   </script>
   <script>
 document.addEventListener('DOMContentLoaded', function() {

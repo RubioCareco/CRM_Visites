@@ -67,7 +67,7 @@ body, html {
 
 .input-group input:hover, .input-group input:focus {
     background-color: #ffffff38;
-    box-shadow: 0 0 0 2px rgba(229,57,53,0.10);
+    box-shadow: 0 0 0 2px rgba(255,59,59,0.10);
     outline: none;
   }
   
@@ -84,7 +84,7 @@ body, html {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    color: #313030;
+    color: #4b5563;
     font-size: 14px;
   }
   
@@ -109,7 +109,7 @@ body, html {
   .input-icon .fa-eye:hover,
   .input-icon .fa-eye-slash:hover {
     transform: scale(1.2);
-    color: #f55;
+    color: #374151;
   }
   
   .forgot-password {
@@ -129,23 +129,37 @@ body, html {
     text-decoration: underline;
   }
   
-  .login-btn {
+.login-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 100%;
     padding: 12px;
     font-size: 16px;
-    border: none;
+    border: 1px solid #ff3b3b;
     border-radius: 12px;
-    background: linear-gradient(to right, #e53935, #e35d5b);
-    color: white;
+    background: #ff3b3b;
+    color: #fff;
     cursor: pointer;
     font-weight: bold;
-    transition: 0.3s, transform 0.18s;
+    box-shadow: 0 2px 8px 0 rgba(211,47,47,0.10);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
   }
   
   .login-btn:hover {
-    opacity: 0.9;
-    transform: scale(1.04);
+    background: #ff3b3b;
+    color: #fff;
+    box-shadow: 0 8px 20px 0 rgba(211,47,47,0.24);
+    transform: translateY(-1px);
+    filter: brightness(1.02);
   }
+
+  .login-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px 0 rgba(211,47,47,0.10);
+    filter: brightness(0.98);
+  }
+
   
   /* Masque l'icône "œil" native des navigateurs */
   input[type="password"]::-ms-reveal,

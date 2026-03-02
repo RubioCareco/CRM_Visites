@@ -3855,14 +3855,38 @@ def api_replace_tournee(request):
 
         commercial_id = int(payload.get("commercial_id") or 0)
         date_str = (payload.get("date") or "").strip()
-        client_ids = payload.get("client_ids") or []
+        client_uuids = payload.get("client_uuids") or []
+        legacy_client_ids = payload.get("client_ids") or []
 
-        if (not commercial_id) or (not date_str) or (not isinstance(client_ids, list)) or (not client_ids):
+        if (not commercial_id) or (not date_str):
             return JsonResponse({"ok": False, "error": "missing_fields"}, status=400)
+        if client_uuids and not isinstance(client_uuids, list):
+            return JsonResponse({"ok": False, "error": "invalid_client_uuids"}, status=400)
+        if legacy_client_ids and not isinstance(legacy_client_ids, list):
+            return JsonResponse({"ok": False, "error": "invalid_client_ids"}, status=400)
 
         d = parse_date(date_str)
         if not d:
             return JsonResponse({"ok": False, "error": "invalid_date"}, status=400)
+
+        # Canonique: client_uuids. Compat legacy: client_ids.
+        resolved_client_ids = []
+        if client_uuids:
+            uuid_map = {
+                str(c.uuid): c.id
+                for c in FrontClient.objects.filter(uuid__in=client_uuids).only("id", "uuid")
+            }
+            missing = [u for u in client_uuids if str(u) not in uuid_map]
+            if missing:
+                return JsonResponse({"ok": False, "error": "unknown_client_uuid", "missing": missing[:3]}, status=400)
+            resolved_client_ids = [int(uuid_map[str(u)]) for u in client_uuids]
+        elif legacy_client_ids:
+            try:
+                resolved_client_ids = [int(cid) for cid in legacy_client_ids]
+            except Exception:
+                return JsonResponse({"ok": False, "error": "invalid_client_ids"}, status=400)
+        else:
+            return JsonResponse({"ok": False, "error": "missing_clients"}, status=400)
 
         # Permissions: un commercial ne peut modifier que sa propre tournée.
         session_commercial_id = int(request.session.get("commercial_id") or 0)
@@ -3877,26 +3901,26 @@ def api_replace_tournee(request):
         qs = Rendezvous.objects.filter(commercial_id=commercial_id, date_rdv=d).order_by("heure_rdv", "id")
         rdvs = list(qs)
 
-        n_update = min(len(rdvs), len(client_ids))
+        n_update = min(len(rdvs), len(resolved_client_ids))
         updated = 0
         for i in range(n_update):
             rv = rdvs[i]
-            cid = int(client_ids[i])
+            cid = int(resolved_client_ids[i])
             if getattr(rv, "client_id", None) != cid:
                 rv.client_id = cid
                 rv.save(update_fields=["client"])
             updated += 1
 
         created = 0
-        if len(client_ids) > len(rdvs):
+        if len(resolved_client_ids) > len(rdvs):
             from datetime import time, datetime, timedelta
             if rdvs:
                 last_h = rdvs[-1].heure_rdv
                 base_dt = datetime.combine(d, last_h) + timedelta(minutes=30)
             else:
                 base_dt = datetime.combine(d, time(9, 0))
-            for j in range(len(rdvs), len(client_ids)):
-                cid = int(client_ids[j])
+            for j in range(len(rdvs), len(resolved_client_ids)):
+                cid = int(resolved_client_ids[j])
                 client = FrontClient.objects.filter(id=cid).first()
                 rv = Rendezvous(
                     commercial_id=commercial_id,
@@ -3911,8 +3935,8 @@ def api_replace_tournee(request):
                 base_dt = base_dt + timedelta(minutes=30)
 
         deleted = 0
-        if len(client_ids) < len(rdvs):
-            extra = rdvs[len(client_ids):]
+        if len(resolved_client_ids) < len(rdvs):
+            extra = rdvs[len(resolved_client_ids):]
             deleted = len(extra)
             for rv in extra:
                 rv.delete()

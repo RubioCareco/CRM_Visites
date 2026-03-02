@@ -1168,15 +1168,12 @@
       btnNewRDV.onclick  = ()=>{
         if(isCommercialAbsent){ showAbsentBlockedToast(); return; }
         const next = '/dashboard_test/';
-        if (currentRDV && (currentRDV.client_uuid || currentRDV.client_id)) {
-          const clientParam = currentRDV.client_uuid
-            ? `client_uuid=${encodeURIComponent(currentRDV.client_uuid)}`
-            : `client_id=${encodeURIComponent(currentRDV.client_id)}`;
+        if (currentRDV && currentRDV.client_uuid) {
+          const clientParam = `client_uuid=${encodeURIComponent(currentRDV.client_uuid)}`;
           const url = `${ADD_RDV_URL}?${clientParam}&next=${encodeURIComponent(next)}`;
           window.open(url,'_blank','noopener,noreferrer');
         } else {
-          const url = `${ADD_RDV_URL}?next=${encodeURIComponent(next)}`;
-          window.open(url,'_blank','noopener,noreferrer');
+          showToast("Client UUID manquant pour ce rendez-vous.", "error");
         }
       };
 
@@ -1678,12 +1675,12 @@ document.addEventListener("click", async (e) => {
   }
 
   // DBT_VALIDATE_TOURNEE_HANDLER_ONLY_V2
-  function dbtGetSelectedIds(){
-    if (window.dbtSelectedClientIds && typeof window.dbtSelectedClientIds.forEach === "function"){
-      return Array.from(window.dbtSelectedClientIds);
+  function dbtGetSelectedUuids(){
+    if (window.dbtSelectedClientUuids && typeof window.dbtSelectedClientUuids.forEach === "function"){
+      return Array.from(window.dbtSelectedClientUuids);
     }
     // fallback si c’est un array
-    if (Array.isArray(window.dbtSelectedClientIds)) return window.dbtSelectedClientIds;
+    if (Array.isArray(window.dbtSelectedClientUuids)) return window.dbtSelectedClientUuids;
     return [];
   }
 
@@ -1719,7 +1716,7 @@ document.addEventListener("click", async (e) => {
     var date = dateEl ? (dateEl.value || "").trim() : "";
 
     var commercial_id = dbtGetCommercialIdSafe();
-    var ids = dbtGetSelectedIds().map(function(x){ return Number(x); }).filter(Boolean);
+    var uuids = dbtGetSelectedUuids().map(function(x){ return String(x || "").trim(); }).filter(Boolean);
 
     if (!commercial_id){
       dbtToast("Commercial introuvable (id).", "error");
@@ -1737,7 +1734,7 @@ document.addEventListener("click", async (e) => {
       dbtToast("Impossible de valider une tournée sur une date passée.", "error");
       return;
     }
-    if (!ids.length){
+    if (!uuids.length){
       dbtToast("Aucun client sélectionné.", "error");
       return;
     }
@@ -1745,7 +1742,7 @@ document.addEventListener("click", async (e) => {
     const askConfirm = (typeof window.dbtAskConfirm === "function")
       ? window.dbtAskConfirm
       : (msg)=>Promise.resolve(window.confirm(msg));
-    const ok = await askConfirm("Remplacer la tournée du " + date + " par " + ids.length + " client(s) sélectionné(s) ?");
+    const ok = await askConfirm("Remplacer la tournée du " + date + " par " + uuids.length + " client(s) sélectionné(s) ?");
     if (!ok){
       return;
     }
@@ -1756,7 +1753,7 @@ document.addEventListener("click", async (e) => {
         "Content-Type": "application/json",
         "X-CSRFToken": (typeof getCSRF === "function") ? getCSRF() : (typeof getCookie === "function" ? getCookie("csrftoken") : "")
       },
-      body: JSON.stringify({ commercial_id: commercial_id, date: date, client_ids: ids })
+      body: JSON.stringify({ commercial_id: commercial_id, date: date, client_uuids: uuids })
     });
 
     var txt = await res.text();
@@ -1809,24 +1806,24 @@ map.on("click", function(e){ dbtDlog("MAP CLICK", e.latlng); });
     spiderLegPolylineOptions: { weight: 2, color: "#be123c", opacity: 0.75 },
   });
   map.addLayer(gTourPoints);
-    var clientMarkersById = {};
+    var clientMarkersByUuid = {};
     // ✅ Sélection clients (Set)
-    window.dbtSelectedClientIds = window.dbtSelectedClientIds || new Set();
+    window.dbtSelectedClientUuids = window.dbtSelectedClientUuids || new Set();
 
-    function dbtIsSelected(id){ return window.dbtSelectedClientIds.has(Number(id)); }
+    function dbtIsSelected(clientUuid){ return window.dbtSelectedClientUuids.has(String(clientUuid || "")); }
     function dbtRefreshMapSelectionStyles(){
-      Object.keys(clientMarkersById).forEach(function(id){
-        var mk = clientMarkersById[id];
+      Object.keys(clientMarkersByUuid).forEach(function(clientUuid){
+        var mk = clientMarkersByUuid[clientUuid];
         if (mk && typeof mk._refreshDbtStyle === "function") mk._refreshDbtStyle();
       });
     }
     function dbtRefreshPopupButtons(){
-      Object.keys(clientMarkersById).forEach(function(id){
-        var mk = clientMarkersById[id];
+      Object.keys(clientMarkersByUuid).forEach(function(clientUuid){
+        var mk = clientMarkersByUuid[clientUuid];
         if (!mk || typeof mk.getPopup !== "function") return;
         var popup = mk.getPopup();
         if (!popup) return;
-        var c = window.dbtClientsById && window.dbtClientsById[Number(id)];
+        var c = window.dbtClientsByUuid && window.dbtClientsByUuid[String(clientUuid)];
         if (!c) return;
         mk.setPopupContent(clientPopupHtml(c));
       });
@@ -1842,17 +1839,19 @@ map.on("click", function(e){ dbtDlog("MAP CLICK", e.latlng); });
       dbtRefreshPopupButtons();
       if (window.dbtRenderSelectedSidebar) window.dbtRenderSelectedSidebar();
     }
-    function dbtToggleSelected(id){
-      id = Number(id);
-      if (window.dbtSelectedClientIds.has(id)) window.dbtSelectedClientIds.delete(id);
-      else window.dbtSelectedClientIds.add(id);
-      dbtDlog("SELECTED CLIENT IDS =", Array.from(window.dbtSelectedClientIds));
+    function dbtToggleSelected(clientUuid){
+      clientUuid = String(clientUuid || "").trim();
+      if (!clientUuid) return;
+      if (window.dbtSelectedClientUuids.has(clientUuid)) window.dbtSelectedClientUuids.delete(clientUuid);
+      else window.dbtSelectedClientUuids.add(clientUuid);
+      dbtDlog("SELECTED CLIENT UUIDS =", Array.from(window.dbtSelectedClientUuids));
       dbtSyncSelectionUI();
     }
-    function dbtSelectClient(id){
-      id = Number(id);
-      if (!window.dbtSelectedClientIds.has(id)) window.dbtSelectedClientIds.add(id);
-      dbtDlog("SELECTED CLIENT IDS =", Array.from(window.dbtSelectedClientIds));
+    function dbtSelectClient(clientUuid){
+      clientUuid = String(clientUuid || "").trim();
+      if (!clientUuid) return;
+      if (!window.dbtSelectedClientUuids.has(clientUuid)) window.dbtSelectedClientUuids.add(clientUuid);
+      dbtDlog("SELECTED CLIENT UUIDS =", Array.from(window.dbtSelectedClientUuids));
       dbtSyncSelectionUI();
     }
     window.dbtToggleSelected = dbtToggleSelected;
@@ -1864,7 +1863,7 @@ map.on("click", function(e){ dbtDlog("MAP CLICK", e.latlng); });
     gClients.clearLayers();
     gTourLine.clearLayers();
     gTourPoints.clearLayers();
-    clientMarkersById = {};
+    clientMarkersByUuid = {};
   }
   function fitDefault(){ map.setView([44.84,-0.58],9); }
   function esc(v){
@@ -1886,7 +1885,8 @@ map.on("click", function(e){ dbtDlog("MAP CLICK", e.latlng); });
     return "<a href='mailto:"+encodeURIComponent(e)+"' style='color:#2563eb;text-decoration:underline'>"+safe+"</a>";
   }
   function clientPopupHtml(c){
-    var isSelected = dbtIsSelected(c.id);
+    var currentUuid = String(c.uuid || "");
+    var isSelected = dbtIsSelected(currentUuid);
     return [
       "<div class='dbt-map-popup-content'>",
       "<div style='font-weight:800;font-size:13px;margin-bottom:6px'>"+esc(c.nom || "Client")+"</div>",
@@ -1895,14 +1895,14 @@ map.on("click", function(e){ dbtDlog("MAP CLICK", e.latlng); });
       "<div style='font-size:12px;line-height:1.35;color:#334155'><b>Email :</b> "+emailHtml(c.email)+"</div>",
       "<div style='font-size:12px;line-height:1.35;color:#334155'><b>Type :</b> "+esc(c.classement_client || "N/A")+"</div>",
       "<div style='font-size:12px;line-height:1.35;color:#334155'><b>Code comptable :</b> "+esc(c.code_comptable || "N/A")+"</div>",
-      "<button type='button' class='dbt-popup-add-btn' data-client-id='"+Number(c.id)+"' "+(isSelected?"disabled":"")+">"+(isSelected?"Ajouté":"Ajouter")+"</button>",
+      "<button type='button' class='dbt-popup-add-btn' data-client-uuid='"+esc(currentUuid)+"' "+(isSelected?"disabled":"")+">"+(isSelected?"Ajouté":"Ajouter")+"</button>",
       "</div>"
     ].join("");
   }
   function tourPopupHtml(t, i){
-    var tid = Number(t.id || t.client_id || 0);
-    var canAdd = Number.isFinite(tid) && tid > 0;
-    var isSelected = canAdd ? dbtIsSelected(tid) : false;
+    var tUuid = String(t.client_uuid || "");
+    var canAdd = !!tUuid;
+    var isSelected = canAdd ? dbtIsSelected(tUuid) : false;
     return [
       "<div class='dbt-map-popup-content'>",
       "<div style='font-weight:800;font-size:13px;margin-bottom:6px'>"+esc(t.label || ("RDV "+(i+1)))+"</div>",
@@ -1912,7 +1912,7 @@ map.on("click", function(e){ dbtDlog("MAP CLICK", e.latlng); });
       "<div style='font-size:12px;line-height:1.35;color:#334155'><b>Email :</b> "+emailHtml(t.email)+"</div>",
       "<div style='font-size:12px;line-height:1.35;color:#334155'><b>Type :</b> "+esc(t.classement_client || "N/A")+"</div>",
       canAdd
-        ? "<button type='button' class='dbt-popup-add-btn' data-client-id='"+tid+"' "+(isSelected?"disabled":"")+">"+(isSelected?"Ajouté":"Ajouter")+"</button>"
+        ? "<button type='button' class='dbt-popup-add-btn' data-client-uuid='"+esc(tUuid)+"' "+(isSelected?"disabled":"")+">"+(isSelected?"Ajouté":"Ajouter")+"</button>"
         : "",
       "</div>"
     ].join("");
@@ -1947,8 +1947,10 @@ map.on("click", function(e){ dbtDlog("MAP CLICK", e.latlng); });
       var pts=[];
 
       (data.clients||[]).forEach(c=>{
-          window.dbtClientsById = window.dbtClientsById || {};
-          window.dbtClientsById[Number(c.id)] = c;
+          window.dbtClientsByUuid = window.dbtClientsByUuid || {};
+          if (c.uuid) {
+            window.dbtClientsByUuid[String(c.uuid)] = c;
+          }
 
         var ll=[c.lat,c.lng]; pts.push(ll);
         // ✅ Client selectable
@@ -1959,10 +1961,10 @@ var mk = L.circleMarker(ll, {
   fillColor: "#93c5fd",
   fillOpacity: 0.9
 });
-mk._clientId = Number(c.id);
+mk._clientUuid = String(c.uuid || "");
 
 function refreshStyle(){
-  var sel = dbtIsSelected(mk._clientId);
+  var sel = dbtIsSelected(mk._clientUuid);
   // Client sélectionné: rouge pour préparer la tournée
   mk.setStyle(
     sel
@@ -1971,11 +1973,13 @@ function refreshStyle(){
   );
 }
 mk._refreshDbtStyle = refreshStyle;
-clientMarkersById[mk._clientId] = mk;
+if (mk._clientUuid) {
+  clientMarkersByUuid[mk._clientUuid] = mk;
+}
 refreshStyle();
 
 mk.on("click", function(ev){
-  dbtDlog("CLIENT MARKER CLICK", mk._clientId, ll);
+  dbtDlog("CLIENT MARKER CLICK", mk._clientUuid, ll);
   if (ev && ev.originalEvent) ev.originalEvent.stopPropagation();
 });
 
@@ -2012,9 +2016,9 @@ mk.addTo(gClients).bindPopup(clientPopupHtml(c));
     if(!addBtn) return;
     ev.preventDefault();
     ev.stopPropagation();
-    var id = Number(addBtn.getAttribute("data-client-id") || "0");
-    if(!id) return;
-    dbtSelectClient(id);
+    var clientUuid = String(addBtn.getAttribute("data-client-uuid") || "").trim();
+    if(!clientUuid) return;
+    dbtSelectClient(clientUuid);
     addBtn.disabled = true;
     addBtn.textContent = "Ajouté";
   });

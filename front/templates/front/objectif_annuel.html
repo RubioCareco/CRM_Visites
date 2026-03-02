@@ -94,7 +94,7 @@
                     </thead>
                     <tbody>
                         {% for client in clients_data %}
-                        <tr class="client-row" data-client-id="{{ client.client_id }}" data-client-uuid="{{ client.client_uuid|default:'' }}" onclick="openClientModal('{{ client.client_id }}', '{{ client.client_uuid|default:'' }}')">
+                        <tr class="client-row" data-client-id="{{ client.client_id }}" data-client-uuid="{{ client.client_uuid|default:'' }}" onclick="openClientModal('{{ client.client_uuid|default:'' }}')">
                             <td>{{ client.client_name }}</td>
                             <td>{{ client.objectif }}</td>
                             <td>{{ client.realises }}</td>
@@ -113,7 +113,7 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{% url 'add_rdv' %}?{% if client.client_uuid %}client_uuid={{ client.client_uuid }}{% else %}client_id={{ client.client_id }}{% endif %}&next={{ next_url_for_add_rdv|urlencode }}" 
+                                <a href="{% url 'add_rdv' %}?client_uuid={{ client.client_uuid }}&next={{ next_url_for_add_rdv|urlencode }}" 
                                    class="btn-planifier {% if client.is_atteint %}disabled{% endif %}"
                                    onclick="event.stopPropagation()">
                                     Planifier RDV
@@ -377,30 +377,27 @@
         }
         
         // Variables pour la modal client
-        let currentClientId = null;
         let currentClientUuid = null;
         let currentClientData = null;
         
         // Fonction pour ouvrir la modal du client
-        function openClientModal(clientId, clientUuid) {
-            currentClientId = clientId;
+        function openClientModal(clientUuid) {
             currentClientUuid = clientUuid || null;
             document.getElementById('clientModal').style.display = 'block';
             
             // Charger les données du client
-            loadClientData(clientId, clientUuid);
+            loadClientData(clientUuid);
         }
         
         // Fonction pour fermer la modal du client
         function closeClientModal() {
             document.getElementById('clientModal').style.display = 'none';
-            currentClientId = null;
             currentClientUuid = null;
             currentClientData = null;
         }
         
         // Fonction pour charger les données du client
-        function loadClientData(clientId, clientUuid) {
+        function loadClientData(clientUuid) {
             // Afficher un loader
             document.getElementById('clientModalContent').innerHTML = `
                 <div class="loading">
@@ -531,9 +528,9 @@
         
         // Fonction pour planifier un RDV depuis la modal
         function planifierRdvClient() {
-            if (currentClientId) {
+            if (currentClientUuid) {
                 const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
-                const clientParam = currentClientUuid ? `client_uuid=${encodeURIComponent(currentClientUuid)}` : `client_id=${encodeURIComponent(currentClientId)}`;
+                const clientParam = `client_uuid=${encodeURIComponent(currentClientUuid)}`;
                 window.location.href = `{% url 'add_rdv' %}?${clientParam}&next=${nextUrl}`;
             }
         }

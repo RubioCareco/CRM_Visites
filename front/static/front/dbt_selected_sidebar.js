@@ -6,13 +6,13 @@
     var count = $("dbtSelCount");
     if(!list || !count) return;
 
-    var set = window.dbtSelectedClientIds || new Set();
-    var ids = Array.from(set);
+    var set = window.dbtSelectedClientUuids || new Set();
+    var uuids = Array.from(set);
 
-    count.textContent = String(ids.length);
+    count.textContent = String(uuids.length);
     list.innerHTML = "";
 
-    if(ids.length === 0){
+    if(uuids.length === 0){
       var empty = document.createElement("div");
       empty.style.color = "#64748b";
       empty.style.fontSize = "12px";
@@ -21,7 +21,7 @@
       return;
     }
 
-    ids.forEach(function(id){
+    uuids.forEach(function(clientUuid){
       var row = document.createElement("div");
       row.style.display = "flex";
       row.style.alignItems = "center";
@@ -38,8 +38,8 @@
       left.style.wordBreak = "break-word";
       left.style.flex = "1";
       left.style.minWidth = "0";
-      var c = (window.dbtClientsById && window.dbtClientsById[Number(id)]) || null;
-      var name = (c && (c.rs_nom || c.nom || c.name)) ? (c.rs_nom || c.nom || c.name) : ("Client #" + id);
+      var c = (window.dbtClientsByUuid && window.dbtClientsByUuid[String(clientUuid)]) || null;
+      var name = (c && (c.rs_nom || c.nom || c.name)) ? (c.rs_nom || c.nom || c.name) : ("Client");
 
       left.innerHTML = "";
       left.style.fontWeight = "normal";
@@ -86,7 +86,7 @@
 
       btn.addEventListener("click", function(ev){
         ev.preventDefault(); ev.stopPropagation();
-        if (typeof window.dbtToggleSelected === "function") window.dbtToggleSelected(Number(id));
+        if (typeof window.dbtToggleSelected === "function") window.dbtToggleSelected(String(clientUuid));
         render();
       });
 
@@ -99,11 +99,11 @@
   // Hook "Vider"
   document.addEventListener("click", function(e){
     if(e && e.target && e.target.id === "dbtSelClear"){
-      var ids = Array.from(window.dbtSelectedClientIds || []);
+      var uuids = Array.from(window.dbtSelectedClientUuids || []);
       if (typeof window.dbtToggleSelected === "function"){
-        ids.forEach(function(id){ window.dbtToggleSelected(Number(id)); });
+        uuids.forEach(function(clientUuid){ window.dbtToggleSelected(String(clientUuid)); });
       } else {
-        window.dbtSelectedClientIds = new Set(); // fallback
+        window.dbtSelectedClientUuids = new Set(); // fallback
       }
       render();
     }
